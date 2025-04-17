@@ -52,14 +52,19 @@ export const LoginForm = () => {
       setFormError(null);
       dispatch(loginStart());
       
+      console.log("Attempting login with:", data.email);
       const userData = await signIn(data.email, data.password);
+      console.log("Login successful, user data received:", !!userData);
       
-      dispatch(loginSuccess(userData));
-      toast.success("Login successful!");
-      
-      navigate(from, { replace: true });
+      if (userData) {
+        dispatch(loginSuccess(userData));
+        toast.success("Login successful!");
+        navigate(from, { replace: true });
+      } else {
+        throw new Error("No user data returned from login");
+      }
     } catch (error: any) {
-      setLoading(false);
+      console.error("Login error:", error);
       const errorMessage = error.message || "Login failed. Please check your credentials.";
       dispatch(loginFailure(errorMessage));
       setFormError(errorMessage);

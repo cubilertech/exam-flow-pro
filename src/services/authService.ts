@@ -6,10 +6,17 @@ import { User } from '@/features/auth/authSlice';
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .rpc('is_admin', { user_id: userId });
+      .from('admin_users')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
     
-    if (error) throw error;
-    return data || false;
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+    
+    return !!data;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -23,9 +30,12 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
       .from('profiles')
       .select('username, country, gender, phone_number, city')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
     
     return data ? {
       username: data.username || '',
@@ -65,8 +75,17 @@ export const signUp = async (
       },
     });
     
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('User registration failed');
+    if (authError) {
+      console.error('Auth error during signup:', authError);
+      throw authError;
+    }
+    
+    if (!authData.user) {
+      console.error('No user returned from auth');
+      throw new Error('User registration failed');
+    }
+    
+    console.log('User created successfully:', authData.user.id);
     
     // 2. Insert the user profile data
     const { error: profileError } = await supabase
@@ -80,7 +99,12 @@ export const signUp = async (
         city: userData.city,
       });
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      throw profileError;
+    }
+    
+    console.log('Profile created successfully');
     
     // 3. Check if the user is an admin
     const isAdmin = await checkIsAdmin(authData.user.id);
@@ -130,12 +154,13 @@ export const signIn = async (email: string, password: string) => {
       .from('profiles')
       .select('*')
       .eq('id', authData.user.id)
-      .single();
+      .maybeSingle();
       
     if (profileError) {
       console.error('Profile error:', profileError);
       // If profile doesn't exist, create a basic one
       if (profileError.code === 'PGRST116') {
+        console.log('Creating basic profile for user');
         const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
@@ -178,7 +203,11 @@ export const signIn = async (email: string, password: string) => {
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    if (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
+    console.log('User signed out successfully');
   } catch (error) {
     console.error('Sign out error:', error);
     throw error;
