@@ -31,10 +31,13 @@ import { startTest } from '@/features/study/studySlice';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Question } from '@/features/questions/questionsSlice';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
 
 // Define form schema
 const formSchema = z.object({
   examType: z.enum(["test", "study"]),
+  questionBankId: z.string().min(1, "Please select a question bank"),
   categories: z.array(z.string()).min(1, "Select at least one category"),
   difficultyLevels: z.array(z.enum(["all", "easy", "medium", "hard"])).min(1, "Select at least one difficulty level"),
   numberOfQuestions: z.number()
@@ -55,50 +58,70 @@ interface NewExamModalProps {
 const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { categories } = useAppSelector((state) => state.questions);
+  const { subscriptions } = useQuestionBankSubscriptions();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   
   const form = useForm<NewExamFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       examType: "test",
+      questionBankId: "",
       categories: [],
       difficultyLevels: ["all"],
-      numberOfQuestions: 10, // Now a number instead of a string
+      numberOfQuestions: 10,
       timedMode: "untimed",
       examName: "",
     },
   });
+  
+  const selectedQuestionBank = form.watch("questionBankId");
 
-  // Fetch categories when modal opens
+  // Fetch categories when question bank changes
   useEffect(() => {
-    if (open && categories.length === 0) {
-      const fetchCategories = async () => {
-        try {
-          dispatch(fetchCategoriesStart());
-          const { data, error } = await supabase
-            .from('categories')
-            .select('*');
-            
-          if (error) throw error;
-          
-          // Transform the data to match Category type
-          const transformedCategories = data.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            questionBankId: cat.question_bank_id || undefined,
-            questionCount: 0 // Provide a default value
-          }));
-          
-          dispatch(fetchCategoriesSuccess(transformedCategories));
-        } catch (error) {
-          console.error('Error fetching categories:', error);
-          dispatch(fetchCategoriesFailure((error as Error).message));
-        }
-      };
-      
-      fetchCategories();
+    if (selectedQuestionBank) {
+      fetchCategoriesByQuestionBank(selectedQuestionBank);
+    } else {
+      setCategories([]);
     }
-  }, [open, categories.length, dispatch]);
+  }, [selectedQuestionBank]);
+
+  // Set first question bank as default when modal opens
+  useEffect(() => {
+    if (open && subscriptions.length > 0 && !selectedQuestionBank) {
+      form.setValue("questionBankId", subscriptions[0].id);
+    }
+  }, [open, subscriptions, selectedQuestionBank]);
+
+  const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('question_bank_id', questionBankId);
+        
+      if (error) throw error;
+      
+      // Transform the data to match Category type
+      const transformedCategories = data.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        questionBankId: cat.question_bank_id || undefined,
+        questionCount: 0 // Provide a default value
+      }));
+      
+      setCategories(transformedCategories);
+      
+      // Reset categories selection when question bank changes
+      form.setValue("categories", []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to fetch categories');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStartExam = async (values: NewExamFormValues) => {
     console.log("Starting exam with values:", values);
@@ -213,6 +236,31 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
             <FormField
               control={form.control}
+              name="questionBankId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Question Bank</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a question bank" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subscriptions.map((qbank) => (
+                        <SelectItem key={qbank.id} value={qbank.id}>
+                          {qbank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="categories"
               render={() => (
                 <FormItem>
@@ -222,41 +270,52 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                       Select the categories you want to include in your exam.
                     </FormDescription>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {categories.map((category) => (
-                      <FormField
-                        key={category.id}
-                        control={form.control}
-                        name="categories"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={category.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(category.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...field.value, category.id])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== category.id
-                                          )
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {category.name} ({category.questionCount || 0})
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
+                  {loading ? (
+                    <div className="p-4 text-center">Loading categories...</div>
+                  ) : categories.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      {selectedQuestionBank ? 
+                        "No categories available for this question bank." : 
+                        "Please select a question bank first."
+                      }
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {categories.map((category) => (
+                        <FormField
+                          key={category.id}
+                          control={form.control}
+                          name="categories"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={category.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(category.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, category.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== category.id
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {category.name} ({category.questionCount || 0})
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -335,6 +394,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                       {...field} 
                       min={1} 
                       max={30} 
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />
@@ -395,7 +455,12 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Start Exam</Button>
+              <Button 
+                type="submit" 
+                disabled={!selectedQuestionBank || form.getValues().categories.length === 0}
+              >
+                Start Exam
+              </Button>
             </DialogFooter>
           </form>
         </Form>

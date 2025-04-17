@@ -40,6 +40,12 @@ interface QuestionBank {
   description: string | null;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  question_bank_id: string | null;
+}
+
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title is too long"),
   description: z.string().optional(),
@@ -65,6 +71,7 @@ const NewExam = () => {
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -96,6 +103,12 @@ const NewExam = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (selectedQuestionBank) {
+      fetchCategoriesByQuestionBank(selectedQuestionBank);
+    }
+  }, [selectedQuestionBank]);
+
   const fetchQuestionBanks = async () => {
     try {
       const { data, error } = await supabase
@@ -110,6 +123,26 @@ const NewExam = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to load question banks",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("question_bank_id", questionBankId)
+        .order("name");
+
+      if (error) throw error;
+      
+      setCategories(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load categories",
         variant: "destructive",
       });
     }

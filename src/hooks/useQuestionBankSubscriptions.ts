@@ -64,28 +64,9 @@ export const useQuestionBankSubscriptions = () => {
     if (!user) return;
 
     try {
-      // First, set all user's subscriptions to inactive
-      const { error: updateError } = await supabase
-        .from('user_subscriptions')
-        .update({ is_active: false })
-        .eq('user_id', user.id);
-
-      if (updateError) throw updateError;
-
-      // Then set the selected one to active
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({ is_active: true })
-        .eq('user_id', user.id)
-        .eq('question_bank_id', questionBankId);
-
-      if (error) throw error;
-
-      // Update Redux state
+      // No longer need to deactivate other subscriptions
+      // Just update Redux state to track the active question bank for UI
       dispatch(setActiveQuestionBank(questionBankId));
-      
-      // Refresh subscriptions
-      await fetchSubscribedQuestionBanks();
       toast.success('Question bank activated');
     } catch (error) {
       toast.error('Failed to set active question bank');
