@@ -152,7 +152,7 @@ export const StudyMode = () => {
                 <SelectValue placeholder={currentExam ? "Choose a category" : "Select exam first"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all-categories">All Categories</SelectItem>
                 {filteredCategories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
