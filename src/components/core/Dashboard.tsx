@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, TestTube, BarChart, Flag, BookMarked } from "lucide-react";
+import { mockQuestions } from "@/data/mockQuestions";
 
 export const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
