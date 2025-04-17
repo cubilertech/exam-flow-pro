@@ -30,6 +30,8 @@ export interface TestResult {
   score: number;
   timeTaken: number;
   answers: AnsweredQuestion[];
+  timeStarted?: string;
+  timeCompleted?: string;
 }
 
 interface StudyState {
@@ -39,6 +41,7 @@ interface StudyState {
   testResults: TestResult[];
   currentStudyMode: 'study' | 'test' | null;
   currentTestQuestions: Question[];
+  currentTestStartTime: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -50,6 +53,7 @@ const initialState: StudyState = {
   testResults: [],
   currentStudyMode: null,
   currentTestQuestions: [],
+  currentTestStartTime: null,
   isLoading: false,
   error: null,
 };
@@ -103,6 +107,12 @@ const studySlice = createSlice({
     startTest: (state, action: PayloadAction<Question[]>) => {
       state.currentTestQuestions = action.payload;
       state.currentStudyMode = 'test';
+      state.currentTestStartTime = new Date().toISOString();
+      // Clear any previous answers for these questions
+      const questionIds = action.payload.map(q => q.id);
+      state.answeredQuestions = state.answeredQuestions.filter(
+        a => !questionIds.includes(a.questionId)
+      );
     },
     
     answerQuestion: (state, action: PayloadAction<AnsweredQuestion>) => {
@@ -121,11 +131,13 @@ const studySlice = createSlice({
       state.testResults.push(action.payload);
       state.currentTestQuestions = [];
       state.currentStudyMode = null;
+      state.currentTestStartTime = null;
     },
     
     clearCurrentTest: (state) => {
       state.currentTestQuestions = [];
       state.currentStudyMode = null;
+      state.currentTestStartTime = null;
     },
     
     // Loading states
