@@ -1,5 +1,5 @@
-
 import * as React from "react";
+import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/features/auth/authSlice";
@@ -14,8 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Book, TestTube, BarChart, HelpCircle, LogOut } from "lucide-react";
+import { User, Book, TestTube, BarChart, HelpCircle, LogOut, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -33,6 +34,8 @@ export const Navbar = () => {
       toast.error(`Logout failed: ${error.message}`);
     }
   };
+
+  const { subscriptions, activeQuestionBankId } = useQuestionBankSubscriptions();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -75,6 +78,25 @@ export const Navbar = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          {isAuthenticated && !isAdmin && (
+            <div className="flex items-center space-x-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center">
+                    {subscriptions.find(qb => qb.id === activeQuestionBankId)?.name || 'Select Question Bank'}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {subscriptions.map(questionBank => (
+                    <DropdownMenuItem key={questionBank.id}>
+                      {questionBank.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

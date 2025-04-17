@@ -55,6 +55,7 @@ interface QuestionsState {
   currentQuestion: Question | null;
   isLoading: boolean;
   error: string | null;
+  activeQuestionBankId: string | null;
 }
 
 const initialState: QuestionsState = {
@@ -68,6 +69,7 @@ const initialState: QuestionsState = {
   currentQuestion: null,
   isLoading: false,
   error: null,
+  activeQuestionBankId: null,
 };
 
 const questionsSlice = createSlice({
@@ -222,6 +224,9 @@ const questionsSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
+    setActiveQuestionBank: (state, action: PayloadAction<string | null>) => {
+      state.activeQuestionBankId = action.payload;
+    },
   },
 });
 
@@ -262,6 +267,7 @@ export const {
   deleteQuestionBankStart,
   deleteQuestionBankSuccess,
   deleteQuestionBankFailure,
+  setActiveQuestionBank,
 } = questionsSlice.actions;
 
 export default questionsSlice.reducer;
