@@ -22,6 +22,11 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Define an interface for the user profile response
+interface UserProfile {
+  id: string;
+}
+
 export function MakeAdminForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -37,14 +42,14 @@ export function MakeAdminForm() {
     try {
       setIsSubmitting(true);
       
-      // Check if user exists - explicitly type the query response
-      const { data: users, error: userError } = await supabase
+      // Check if user exists with explicitly typed response
+      const { data: user, error: userError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', values.email)
-        .single();
+        .single() as { data: UserProfile | null, error: any };
 
-      if (userError || !users) {
+      if (userError || !user) {
         toast({
           title: "Error",
           description: "User not found",
@@ -56,7 +61,7 @@ export function MakeAdminForm() {
       // Make user admin
       const { error: adminError } = await supabase
         .from('admin_users')
-        .insert([{ user_id: users.id }]);
+        .insert([{ user_id: user.id }]);
 
       if (adminError) {
         throw adminError;
