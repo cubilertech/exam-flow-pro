@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
@@ -35,7 +36,11 @@ export const Navbar = () => {
     }
   };
 
-  const { subscriptions, activeQuestionBankId } = useQuestionBankSubscriptions();
+  const { 
+    subscriptions, 
+    activeQuestionBankId,
+    setActiveQuestionBankById
+  } = useQuestionBankSubscriptions();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -83,16 +88,37 @@ export const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center">
+                    <Book className="mr-2 h-4 w-4" />
                     {subscriptions.find(qb => qb.id === activeQuestionBankId)?.name || 'Select Question Bank'}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {subscriptions.map(questionBank => (
-                    <DropdownMenuItem key={questionBank.id}>
-                      {questionBank.name}
-                    </DropdownMenuItem>
-                  ))}
+                  <DropdownMenuLabel>Subscribed Question Banks</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {subscriptions.length === 0 ? (
+                    <DropdownMenuItem disabled>No subscriptions available</DropdownMenuItem>
+                  ) : (
+                    subscriptions.map(questionBank => (
+                      <DropdownMenuItem 
+                        key={questionBank.id}
+                        className={cn(
+                          questionBank.id === activeQuestionBankId && "bg-accent text-accent-foreground",
+                          "cursor-pointer"
+                        )}
+                        onClick={() => setActiveQuestionBankById(questionBank.id)}
+                      >
+                        {questionBank.name}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <Book className="mr-2 h-4 w-4" />
+                      Manage Subscriptions
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

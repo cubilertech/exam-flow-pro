@@ -10,6 +10,7 @@ export const useQuestionBankSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<QuestionBank[]>([]);
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
 
   const fetchSubscribedQuestionBanks = async () => {
     if (!user) return;
@@ -27,7 +28,7 @@ export const useQuestionBankSubscriptions = () => {
       setSubscriptions(activeQuestionBanks);
 
       // Set the first subscribed question bank as active by default
-      if (activeQuestionBanks.length > 0) {
+      if (activeQuestionBanks.length > 0 && !activeQuestionBankId) {
         dispatch(setActiveQuestionBank(activeQuestionBanks[0].id));
       }
     } catch (error) {
@@ -59,6 +60,39 @@ export const useQuestionBankSubscriptions = () => {
     }
   };
 
+  const setActiveQuestionBankById = async (questionBankId: string) => {
+    if (!user) return;
+
+    try {
+      // First, set all user's subscriptions to inactive
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({ is_active: false })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Then set the selected one to active
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .update({ is_active: true })
+        .eq('user_id', user.id)
+        .eq('question_bank_id', questionBankId);
+
+      if (error) throw error;
+
+      // Update Redux state
+      dispatch(setActiveQuestionBank(questionBankId));
+      
+      // Refresh subscriptions
+      await fetchSubscribedQuestionBanks();
+      toast.success('Question bank activated');
+    } catch (error) {
+      toast.error('Failed to set active question bank');
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchSubscribedQuestionBanks();
   }, [user]);
@@ -66,6 +100,7 @@ export const useQuestionBankSubscriptions = () => {
   return { 
     subscriptions, 
     subscribeToQuestionBank,
-    activeQuestionBankId: useAppSelector(state => state.questions.activeQuestionBankId)
+    setActiveQuestionBankById,
+    activeQuestionBankId
   };
 };

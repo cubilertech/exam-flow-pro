@@ -18,8 +18,10 @@ import NotFound from "./pages/NotFound";
 import { MainLayout } from "./layouts/MainLayout";
 import QuestionBank from "./pages/QuestionBank";
 import QuestionBankDetail from "./pages/QuestionBankDetail";
+import Profile from "./pages/Profile";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { StudentRoute } from "./components/auth/StudentRoute";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
 
 function App() {
   return (
@@ -30,6 +32,7 @@ function App() {
             <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
             <Route path="/login" element={<Login/>}/>
             <Route path="/register" element={<Register/>}/>
+            <Route path="/profile" element={<PrivateRoute><MainLayout><Profile/></MainLayout></PrivateRoute>}/>
             <Route path="/study" element={<StudentRoute><MainLayout><Study/></MainLayout></StudentRoute>}/>
             <Route path="/exams" element={<StudentRoute><MainLayout><Exams/></MainLayout></StudentRoute>}/>
             <Route path="/my-exams" element={<StudentRoute><MainLayout><MyExams/></MainLayout></StudentRoute>}/>
