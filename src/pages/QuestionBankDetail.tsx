@@ -27,7 +27,7 @@ import {
   CardDescription, 
   CardContent 
 } from "@/components/ui/card";
-import { Plus, Search, ArrowLeft, PenSquare } from "lucide-react";
+import { Plus, Search, ArrowLeft, PenSquare, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -89,6 +89,11 @@ const QuestionBankDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  // For category management in the edit dialog
+  const [newCategory, setNewCategory] = useState("");
+  const [editedCategories, setEditedCategories] = useState<Category[]>([]);
+  const [deletedCategoryIds, setDeletedCategoryIds] = useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -117,6 +122,11 @@ const QuestionBankDetail = () => {
   useEffect(() => {
     fetchQuestions();
   }, [selectedCategory, id]);
+
+  useEffect(() => {
+    // Initialize edited categories whenever categories change
+    setEditedCategories([...categories]);
+  }, [categories]);
 
   const fetchQuestionBank = async () => {
     try {
@@ -251,13 +261,37 @@ const QuestionBankDetail = () => {
     fetchQuestions();
   };
 
+  // Category management in edit dialog
+  const handleAddCategory = () => {
+    if (newCategory.trim() && !editedCategories.some(cat => cat.name === newCategory.trim())) {
+      setEditedCategories([...editedCategories, { 
+        id: crypto.randomUUID(), 
+        name: newCategory.trim(),
+        questionBankId: id 
+      }]);
+      setNewCategory("");
+    }
+  };
+
+  const handleRemoveCategory = (categoryId: string) => {
+    const category = editedCategories.find(cat => cat.id === categoryId);
+    if (category) {
+      // If it's an existing category (has a questionBankId), mark for deletion
+      if (categories.some(cat => cat.id === categoryId)) {
+        setDeletedCategoryIds([...deletedCategoryIds, categoryId]);
+      }
+      setEditedCategories(editedCategories.filter(cat => cat.id !== categoryId));
+    }
+  };
+
   const onEditQuestionBank = async (values: z.infer<typeof formSchema>) => {
     if (!id) return;
     
     try {
       setIsSubmitting(true);
       
-      const { error } = await supabase
+      // 1. Update question bank details
+      const { error: bankError } = await supabase
         .from("question_banks")
         .update({
           name: values.name,
@@ -266,7 +300,48 @@ const QuestionBankDetail = () => {
         })
         .eq("id", id);
 
-      if (error) throw error;
+      if (bankError) throw bankError;
+
+      // 2. Delete removed categories
+      if (deletedCategoryIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("categories")
+          .delete()
+          .in("id", deletedCategoryIds);
+        
+        if (deleteError) throw deleteError;
+      }
+
+      // 3. Add new categories
+      const newCategories = editedCategories.filter(
+        cat => !categories.some(existingCat => existingCat.id === cat.id)
+      );
+      
+      if (newCategories.length > 0) {
+        const categoriesToInsert = newCategories.map(cat => ({
+          name: cat.name,
+          question_bank_id: id,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("categories")
+          .insert(categoriesToInsert);
+        
+        if (insertError) throw insertError;
+      }
+
+      // 4. Update existing categories (if any were renamed)
+      for (const cat of editedCategories) {
+        const existingCat = categories.find(c => c.id === cat.id);
+        if (existingCat && existingCat.name !== cat.name) {
+          const { error: updateError } = await supabase
+            .from("categories")
+            .update({ name: cat.name })
+            .eq("id", cat.id);
+          
+          if (updateError) throw updateError;
+        }
+      }
 
       toast({
         title: "Success",
@@ -274,7 +349,9 @@ const QuestionBankDetail = () => {
       });
       
       setEditDialogOpen(false);
+      setDeletedCategoryIds([]);
       fetchQuestionBank();
+      fetchCategories();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -444,18 +521,69 @@ const QuestionBankDetail = () => {
                 )}
               />
 
+              <div className="space-y-2">
+                <FormLabel>Categories</FormLabel>
+                <div className="flex space-x-2">
+                  <Input 
+                    placeholder="Add category" 
+                    value={newCategory} 
+                    onChange={(e) => setNewCategory(e.target.value)} 
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCategory();
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddCategory}
+                    disabled={!newCategory.trim()}
+                    size="icon"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {editedCategories.map((category) => (
+                    <Badge key={category.id} variant="secondary" className="flex items-center space-x-1">
+                      <span>{category.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategory(category.id)}
+                        className="ml-1 text-muted-foreground rounded-full hover:bg-muted h-4 w-4 inline-flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                        <span className="sr-only">Remove</span>
+                      </button>
+                    </Badge>
+                  ))}
+                  {editedCategories.length === 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      No categories added yet. Add at least one category.
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <DialogFooter className="pt-4">
                 <Button 
                   variant="outline" 
                   type="button" 
-                  onClick={() => setEditDialogOpen(false)}
+                  onClick={() => {
+                    setEditDialogOpen(false);
+                    setEditedCategories([...categories]);
+                    setDeletedCategoryIds([]);
+                  }}
                   disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || editedCategories.length === 0}
                 >
                   {isSubmitting ? "Updating..." : "Update Question Bank"}
                 </Button>

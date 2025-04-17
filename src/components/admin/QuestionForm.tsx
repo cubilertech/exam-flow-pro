@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, X, Upload } from 'lucide-react';
+import { Plus, X, Upload, Image, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 
@@ -52,6 +53,7 @@ export const QuestionForm = ({
 }: QuestionFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<Question>({
     id: initialData?.id || '',
@@ -73,6 +75,7 @@ export const QuestionForm = ({
     initialData?.options.filter(o => o.isCorrect).length > 1 ? 'multiple' : 'single'
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
 
   useEffect(() => {
     if (questionBankId) {
@@ -124,10 +127,12 @@ export const QuestionForm = ({
     });
   };
   
+  /* Commented out tags field
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
     setFormData({ ...formData, tags });
   };
+  */
 
   const handleOptionTextChange = (id: string, value: string) => {
     setFormData({
@@ -184,21 +189,76 @@ export const QuestionForm = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
       
-      // In a real app, you would upload the file to a server and get a URL back
-      // For now, we'll just set a placeholder URL
+      // Check file size - limit to 2MB
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 2MB in size",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
+      
+      // Set a preview
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+      
+      // Start the upload process
+      uploadImage(file);
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    try {
+      setIsUploading(true);
+      
+      // Create a unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `questions/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('question-images')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('question-images')
+        .getPublicUrl(filePath);
+      
+      // Update form data with the image URL
       setFormData({
         ...formData,
-        imageUrl: 'https://example.com/image.jpg'
+        imageUrl: publicUrl
       });
+      
+      toast({
+        title: "Image uploaded",
+        description: "Image has been uploaded successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const removeImage = () => {
     setSelectedFile(null);
+    setImagePreview(null);
     setFormData({
       ...formData,
       imageUrl: ''
@@ -367,6 +427,7 @@ export const QuestionForm = ({
           </Select>
         </div>
 
+        {/* Tags field commented out as requested
         <div>
           <Label htmlFor="tags">Tags (comma-separated)</Label>
           <Input
@@ -377,6 +438,7 @@ export const QuestionForm = ({
             placeholder="Enter tags, separated by commas"
           />
         </div>
+        */}
 
         <div className="space-y-2">
           <Label>Question Type</Label>
@@ -475,32 +537,31 @@ export const QuestionForm = ({
         <div>
           <Label>Image (optional)</Label>
           <div className="mt-2">
-            {formData.imageUrl ? (
-              <div className="flex items-center space-x-2">
-                <div className="flex-1 p-2 border rounded flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center overflow-hidden">
-                    {selectedFile ? (
-                      <img 
-                        src={URL.createObjectURL(selectedFile)} 
-                        alt="Selected" 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <div>Image</div>
-                    )}
-                  </div>
-                  <div className="flex-1 truncate">
-                    {selectedFile?.name || 'Image uploaded'}
-                  </div>
+            {imagePreview ? (
+              <div className="space-y-2">
+                <div className="relative w-full rounded-lg overflow-hidden border bg-background flex items-center justify-center">
+                  <img 
+                    src={imagePreview} 
+                    alt="Question image" 
+                    className="max-h-[200px] object-contain" 
+                  />
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  )}
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={removeImage}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={removeImage}
+                    disabled={isUploading}
+                  >
+                    <X className="h-4 w-4 mr-2" /> Remove Image
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">
@@ -509,9 +570,12 @@ export const QuestionForm = ({
                   className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 text-gray-500 mb-2" />
+                    <Image className="w-8 h-8 text-gray-500 mb-2" />
                     <p className="text-sm text-gray-500">
                       Click to upload image
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      PNG, JPG, GIF up to 2MB
                     </p>
                   </div>
                   <input 
@@ -520,6 +584,7 @@ export const QuestionForm = ({
                     accept="image/*"
                     className="hidden" 
                     onChange={handleFileChange}
+                    disabled={isUploading}
                   />
                 </label>
               </div>
@@ -561,7 +626,7 @@ export const QuestionForm = ({
         <Button type="button" variant="outline" onClick={onFormSubmitted}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || isUploading}>
           {isSubmitting ? 
             (initialData ? "Updating..." : "Creating...") : 
             (initialData ? "Update Question" : "Create Question")
