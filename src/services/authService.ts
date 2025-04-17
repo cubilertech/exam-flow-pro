@@ -149,6 +149,7 @@ export const signIn = async (email: string, password: string) => {
       }
     }
     
+    // Use the profileData if it exists, otherwise create a minimal profile
     const profile = profileData || { username: email.split('@')[0] };
     
     // 3. Check if the user is an admin
@@ -156,15 +157,15 @@ export const signIn = async (email: string, password: string) => {
     
     console.log('Login process completed successfully');
     
-    // Return combined user data
+    // Return combined user data, safely accessing properties
     return {
       id: authData.user.id,
       email: authData.user.email || '',
       username: profile.username || '',
-      country: profile.country || '',
-      gender: profile.gender || '',
-      phone: profile.phone_number || '',
-      city: profile.city || '',
+      country: 'country' in profile ? profile.country || '' : '',
+      gender: 'gender' in profile ? profile.gender || '' : '',
+      phone: 'phone_number' in profile ? profile.phone_number || '' : '',
+      city: 'city' in profile ? profile.city || '' : '',
       isAdmin,
     };
   } catch (error: any) {
