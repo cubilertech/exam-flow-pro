@@ -59,7 +59,10 @@ export const LoginForm = () => {
       if (userData) {
         dispatch(loginSuccess(userData));
         toast.success("Login successful!");
-        navigate(from, { replace: true });
+        // Use a small timeout to ensure state updates have propagated
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 100);
       } else {
         throw new Error("No user data returned from login");
       }

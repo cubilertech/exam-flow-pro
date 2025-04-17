@@ -149,36 +149,46 @@ export const signIn = async (email: string, password: string) => {
     
     console.log('User authenticated successfully:', authData.user.id);
     
-    // 2. Fetch user profile data
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
-      .maybeSingle();
-      
-    if (profileError) {
-      console.error('Profile error:', profileError);
-      // If profile doesn't exist, create a basic one
-      if (profileError.code === 'PGRST116') {
-        console.log('Creating basic profile for user');
-        const { error: upsertError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            username: email.split('@')[0],
-          });
-          
-        if (upsertError) {
-          console.error('Error creating profile:', upsertError);
+    // 2. Fetch user profile data with additional error handling
+    let profile: any = { username: email.split('@')[0] };
+    
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+        
+      if (!profileError && profileData) {
+        profile = profileData;
+      } else if (profileError) {
+        console.error('Profile error:', profileError);
+        // If profile doesn't exist, create a basic one
+        if (profileError.code === 'PGRST116') {
+          console.log('Creating basic profile for user');
+          const { error: upsertError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: authData.user.id,
+              username: email.split('@')[0],
+            });
+            
+          if (upsertError) {
+            console.error('Error creating profile:', upsertError);
+          }
         }
       }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
     }
     
-    // Use the profileData if it exists, otherwise create a minimal profile
-    const profile = profileData || { username: email.split('@')[0] };
-    
     // 3. Check if the user is an admin
-    const isAdmin = await checkIsAdmin(authData.user.id);
+    let isAdmin = false;
+    try {
+      isAdmin = await checkIsAdmin(authData.user.id);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
     
     console.log('Login process completed successfully');
     
@@ -187,10 +197,10 @@ export const signIn = async (email: string, password: string) => {
       id: authData.user.id,
       email: authData.user.email || '',
       username: profile.username || '',
-      country: 'country' in profile ? profile.country || '' : '',
-      gender: 'gender' in profile ? profile.gender || '' : '',
-      phone: 'phone_number' in profile ? profile.phone_number || '' : '',
-      city: 'city' in profile ? profile.city || '' : '',
+      country: profile.country || '',
+      gender: profile.gender || '',
+      phone: profile.phone_number || '',
+      city: profile.city || '',
       isAdmin,
     };
   } catch (error: any) {
