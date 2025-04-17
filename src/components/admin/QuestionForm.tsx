@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
@@ -147,13 +146,11 @@ export const QuestionForm = ({
     let newOptions = [...formData.options];
     
     if (questionType === 'single' && checked) {
-      // For single choice, uncheck all other options
       newOptions = newOptions.map(option => ({
         ...option,
         isCorrect: option.id === id
       }));
     } else {
-      // For multiple choice, toggle the selected option
       newOptions = newOptions.map(option =>
         option.id === id ? { ...option, isCorrect: checked } : option
       );
@@ -193,7 +190,6 @@ export const QuestionForm = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check file size - limit to 2MB
       if (file.size > 2 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -205,12 +201,10 @@ export const QuestionForm = ({
       
       setSelectedFile(file);
       
-      // Set a preview
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
       
-      // Start the upload process
-      uploadImage(file);
+      await uploadImage(file);
     }
   };
 
@@ -218,24 +212,36 @@ export const QuestionForm = ({
     try {
       setIsUploading(true);
       
-      // Create a unique file path
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('question-images');
+      
+      if (bucketError && bucketError.message.includes('does not exist')) {
+        const { error: createError } = await supabase.storage.createBucket('question-images', {
+          public: true,
+          fileSizeLimit: 2097152,
+        });
+        
+        if (createError) throw createError;
+      }
+      
       const fileExt = file.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `questions/${fileName}`;
+      const filePath = `${fileName}`;
       
-      // Upload to Supabase Storage
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('question-images')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('question-images')
         .getPublicUrl(filePath);
       
-      // Update form data with the image URL
+      console.log("Uploaded image URL:", publicUrl);
+      
       setFormData({
         ...formData,
         imageUrl: publicUrl
@@ -246,6 +252,7 @@ export const QuestionForm = ({
         description: "Image has been uploaded successfully",
       });
     } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload image",
@@ -313,11 +320,11 @@ export const QuestionForm = ({
     try {
       setIsSubmitting(true);
       
-      // First, save the question to get the ID
+      console.log("Submitting question with image URL:", formData.imageUrl);
+      
       let questionId = formData.id;
       
       if (initialData) {
-        // Update existing question
         const { error: questionError } = await supabase
           .from('questions')
           .update({
@@ -331,7 +338,6 @@ export const QuestionForm = ({
           
         if (questionError) throw questionError;
       } else {
-        // Create new question
         const { data: questionData, error: questionError } = await supabase
           .from('questions')
           .insert({
@@ -351,9 +357,7 @@ export const QuestionForm = ({
         questionId = questionData[0].id;
       }
       
-      // Handle options
       if (initialData) {
-        // Delete existing options
         const { error: deleteError } = await supabase
           .from('question_options')
           .delete()
@@ -362,7 +366,6 @@ export const QuestionForm = ({
         if (deleteError) throw deleteError;
       }
       
-      // Insert new options
       const optionsToInsert = formData.options.map(opt => ({
         question_id: questionId,
         text: opt.text,
@@ -382,6 +385,7 @@ export const QuestionForm = ({
       
       onFormSubmitted();
     } catch (error: any) {
+      console.error("Question save error:", error);
       toast({
         title: "Error",
         description: error.message || `Failed to ${initialData ? 'update' : 'create'} question`,
@@ -426,19 +430,6 @@ export const QuestionForm = ({
             </SelectContent>
           </Select>
         </div>
-
-        {/* Tags field commented out as requested
-        <div>
-          <Label htmlFor="tags">Tags (comma-separated)</Label>
-          <Input
-            id="tags"
-            name="tags"
-            value={formData.tags.join(', ')}
-            onChange={handleTagsChange}
-            placeholder="Enter tags, separated by commas"
-          />
-        </div>
-        */}
 
         <div className="space-y-2">
           <Label>Question Type</Label>
