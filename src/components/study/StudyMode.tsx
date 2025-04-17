@@ -5,6 +5,7 @@ import {
   setCurrentExam,
   setCurrentCategory,
   fetchQuestionsSuccess,
+  Question,
 } from "@/features/questions/questionsSlice";
 import { setStudyMode } from "@/features/study/studySlice";
 import { QuestionCard } from "@/components/questions/QuestionCard";
@@ -25,7 +26,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { toast } from "sonner";
 import { BookOpen, Filter } from "lucide-react";
 
 // Mock data for initial development
@@ -41,7 +41,7 @@ export const StudyMode = () => {
   
   const [currentPage, setCurrentPage] = useState(1);
   const [questionsPerPage, setQuestionsPerPage] = useState(10);
-  const [difficultyFilter, setDifficultyFilter] = useState<string | null>(null);
+  const [difficultyFilter, setDifficultyFilter] = useState<"easy" | "medium" | "hard" | null>(null);
   
   // Load mock data on initial render
   useEffect(() => {
@@ -54,7 +54,7 @@ export const StudyMode = () => {
     }
     
     if (questions.length === 0) {
-      dispatch(fetchQuestionsSuccess(mockQuestions));
+      dispatch(fetchQuestionsSuccess(mockQuestions as Question[]));
     }
     
     dispatch(setStudyMode("study"));
@@ -105,7 +105,7 @@ export const StudyMode = () => {
   };
   
   const handleDifficultyChange = (difficulty: string) => {
-    setDifficultyFilter(difficulty === "all" ? null : difficulty);
+    setDifficultyFilter(difficulty === "all" ? null : difficulty as "easy" | "medium" | "hard");
   };
   
   const filteredCategories = currentExam
