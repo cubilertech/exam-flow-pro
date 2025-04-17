@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/lib/hooks';
 import { supabase } from '@/integrations/supabase/client';
 import { QuestionBank } from '@/features/questions/questionsSlice';
@@ -31,7 +30,6 @@ const Profile = () => {
 
         if (error) throw error;
 
-        // Filter out question banks that the user is already subscribed to
         const subscribedIds = subscriptions.map(sub => sub.id);
         const available = data.filter(bank => !subscribedIds.includes(bank.id));
         
@@ -49,8 +47,12 @@ const Profile = () => {
 
   const handleSubscribe = async (questionBankId: string) => {
     await subscribeToQuestionBank(questionBankId);
-    // Remove the subscribed question bank from available list
     setAvailableQuestionBanks(prev => prev.filter(bank => bank.id !== questionBankId));
+    
+    const dialogCloseButton = document.querySelector('[data-radix-dialog-close]') as HTMLButtonElement;
+    if (dialogCloseButton) {
+      dialogCloseButton.click();
+    }
   };
 
   if (!user) {
@@ -254,10 +256,7 @@ const Profile = () => {
                                     <Button variant="outline">Cancel</Button>
                                   </DialogClose>
                                   <Button 
-                                    onClick={() => {
-                                      handleSubscribe(bank.id);
-                                      document.querySelector('[data-radix-dialog-close]')?.click();
-                                    }}
+                                    onClick={() => handleSubscribe(bank.id)}
                                   >
                                     Confirm Subscription
                                   </Button>
