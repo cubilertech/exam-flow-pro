@@ -50,6 +50,8 @@ const TakeExam = () => {
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [examDuration, setExamDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [noteIsSaving, setNoteIsSaving] = useState(false);
+  const [examDetails, setExamDetails] = useState<any>(null);
 
   // Initialize selected answers from previously saved answers
   useEffect(() => {
@@ -64,14 +66,103 @@ const TakeExam = () => {
     }
   }, [answeredQuestions, currentTestQuestions]);
 
+  // Fetch exam details for time limit information
+  useEffect(() => {
+    if (currentExamId) {
+      const fetchExamDetails = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('user_exams')
+            .select('*')
+            .eq('id', currentExamId)
+            .single();
+            
+          if (error) throw error;
+          
+          setExamDetails(data);
+        } catch (error) {
+          console.error('Error fetching exam details:', error);
+        }
+      };
+      
+      fetchExamDetails();
+    }
+  }, [currentExamId]);
+
   // Load existing note for current question
   useEffect(() => {
-    if (currentTestQuestions?.length && currentQuestionIndex >= 0) {
+    if (currentTestQuestions?.length && currentQuestionIndex >= 0 && user?.id) {
       const currentQId = currentTestQuestions[currentQuestionIndex]?.id;
-      const existingNote = notes.find(note => note.questionId === currentQId);
-      setNoteText(existingNote?.note || "");
+      
+      // Check in local state first
+      const existingLocalNote = notes.find(note => note.questionId === currentQId);
+      if (existingLocalNote) {
+        setNoteText(existingLocalNote.note || "");
+      } else {
+        // Check in database
+        const fetchNote = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('user_notes')
+              .select('note')
+              .eq('question_id', currentQId)
+              .eq('user_id', user.id)
+              .maybeSingle();
+              
+            if (error) throw error;
+            
+            if (data) {
+              setNoteText(data.note);
+              // Also update local state
+              dispatch(addNote({
+                questionId: currentQId,
+                note: data.note,
+                updatedAt: new Date().toISOString(),
+              }));
+            } else {
+              setNoteText("");
+            }
+          } catch (error) {
+            console.error('Error fetching note:', error);
+          }
+        };
+        
+        fetchNote();
+      }
+      
+      // Check flagged status from database
+      const checkFlaggedStatus = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('flagged_questions')
+            .select('id')
+            .eq('question_id', currentQId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+            
+          if (error) throw error;
+          
+          // If flagged in database but not in local state, update local state
+          const isLocallyFlagged = flaggedQuestions.some(q => q.questionId === currentQId);
+          if (data && !isLocallyFlagged) {
+            dispatch(toggleFlagQuestion(currentQId));
+          } else if (!data && isLocallyFlagged) {
+            // If flagged in local state but not in database, update database
+            await supabase
+              .from('flagged_questions')
+              .insert({
+                question_id: currentQId,
+                user_id: user.id
+              });
+          }
+        } catch (error) {
+          console.error('Error checking flagged status:', error);
+        }
+      };
+      
+      checkFlaggedStatus();
     }
-  }, [currentQuestionIndex, currentTestQuestions, notes]);
+  }, [currentQuestionIndex, currentTestQuestions, notes, user, dispatch, flaggedQuestions]);
 
   // Update timer
   useEffect(() => {
@@ -94,6 +185,33 @@ const TakeExam = () => {
     }
   }, [currentTestQuestions, currentStudyMode, navigate]);
 
+  // Check time limit
+  useEffect(() => {
+    if (examDetails && examDetails.is_timed && examDetails.time_limit && currentTestStartTime) {
+      const checkTimeLimit = () => {
+        const startTime = new Date(currentTestStartTime).getTime();
+        const currentTime = new Date().getTime();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        
+        let timeLimit;
+        if (examDetails.time_limit_type === 'total_time') {
+          timeLimit = examDetails.time_limit;
+        } else {
+          // For seconds_per_question, multiply by question count
+          timeLimit = examDetails.time_limit * currentTestQuestions.length;
+        }
+        
+        if (elapsedSeconds >= timeLimit) {
+          toast.error("Time's up! Submitting your exam.");
+          confirmFinishExam();
+        }
+      };
+      
+      const timer = setInterval(checkTimeLimit, 5000); // Check every 5 seconds
+      return () => clearInterval(timer);
+    }
+  }, [examDetails, currentTestStartTime, currentTestQuestions]);
+
   if (!currentTestQuestions || currentTestQuestions.length === 0) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -113,6 +231,24 @@ const TakeExam = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Calculate and display remaining time if timed
+  const getRemainingTime = () => {
+    if (!examDetails || !examDetails.is_timed || !examDetails.time_limit) {
+      return null;
+    }
+    
+    let totalTimeLimit;
+    if (examDetails.time_limit_type === 'total_time') {
+      totalTimeLimit = examDetails.time_limit;
+    } else {
+      // For seconds_per_question, multiply by question count
+      totalTimeLimit = examDetails.time_limit * currentTestQuestions.length;
+    }
+    
+    const remainingSeconds = Math.max(0, totalTimeLimit - examDuration);
+    return formatTime(remainingSeconds);
   };
 
   const handleSelectAnswer = (optionId: string) => {
@@ -182,8 +318,16 @@ const TakeExam = () => {
     }
   };
 
-  const handleSaveNote = () => {
-    if (noteText.trim()) {
+  const handleSaveNote = async () => {
+    if (!user?.id) {
+      toast.error('You must be logged in to save notes');
+      return;
+    }
+    
+    try {
+      setNoteIsSaving(true);
+      
+      // Update local state
       dispatch(
         addNote({
           questionId: currentQuestion.id,
@@ -191,12 +335,80 @@ const TakeExam = () => {
           updatedAt: new Date().toISOString(),
         })
       );
-      toast.success("Note saved successfully");
+      
+      // Save to database
+      if (noteText.trim()) {
+        const { error } = await supabase
+          .from('user_notes')
+          .upsert({
+            user_id: user.id,
+            question_id: currentQuestion.id,
+            note: noteText,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,question_id' });
+          
+        if (error) throw error;
+        
+        toast.success("Note saved successfully");
+      } else {
+        // If note is empty, delete it
+        const { error } = await supabase
+          .from('user_notes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('question_id', currentQuestion.id);
+          
+        if (error) throw error;
+        
+        toast.success("Note cleared");
+      }
+    } catch (error) {
+      console.error('Error saving note:', error);
+      toast.error('Failed to save note');
+    } finally {
+      setNoteIsSaving(false);
     }
   };
 
-  const handleFlagQuestion = () => {
-    dispatch(toggleFlagQuestion(currentQuestion.id));
+  const handleFlagQuestion = async () => {
+    if (!user?.id) {
+      toast.error('You must be logged in to flag questions');
+      return;
+    }
+    
+    try {
+      // Toggle flag in local state
+      dispatch(toggleFlagQuestion(currentQuestion.id));
+      
+      // Check if already flagged to determine whether to insert or delete
+      const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
+      
+      if (!isFlagged) {
+        // Add to database
+        const { error } = await supabase
+          .from('flagged_questions')
+          .insert({
+            user_id: user.id,
+            question_id: currentQuestion.id
+          });
+          
+        if (error) throw error;
+      } else {
+        // Remove from database
+        const { error } = await supabase
+          .from('flagged_questions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('question_id', currentQuestion.id);
+          
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error toggling flag:', error);
+      toast.error('Failed to update flag status');
+      // Revert the local state change if database operation failed
+      dispatch(toggleFlagQuestion(currentQuestion.id));
+    }
   };
 
   const getCompletedQuestionCount = () => {
@@ -329,7 +541,7 @@ const TakeExam = () => {
         <div className="flex items-center space-x-2">
           <Badge variant="outline" className="px-2 py-1">
             <Timer className="h-4 w-4 mr-1.5" />
-            {formatTime(examDuration)}
+            {examDetails?.is_timed ? getRemainingTime() : formatTime(examDuration)}
           </Badge>
           <Button onClick={handleFinishExam} variant="default">
             Finish Exam
@@ -375,8 +587,8 @@ const TakeExam = () => {
               onChange={(e) => setNoteText(e.target.value)}
               className="min-h-[100px]"
             />
-            <Button onClick={handleSaveNote} size="sm">
-              Save Note
+            <Button onClick={handleSaveNote} size="sm" disabled={noteIsSaving}>
+              {noteIsSaving ? "Saving..." : "Save Note"}
             </Button>
           </TabsContent>
           

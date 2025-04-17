@@ -177,6 +177,35 @@ export type Database = {
           },
         ]
       }
+      flagged_questions: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flagged_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           city: string | null
@@ -367,6 +396,7 @@ export type Database = {
           question_bank_id: string
           question_count: number
           time_limit: number | null
+          time_limit_type: string | null
           updated_at: string
           user_id: string
         }
@@ -382,6 +412,7 @@ export type Database = {
           question_bank_id: string
           question_count: number
           time_limit?: number | null
+          time_limit_type?: string | null
           updated_at?: string
           user_id: string
         }
@@ -397,6 +428,7 @@ export type Database = {
           question_bank_id?: string
           question_count?: number
           time_limit?: number | null
+          time_limit_type?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -406,6 +438,41 @@ export type Database = {
             columns: ["question_bank_id"]
             isOneToOne: false
             referencedRelation: "question_banks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notes: {
+        Row: {
+          created_at: string
+          id: string
+          note: string
+          question_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note: string
+          question_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string
+          question_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notes_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
             referencedColumns: ["id"]
           },
         ]

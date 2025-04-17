@@ -37,7 +37,6 @@ import { toast } from "sonner";
 
 const formSchema = z.object({
   examType: z.enum(["test", "study"]),
-  questionBankId: z.string().min(1, "Please select a question bank"),
   categories: z.array(z.string()).min(1, "Select at least one category"),
   difficultyLevels: z.array(z.enum(["all", "easy", "medium", "hard"])).min(1, "Select at least one difficulty level"),
   numberOfQuestions: z.number()
@@ -45,7 +44,11 @@ const formSchema = z.object({
     .min(1, "At least 1 question")
     .max(30, "Maximum 30 questions"),
   timedMode: z.enum(["timed", "untimed"]),
+  timeLimit: z.number().int().min(0).optional(),
+  timeLimitType: z.enum(["total_time", "seconds_per_question"]).optional(),
   examName: z.string().min(3, "Exam name must be at least 3 characters"),
+  minutes: z.number().int().min(0).max(180).optional(),
+  seconds: z.number().int().min(0).max(59).optional(),
 });
 
 type NewExamFormValues = z.infer<typeof formSchema>;
@@ -68,30 +71,27 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       examType: "test",
-      questionBankId: "",
       categories: [],
       difficultyLevels: ["all"],
       numberOfQuestions: 10,
       timedMode: "untimed",
+      timeLimitType: "seconds_per_question",
+      timeLimit: 60,
+      minutes: 0,
+      seconds: 0,
       examName: "",
     },
   });
   
-  const selectedQuestionBank = form.watch("questionBankId");
-
+  const timedMode = form.watch("timedMode");
+  const timeLimitType = form.watch("timeLimitType");
+  
+  // Auto-select the first subscription when opening the modal
   useEffect(() => {
-    if (selectedQuestionBank) {
-      fetchCategoriesByQuestionBank(selectedQuestionBank);
-    } else {
-      setCategories([]);
+    if (open && subscriptions.length > 0) {
+      fetchCategoriesByQuestionBank(subscriptions[0].question_bank_id);
     }
-  }, [selectedQuestionBank]);
-
-  useEffect(() => {
-    if (open && subscriptions.length > 0 && !selectedQuestionBank) {
-      form.setValue("questionBankId", subscriptions[0].id);
-    }
-  }, [open, subscriptions, selectedQuestionBank]);
+  }, [open, subscriptions]);
 
   const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
     try {
@@ -121,14 +121,39 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     }
   };
 
+  const calculateTimeLimit = (values: NewExamFormValues) => {
+    if (values.timedMode === "untimed") {
+      return null;
+    }
+    
+    if (values.timeLimitType === "seconds_per_question") {
+      return values.timeLimit;
+    } else {
+      // Convert total time (minutes and seconds) to seconds
+      const totalSeconds = (values.minutes || 0) * 60 + (values.seconds || 0);
+      return totalSeconds > 0 ? totalSeconds : 60; // Default to 60 seconds if no time specified
+    }
+  };
+
   const handleStartExam = async (values: NewExamFormValues) => {
     if (!user?.id) {
       toast.error('You must be logged in to create an exam');
       return;
     }
+    
+    if (subscriptions.length === 0) {
+      toast.error('You need to have at least one question bank subscription');
+      return;
+    }
 
     try {
       setIsSaving(true);
+      
+      // Get the first subscription's question bank ID
+      const questionBankId = subscriptions[0].question_bank_id;
+      
+      // Calculate the time limit based on the time mode and type
+      const timeLimit = calculateTimeLimit(values);
       
       // 1. First save the exam to the database
       const { data: examData, error: examError } = await supabase
@@ -137,12 +162,13 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           user_id: user.id,
           name: values.examName,
           exam_type: values.examType,
-          question_bank_id: values.questionBankId,
+          question_bank_id: questionBankId,
           category_ids: values.categories,
           difficulty_levels: values.difficultyLevels.filter(d => d !== "all") as string[],
           question_count: values.numberOfQuestions,
           is_timed: values.timedMode === "timed",
-          time_limit: values.timedMode === "timed" ? 60 : null, // Default 60 seconds per question if timed
+          time_limit: timeLimit,
+          time_limit_type: values.timedMode === "timed" ? values.timeLimitType : null,
           completed: false
         })
         .select()
@@ -263,31 +289,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
             <FormField
               control={form.control}
-              name="questionBankId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Question Bank</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a question bank" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subscriptions.map((qbank) => (
-                        <SelectItem key={qbank.id} value={qbank.id}>
-                          {qbank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="categories"
               render={() => (
                 <FormItem>
@@ -301,10 +302,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                     <div className="p-4 text-center">Loading categories...</div>
                   ) : categories.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
-                      {selectedQuestionBank ? 
-                        "No categories available for this question bank." : 
-                        "Please select a question bank first."
-                      }
+                      No categories available. Please contact your administrator.
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
@@ -462,6 +460,106 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
               )}
             />
 
+            {timedMode === "timed" && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="timeLimitType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time Limit Type</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a time limit type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="seconds_per_question">Seconds per question</SelectItem>
+                          <SelectItem value="total_time">Total time</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {timeLimitType === "seconds_per_question" && (
+                  <FormField
+                    control={form.control}
+                    name="timeLimit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seconds per question</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            min={5} 
+                            placeholder="60"
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Time allowed for each question in seconds
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {timeLimitType === "total_time" && (
+                  <div className="flex space-x-4">
+                    <FormField
+                      control={form.control}
+                      name="minutes"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Minutes</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              min={0}
+                              max={180}
+                              placeholder="0"
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="seconds"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Seconds</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              min={0}
+                              max={59}
+                              placeholder="0"
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
             <FormField
               control={form.control}
               name="examName"
@@ -482,7 +580,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
               </Button>
               <Button 
                 type="submit" 
-                disabled={!selectedQuestionBank || form.getValues().categories.length === 0 || isSaving}
+                disabled={form.getValues().categories.length === 0 || isSaving}
               >
                 {isSaving ? "Creating..." : "Start Exam"}
               </Button>
