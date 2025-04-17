@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -33,6 +34,7 @@ export const LoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const from = (location.state as any)?.from?.pathname || "/";
 
@@ -47,6 +49,7 @@ export const LoginForm = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setLoading(true);
+      setFormError(null);
       dispatch(loginStart());
       
       const userData = await signIn(data.email, data.password);
@@ -59,6 +62,7 @@ export const LoginForm = () => {
       setLoading(false);
       const errorMessage = error.message || "Login failed. Please check your credentials.";
       dispatch(loginFailure(errorMessage));
+      setFormError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -76,6 +80,11 @@ export const LoginForm = () => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {formError && (
+              <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm mb-4">
+                {formError}
+              </div>
+            )}
             <FormField
               control={form.control}
               name="email"
@@ -115,7 +124,7 @@ export const LoginForm = () => {
           </form>
         </Form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      <CardFooter className="flex flex-col gap-4">
         <div className="text-sm text-muted-foreground">
           Don't have an account?{" "}
           <Link
@@ -124,6 +133,9 @@ export const LoginForm = () => {
           >
             Register
           </Link>
+        </div>
+        <div className="text-xs text-muted-foreground italic">
+          Note: This is a development environment. For testing, you need to register a new account first.
         </div>
       </CardFooter>
     </Card>

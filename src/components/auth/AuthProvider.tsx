@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '@/lib/hooks';
 import { loginSuccess, logout } from '@/features/auth/authSlice';
-import { setupAuthListener } from '@/services/authService';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthProviderProps {
@@ -47,15 +46,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }));
         }
       }
-      
-      // Set up auth state listener
-      const { data: authListenerData } = setupAuthListener(async (authUser) => {
-        if (authUser) {
+    };
+    
+    // Initialize auth
+    initializeAuth();
+
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+        
+        if (event === 'SIGNED_IN' && session) {
+          const { user } = session;
+          
           // Fetch user profile data
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', authUser.id)
+            .eq('id', user.id)
             .single();
             
           if (!profileError && profileData) {
@@ -63,12 +71,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             const { data: adminData } = await supabase
               .from('admin_users')
               .select('*')
-              .eq('user_id', authUser.id)
+              .eq('user_id', user.id)
               .single();
             
             dispatch(loginSuccess({
-              id: authUser.id,
-              email: authUser.email || '',
+              id: user.id,
+              email: user.email || '',
               username: profileData.username || '',
               country: profileData.country || '',
               gender: profileData.gender || '',
@@ -77,19 +85,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               isAdmin: !!adminData
             }));
           }
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           dispatch(logout());
         }
-      });
-      
-      return () => {
-        if (authListenerData?.subscription) {
-          authListenerData.subscription.unsubscribe();
-        }
-      };
-    };
+      }
+    );
     
-    initializeAuth();
+    return () => {
+      if (authListener) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, [dispatch]);
 
   return <>{children}</>;
