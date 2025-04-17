@@ -98,10 +98,14 @@ export const StudyMode = () => {
   };
   
   const handleCategoryChange = (categoryId: string) => {
-    const selectedCategory = categories.find(
-      (category) => category.id === categoryId
-    ) || null;
-    dispatch(setCurrentCategory(selectedCategory));
+    if (categoryId === "all-categories") {
+      dispatch(setCurrentCategory(null));
+    } else {
+      const selectedCategory = categories.find(
+        (category) => category.id === categoryId
+      ) || null;
+      dispatch(setCurrentCategory(selectedCategory));
+    }
   };
   
   const handleDifficultyChange = (difficulty: string) => {
@@ -145,7 +149,7 @@ export const StudyMode = () => {
             <label className="text-sm font-medium mb-1 block">Select Category</label>
             <Select
               onValueChange={handleCategoryChange}
-              value={currentCategory?.id || ""}
+              value={currentCategory?.id || "all-categories"}
               disabled={!currentExam}
             >
               <SelectTrigger>

@@ -53,7 +53,7 @@ export function AddQuestionDialog({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export function AddQuestionDialog({
       question.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = 
-      selectedCategory === "" || 
+      selectedCategory === "all-categories" || 
       question.category_id === selectedCategory;
     
     return matchesSearch && matchesCategory;
@@ -250,7 +250,7 @@ export function AddQuestionDialog({
             ) : filteredQuestions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  {searchTerm || selectedCategory ? "No questions match your filters" : "No questions available"}
+                  {searchTerm || selectedCategory !== "all-categories" ? "No questions match your filters" : "No questions available"}
                 </TableCell>
               </TableRow>
             ) : (

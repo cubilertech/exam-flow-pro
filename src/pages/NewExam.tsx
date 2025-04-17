@@ -20,13 +20,25 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { QuestionsSection } from "@/components/exams/QuestionsSection";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title is too long"),
   description: z.string().optional(),
+  subscriptionType: z.string().optional(),
+  isSubscription: z.boolean().default(false),
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+const SUBSCRIPTION_TYPES = [
+  { value: "part1", label: "Part 1 Exam" },
+  { value: "part2", label: "Part 2 Exam" },
+  { value: "promo1", label: "Promotion 1" },
+  { value: "promo2", label: "Promotion 2" },
+  { value: "promo3", label: "Promotion 3" },
+];
 
 const NewExam = () => {
   const { id } = useParams();
@@ -41,8 +53,13 @@ const NewExam = () => {
     defaultValues: {
       title: "",
       description: "",
+      subscriptionType: "",
+      isSubscription: false,
     },
   });
+
+  // Watch the isSubscription value to conditionally show subscription type
+  const isSubscription = form.watch("isSubscription");
 
   useEffect(() => {
     if (isEditMode) {
@@ -66,6 +83,8 @@ const NewExam = () => {
         form.reset({
           title: data.title,
           description: data.description || "",
+          subscriptionType: data.subscription_type || "",
+          isSubscription: !!data.subscription_type,
         });
       }
     } catch (error: any) {
@@ -84,15 +103,18 @@ const NewExam = () => {
     try {
       setIsSubmitting(true);
       
+      const examData = {
+        title: values.title,
+        description: values.description,
+        subscription_type: values.isSubscription ? values.subscriptionType : null,
+        updated_at: new Date().toISOString(),
+      };
+      
       if (isEditMode) {
         // Update existing exam
         const { error } = await supabase
           .from("exams")
-          .update({
-            title: values.title,
-            description: values.description,
-            updated_at: new Date().toISOString(),
-          })
+          .update(examData)
           .eq("id", id);
 
         if (error) throw error;
@@ -105,10 +127,7 @@ const NewExam = () => {
         // Create new exam
         const { data, error } = await supabase
           .from("exams")
-          .insert({
-            title: values.title,
-            description: values.description,
-          })
+          .insert(examData)
           .select();
 
         if (error) throw error;
@@ -188,6 +207,56 @@ const NewExam = () => {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="isSubscription"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        This is a subscription exam
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Subscription exams can be associated with specific categories for different subscription types
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              {isSubscription && (
+                <FormField
+                  control={form.control}
+                  name="subscriptionType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select subscription type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SUBSCRIPTION_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (

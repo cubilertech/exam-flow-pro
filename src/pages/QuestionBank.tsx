@@ -209,7 +209,7 @@ const QuestionBank = () => {
           </SheetHeader>
           <div className="py-4">
             <QuestionForm 
-              categoryId={selectedCategory} 
+              categoryId={selectedCategory === "all-categories" ? "" : selectedCategory} 
               initialData={currentQuestion} 
               allCategories={categories}
               onFormSubmitted={handleFormSubmitted}

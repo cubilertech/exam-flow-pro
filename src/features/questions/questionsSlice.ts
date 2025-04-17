@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Option {
@@ -32,6 +31,8 @@ export interface Exam {
   title: string;
   description: string;
   categoryCount: number;
+  isSubscription?: boolean;
+  subscriptionType?: string;
 }
 
 interface QuestionsState {
@@ -105,7 +106,6 @@ const questionsSlice = createSlice({
     setCurrentQuestion: (state, action: PayloadAction<Question | null>) => {
       state.currentQuestion = action.payload;
     },
-    // Admin actions for question management
     addQuestionStart: (state) => {
       state.isLoading = true;
       state.error = null;
@@ -145,6 +145,16 @@ const questionsSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
+    setExamSubscriptionType: (state, action: PayloadAction<{ examId: string, subscriptionType: string }>) => {
+      const examIndex = state.exams.findIndex(e => e.id === action.payload.examId);
+      if (examIndex !== -1) {
+        state.exams[examIndex].isSubscription = true;
+        state.exams[examIndex].subscriptionType = action.payload.subscriptionType;
+      }
+    },
+    filterQuestionsBySubscription: (state, action: PayloadAction<string>) => {
+      state.currentExam = state.exams.find(e => e.subscriptionType === action.payload) || null;
+    },
   },
 });
 
@@ -170,6 +180,8 @@ export const {
   deleteQuestionStart,
   deleteQuestionSuccess,
   deleteQuestionFailure,
+  setExamSubscriptionType,
+  filterQuestionsBySubscription,
 } = questionsSlice.actions;
 
 export default questionsSlice.reducer;
