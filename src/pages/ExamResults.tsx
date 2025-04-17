@@ -12,7 +12,9 @@ import {
   AlertCircle,
   ChevronLeft,
   Tag,
-  BookOpen
+  BookOpen,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
