@@ -1,6 +1,6 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MakeAdminForm } from "@/components/admin/MakeAdminForm";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("questions");
@@ -26,7 +26,7 @@ const Admin = () => {
         <TabsContent value="users">
           <div className="grid gap-6">
             <h2 className="text-xl font-semibold">User Management</h2>
-            <MakeAdminForm />
+            <p className="text-muted-foreground">User management functionality coming soon</p>
           </div>
         </TabsContent>
       </Tabs>
