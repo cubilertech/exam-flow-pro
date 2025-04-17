@@ -1,12 +1,6 @@
 
 import { useState } from 'react';
-import { useAppDispatch } from '@/lib/hooks';
-import { 
-  Question, 
-  deleteQuestionStart, 
-  deleteQuestionSuccess, 
-  deleteQuestionFailure 
-} from '@/features/questions/questionsSlice';
+import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +16,25 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Search, Image } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+
+interface Option {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+interface Question {
+  id: string;
+  serialNumber: string;
+  text: string;
+  options: Option[];
+  explanation: string;
+  imageUrl?: string;
+  categoryId: string;
+  tags: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+}
 
 interface QuestionsListProps {
   questions: Question[];
@@ -29,9 +42,10 @@ interface QuestionsListProps {
 }
 
 export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
-  const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState('');
   const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const filteredQuestions = questions.filter(
     (question) =>
@@ -43,16 +57,36 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
     setQuestionToDelete(question);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (questionToDelete) {
       try {
-        dispatch(deleteQuestionStart());
-        // In a real app, you would call an API endpoint here
-        dispatch(deleteQuestionSuccess(questionToDelete.id));
-      } catch (error) {
-        dispatch(deleteQuestionFailure(error instanceof Error ? error.message : 'Failed to delete question'));
+        setIsDeleting(true);
+        
+        // Delete the question from the database
+        const { error } = await supabase
+          .from('questions')
+          .delete()
+          .eq('id', questionToDelete.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Question deleted successfully"
+        });
+        
+        // Refresh the questions list
+        window.location.reload();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete question",
+          variant: "destructive"
+        });
+      } finally {
+        setIsDeleting(false);
+        setQuestionToDelete(null);
       }
-      setQuestionToDelete(null);
     }
   };
 
@@ -83,7 +117,7 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
           variant="default" 
           onClick={() => onEdit({
             id: "",
-            serialNumber: Math.max(0, ...questions.map(q => q.serialNumber)) + 1,
+            serialNumber: "",
             text: "",
             options: [
               { id: "1", text: "", isCorrect: false },
@@ -174,7 +208,13 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

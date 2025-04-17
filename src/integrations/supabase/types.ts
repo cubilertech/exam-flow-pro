@@ -48,6 +48,66 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_questions: {
+        Row: {
+          created_at: string
+          exam_id: string | null
+          id: string
+          question_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          exam_id?: string | null
+          id?: string
+          question_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          exam_id?: string | null
+          id?: string
+          question_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           city: string | null
@@ -83,6 +143,123 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      question_options: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string | null
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string | null
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string | null
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          answered_correctly_count: number | null
+          answered_count: number | null
+          category_id: string | null
+          created_at: string
+          difficulty: Database["public"]["Enums"]["difficulty_level"] | null
+          explanation: string | null
+          id: string
+          image_url: string | null
+          serial_number: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          answered_correctly_count?: number | null
+          answered_count?: number | null
+          category_id?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          serial_number?: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          answered_correctly_count?: number | null
+          answered_count?: number | null
+          category_id?: string | null
+          created_at?: string
+          difficulty?: Database["public"]["Enums"]["difficulty_level"] | null
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          serial_number?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_answers: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          question_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

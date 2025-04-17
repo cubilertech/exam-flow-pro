@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, FolderTree, Users, Settings, BookCheck } from "lucide-react";
+import { Home, BookOpen, FolderTree, Users, Settings, BookCheck, HelpCircle } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import {
   Sidebar,
@@ -35,6 +35,11 @@ export function AppSidebar() {
       title: "Exams",
       url: "/exams",
       icon: BookCheck,
+    },
+    {
+      title: "Questions",
+      url: "/questions",
+      icon: HelpCircle,
     },
     {
       title: "Admin",

@@ -1,17 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAppDispatch } from '@/lib/hooks';
-import { 
-  Question, 
-  Category,
-  Option,
-  addQuestionStart, 
-  addQuestionSuccess, 
-  addQuestionFailure,
-  updateQuestionStart,
-  updateQuestionSuccess,
-  updateQuestionFailure
-} from '@/features/questions/questionsSlice';
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +11,29 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Plus, X, Upload } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
+
+interface Option {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+interface Question {
+  id: string;
+  serialNumber: string;
+  text: string;
+  options: Option[];
+  explanation: string;
+  imageUrl?: string;
+  categoryId: string;
+  tags: string[];
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 interface QuestionFormProps {
   categoryId: string;
@@ -36,11 +48,11 @@ export const QuestionForm = ({
   allCategories, 
   onFormSubmitted 
 }: QuestionFormProps) => {
-  const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Question>({
-    id: initialData?.id || uuidv4(),
-    serialNumber: initialData?.serialNumber || 0,
+    id: initialData?.id || '',
+    serialNumber: initialData?.serialNumber || '',
     text: initialData?.text || '',
     options: initialData?.options || [
       { id: uuidv4(), text: '', isCorrect: false },
@@ -51,24 +63,13 @@ export const QuestionForm = ({
     explanation: initialData?.explanation || '',
     imageUrl: initialData?.imageUrl || '',
     categoryId: initialData?.categoryId || categoryId,
-    tags: initialData?.tags || [allCategories.find(c => c.id === categoryId)?.name || ''],
+    tags: initialData?.tags || [],
     difficulty: initialData?.difficulty || 'medium',
-    correctAnswerRate: initialData?.correctAnswerRate || 50
   });
   const [questionType, setQuestionType] = useState<'single' | 'multiple'>(
     initialData?.options.filter(o => o.isCorrect).length > 1 ? 'multiple' : 'single'
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  // Set new serial number for new questions
-  useEffect(() => {
-    if (!initialData) {
-      setFormData(prev => ({
-        ...prev,
-        categoryId
-      }));
-    }
-  }, [initialData, categoryId]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -76,11 +77,9 @@ export const QuestionForm = ({
   };
 
   const handleCategoryChange = (value: string) => {
-    const category = allCategories.find(c => c.id === value);
     setFormData({
       ...formData,
-      categoryId: value,
-      tags: category ? [category.name] : formData.tags
+      categoryId: value
     });
   };
   
@@ -165,21 +164,6 @@ export const QuestionForm = ({
     });
   };
 
-  const calculateDifficulty = (correctAnswerRate: number): 'easy' | 'medium' | 'hard' => {
-    if (correctAnswerRate <= 33) return 'hard';
-    if (correctAnswerRate <= 66) return 'medium';
-    return 'easy';
-  };
-
-  const handleCorrectAnswerRateChange = (value: string) => {
-    const rate = parseInt(value, 10);
-    setFormData({
-      ...formData,
-      correctAnswerRate: rate,
-      difficulty: calculateDifficulty(rate)
-    });
-  };
-
   const validateForm = (): boolean => {
     if (!formData.text.trim()) {
       toast({
@@ -220,45 +204,90 @@ export const QuestionForm = ({
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
     
     try {
+      setIsSubmitting(true);
+      
+      // First, save the question to get the ID
+      let questionId = formData.id;
+      
       if (initialData) {
         // Update existing question
-        dispatch(updateQuestionStart());
-        dispatch(updateQuestionSuccess(formData));
-        toast({
-          title: "Success",
-          description: "Question updated successfully",
-        });
+        const { error: questionError } = await supabase
+          .from('questions')
+          .update({
+            text: formData.text,
+            explanation: formData.explanation,
+            image_url: formData.imageUrl,
+            category_id: formData.categoryId,
+            difficulty: formData.difficulty
+          })
+          .eq('id', questionId);
+          
+        if (questionError) throw questionError;
       } else {
-        // Add new question
-        dispatch(addQuestionStart());
-        dispatch(addQuestionSuccess({
-          ...formData,
-          serialNumber: formData.serialNumber || Math.floor(Math.random() * 10000) // In a real app, this would be generated on the server
-        }));
-        toast({
-          title: "Success",
-          description: "Question added successfully",
-        });
+        // Create new question
+        const { data: questionData, error: questionError } = await supabase
+          .from('questions')
+          .insert({
+            text: formData.text,
+            explanation: formData.explanation,
+            image_url: formData.imageUrl,
+            category_id: formData.categoryId,
+            difficulty: formData.difficulty
+          })
+          .select('id');
+          
+        if (questionError) throw questionError;
+        if (!questionData || questionData.length === 0) {
+          throw new Error('Failed to create question');
+        }
+        
+        questionId = questionData[0].id;
       }
-      onFormSubmitted();
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to save question';
+      
+      // Handle options
       if (initialData) {
-        dispatch(updateQuestionFailure(errorMsg));
-      } else {
-        dispatch(addQuestionFailure(errorMsg));
+        // Delete existing options
+        const { error: deleteError } = await supabase
+          .from('question_options')
+          .delete()
+          .eq('question_id', questionId);
+          
+        if (deleteError) throw deleteError;
       }
+      
+      // Insert new options
+      const optionsToInsert = formData.options.map(opt => ({
+        question_id: questionId,
+        text: opt.text,
+        is_correct: opt.isCorrect
+      }));
+      
+      const { error: optionsError } = await supabase
+        .from('question_options')
+        .insert(optionsToInsert);
+        
+      if (optionsError) throw optionsError;
+      
+      toast({
+        title: "Success",
+        description: initialData ? "Question updated successfully" : "Question created successfully",
+      });
+      
+      onFormSubmitted();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: errorMsg,
+        description: error.message || `Failed to ${initialData ? 'update' : 'create'} question`,
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -458,17 +487,20 @@ export const QuestionForm = ({
         </div>
 
         <div>
-          <Label htmlFor="correctAnswerRate">
-            Correct Answer Rate (%) - Difficulty: <span className="capitalize">{formData.difficulty}</span>
-          </Label>
-          <Input
-            id="correctAnswerRate"
-            type="number"
-            min="0"
-            max="100"
-            value={formData.correctAnswerRate}
-            onChange={(e) => handleCorrectAnswerRateChange(e.target.value)}
-          />
+          <Label htmlFor="difficulty">Difficulty</Label>
+          <Select
+            value={formData.difficulty}
+            onValueChange={(value) => setFormData({...formData, difficulty: value as 'easy' | 'medium' | 'hard'})}
+          >
+            <SelectTrigger id="difficulty">
+              <SelectValue placeholder="Select difficulty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="w-full h-2 mt-2 bg-gray-200 rounded overflow-hidden">
             <div 
               className={`h-full ${
@@ -478,13 +510,8 @@ export const QuestionForm = ({
                     ? 'bg-yellow-600' 
                     : 'bg-green-600'
               }`}
-              style={{ width: `${formData.correctAnswerRate}%` }}
+              style={{ width: formData.difficulty === 'hard' ? '100%' : formData.difficulty === 'medium' ? '66%' : '33%' }}
             ></div>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <div>Hard (0-33%)</div>
-            <div>Medium (34-66%)</div>
-            <div>Easy (67-100%)</div>
           </div>
         </div>
       </div>
@@ -493,8 +520,11 @@ export const QuestionForm = ({
         <Button type="button" variant="outline" onClick={onFormSubmitted}>
           Cancel
         </Button>
-        <Button type="submit">
-          {initialData ? 'Update Question' : 'Create Question'}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 
+            (initialData ? "Updating..." : "Creating...") : 
+            (initialData ? "Update Question" : "Create Question")
+          }
         </Button>
       </div>
     </form>

@@ -1,84 +1,44 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Index from "./pages";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Categories from "./pages/Categories";
+import Study from "./pages/Study";
+import Admin from "./pages/Admin";
+import Exams from "./pages/Exams";
+import NewExam from "./pages/NewExam";
+import NotFound from "./pages/NotFound";
+import PrivateRoute from "./components/PrivateRoute";
+import MainLayout from "./components/core/MainLayout";
+import QuestionBank from "./pages/QuestionBank";
 
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Providers } from "@/lib/providers";
-
-import { MainLayout } from "@/layouts/MainLayout";
-import { AuthProvider } from "@/components/auth/AuthProvider";
-import { PrivateRoute } from "@/components/auth/PrivateRoute";
-import Index from "@/pages/Index";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import Study from "@/pages/Study";
-import Admin from "@/pages/Admin";
-import Categories from "@/pages/Categories";
-import Exams from "@/pages/Exams";
-import NewExam from "@/pages/NewExam";
-import NotFound from "@/pages/NotFound";
-
-// Create a client
-const queryClient = new QueryClient();
-
-const App = () => {
+function App() {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <Providers>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AuthProvider>
-                <Routes>
-                  <Route element={<MainLayout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/study" element={
-                      <PrivateRoute>
-                        <Study />
-                      </PrivateRoute>
-                    } />
-                    <Route path="/admin" element={
-                      <PrivateRoute requireAdmin>
-                        <Admin />
-                      </PrivateRoute>
-                    } />
-                    <Route path="/categories" element={
-                      <PrivateRoute requireAdmin>
-                        <Categories />
-                      </PrivateRoute>
-                    } />
-                    <Route path="/exams" element={
-                      <PrivateRoute requireAdmin>
-                        <Exams />
-                      </PrivateRoute>
-                    } />
-                    <Route path="/exams/new" element={
-                      <PrivateRoute requireAdmin>
-                        <NewExam />
-                      </PrivateRoute>
-                    } />
-                    <Route path="/exams/:id/edit" element={
-                      <PrivateRoute requireAdmin>
-                        <NewExam />
-                      </PrivateRoute>
-                    } />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Routes>
-              </AuthProvider>
-            </BrowserRouter>
-          </TooltipProvider>
-        </Providers>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <div className="App">
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
+            <Route path="/login" element={<Login/>}/>
+            <Route path="/register" element={<Register/>}/>
+            <Route path="/categories" element={<PrivateRoute><MainLayout><Categories/></MainLayout></PrivateRoute>}/>
+            <Route path="/study" element={<PrivateRoute><MainLayout><Study/></MainLayout></PrivateRoute>}/>
+            <Route path="/admin" element={<PrivateRoute><MainLayout><Admin/></MainLayout></PrivateRoute>}/>
+            <Route path="/exams" element={<PrivateRoute><MainLayout><Exams/></MainLayout></PrivateRoute>}/>
+            <Route path="/exams/new" element={<PrivateRoute><MainLayout><NewExam/></MainLayout></PrivateRoute>}/>
+            <Route path="/exams/:id/edit" element={<PrivateRoute><MainLayout><NewExam/></MainLayout></PrivateRoute>}/>
+            <Route path="/questions" element={<PrivateRoute><MainLayout><QuestionBank/></MainLayout></PrivateRoute>}/>
+            <Route path="*" element={<NotFound/>}/>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </div>
   );
-};
+}
 
 export default App;
