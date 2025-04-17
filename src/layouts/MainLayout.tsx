@@ -1,11 +1,15 @@
 
-import { Outlet } from "react-router-dom";
+import React, { ReactNode } from "react";
 import { Navbar } from "@/components/core/Navbar";
 import { useAppSelector } from "@/lib/hooks";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/core/AppSidebar";
 
-export const MainLayout = () => {
+interface MainLayoutProps {
+  children: ReactNode;
+}
+
+export const MainLayout = ({ children }: MainLayoutProps) => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   return (
@@ -16,7 +20,7 @@ export const MainLayout = () => {
           <AppSidebar />
           <SidebarInset className="flex-1">
             <main className="flex-1 p-4">
-              <Outlet />
+              {children}
             </main>
             <footer className="py-6 border-t">
               <div className="container text-center text-sm text-muted-foreground">

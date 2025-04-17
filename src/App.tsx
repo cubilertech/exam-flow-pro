@@ -1,10 +1,11 @@
+
 import {
   BrowserRouter as Router,
   Routes,
   Route,
 } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import Index from "./pages";
+import { Providers } from "./lib/providers";
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Categories from "./pages/Categories";
@@ -13,14 +14,14 @@ import Admin from "./pages/Admin";
 import Exams from "./pages/Exams";
 import NewExam from "./pages/NewExam";
 import NotFound from "./pages/NotFound";
-import PrivateRoute from "./components/PrivateRoute";
-import MainLayout from "./components/core/MainLayout";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
+import { MainLayout } from "./layouts/MainLayout";
 import QuestionBank from "./pages/QuestionBank";
 
 function App() {
   return (
     <div className="App">
-      <AuthProvider>
+      <Providers>
         <Router>
           <Routes>
             <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
@@ -36,7 +37,7 @@ function App() {
             <Route path="*" element={<NotFound/>}/>
           </Routes>
         </Router>
-      </AuthProvider>
+      </Providers>
     </div>
   );
 }

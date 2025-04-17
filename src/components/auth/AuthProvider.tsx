@@ -5,7 +5,11 @@ import { loginSuccess, logout } from '@/features/auth/authSlice';
 import { setupAuthListener } from '@/services/authService';
 import { supabase } from '@/integrations/supabase/client';
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -13,19 +17,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) return;
+      if (session) {
+        const { user } = session;
+        
+        // Fetch user profile data from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (!profileError && profileData) {
+          // Check if the user is an admin
+          const { data: adminData } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          
+          dispatch(loginSuccess({
+            id: user.id,
+            email: user.email || '',
+            username: profileData.username || '',
+            country: profileData.country || '',
+            gender: profileData.gender || '',
+            phone: profileData.phone_number,
+            city: profileData.city,
+            isAdmin: !!adminData
+          }));
+        }
+      }
       
-      // Set up auth state listener 
-      const unsubscribe = setupAuthListener((user) => {
-        if (user) {
-          dispatch(loginSuccess(user));
+      // Set up auth state listener
+      const { data: authListenerData } = setupAuthListener(async (authUser) => {
+        if (authUser) {
+          // Fetch user profile data
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
+            
+          if (!profileError && profileData) {
+            // Check if the user is an admin
+            const { data: adminData } = await supabase
+              .from('admin_users')
+              .select('*')
+              .eq('user_id', authUser.id)
+              .single();
+            
+            dispatch(loginSuccess({
+              id: authUser.id,
+              email: authUser.email || '',
+              username: profileData.username || '',
+              country: profileData.country || '',
+              gender: profileData.gender || '',
+              phone: profileData.phone_number,
+              city: profileData.city,
+              isAdmin: !!adminData
+            }));
+          }
         } else {
           dispatch(logout());
         }
       });
       
       return () => {
-        unsubscribe.data.subscription.unsubscribe();
+        if (authListenerData?.subscription) {
+          authListenerData.subscription.unsubscribe();
+        }
       };
     };
     
