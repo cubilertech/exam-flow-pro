@@ -14,6 +14,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Question {
   id: string;
@@ -202,18 +203,22 @@ export function AddQuestionDialog({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select
-          className="border rounded-md px-3 py-2"
+        <Select
           value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
+          onValueChange={setSelectedCategory}
         >
-          <option value="">All Categories</option>
-          {categories.map(category => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all-categories">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="h-[400px] overflow-y-auto rounded-md border">
