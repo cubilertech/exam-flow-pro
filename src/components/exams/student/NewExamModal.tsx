@@ -30,6 +30,7 @@ import { fetchCategoriesStart, fetchCategoriesSuccess, fetchCategoriesFailure } 
 import { startTest } from '@/features/study/studySlice';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Question } from '@/features/questions/questionsSlice';
 
 // Define form schema
 const formSchema = z.object({
@@ -60,7 +61,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       examType: "test",
       categories: [],
       difficultyLevels: ["all"],
-      numberOfQuestions: "10",
+      numberOfQuestions: "10", // String to match the input type
       timedMode: "untimed",
       examName: "",
     },
@@ -77,7 +78,16 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
             .select('*');
             
           if (error) throw error;
-          dispatch(fetchCategoriesSuccess(data));
+          
+          // Transform the data to match Category type
+          const transformedCategories = data.map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            questionBankId: cat.question_bank_id || undefined,
+            questionCount: 0 // Provide a default value
+          }));
+          
+          dispatch(fetchCategoriesSuccess(transformedCategories));
         } catch (error) {
           console.error('Error fetching categories:', error);
           dispatch(fetchCategoriesFailure((error as Error).message));
@@ -100,19 +110,38 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
       // Apply difficulty filter if not "all"
       if (!values.difficultyLevels.includes("all")) {
-        query = query.in('difficulty', values.difficultyLevels);
+        // Use only valid difficulty levels for the query
+        const validDifficulties = values.difficultyLevels.filter(d => d !== "all") as ("easy" | "medium" | "hard")[];
+        if (validDifficulties.length > 0) {
+          query = query.in('difficulty', validDifficulties);
+        }
       }
       
       // Limit to requested number of questions
-      const { data: questions, error } = await query.limit(values.numberOfQuestions);
+      const { data: questionsData, error } = await query.limit(values.numberOfQuestions);
       
       if (error) throw error;
       
-      if (questions.length === 0) {
+      if (!questionsData || questionsData.length === 0) {
         // Show a message that no questions match criteria
         console.error("No questions match your criteria");
         return;
       }
+      
+      // Transform the data to match Question type
+      const questions: Question[] = questionsData.map(q => ({
+        id: q.id,
+        serialNumber: parseInt(q.serial_number.replace(/\D/g, '')), // Extract number from serial
+        text: q.text,
+        options: [], // Will be populated later if needed
+        explanation: q.explanation || "",
+        imageUrl: q.image_url || undefined,
+        categoryId: q.category_id || "",
+        tags: [], // Default empty array
+        difficulty: q.difficulty || "medium",
+        correctAnswerRate: q.answered_correctly_count && q.answered_count ? 
+          (q.answered_correctly_count / q.answered_count) * 100 : undefined
+      }));
       
       // Start the test with the fetched questions
       dispatch(startTest(questions));
