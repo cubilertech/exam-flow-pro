@@ -37,7 +37,7 @@ export function MakeAdminForm() {
     try {
       setIsSubmitting(true);
       
-      // Check if user exists
+      // Check if user exists - explicitly type the query response
       const { data: users, error: userError } = await supabase
         .from('profiles')
         .select('id')
