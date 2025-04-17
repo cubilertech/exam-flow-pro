@@ -40,16 +40,19 @@ export function AppSidebar() {
   // Admin-only menu items
   const adminMenuItems = [
     {
+      title: "Dashboard",
+      url: "/",
+      icon: Home,
+    },
+    {
       title: "Question Banks",
       url: "/questions",
       icon: HelpCircle,
     },
   ];
   
-  // Combine the appropriate menu items based on user role
-  const menuItems = isAdmin 
-    ? [...studentMenuItems, ...adminMenuItems]
-    : studentMenuItems;
+  // Use the appropriate menu items based on user role
+  const menuItems = isAdmin ? adminMenuItems : studentMenuItems;
 
   return (
     <Sidebar>

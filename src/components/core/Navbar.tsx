@@ -46,18 +46,22 @@ export const Navbar = () => {
         <nav className="hidden md:flex items-center gap-6">
           {isAuthenticated && (
             <>
-              <Link
-                to="/study"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Study Mode
-              </Link>
-              <Link
-                to="/exams"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Exams
-              </Link>
+              {!isAdmin && (
+                <>
+                  <Link
+                    to="/study"
+                    className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Study Mode
+                  </Link>
+                  <Link
+                    to="/exams"
+                    className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Exams
+                  </Link>
+                </>
+              )}
               {isAdmin && (
                 <Link
                   to="/questions"
@@ -90,18 +94,24 @@ export const Navbar = () => {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/study" className="flex items-center cursor-pointer">
-                    <Book className="mr-2 h-4 w-4" />
-                    <span>Study Mode</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/exams" className="flex items-center cursor-pointer">
-                    <TestTube className="mr-2 h-4 w-4" />
-                    <span>Exams</span>
-                  </Link>
-                </DropdownMenuItem>
+                
+                {!isAdmin && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/study" className="flex items-center cursor-pointer">
+                        <Book className="mr-2 h-4 w-4" />
+                        <span>Study Mode</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/exams" className="flex items-center cursor-pointer">
+                        <TestTube className="mr-2 h-4 w-4" />
+                        <span>Exams</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
                 {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link to="/questions" className="flex items-center cursor-pointer">
@@ -131,4 +141,4 @@ export const Navbar = () => {
       </div>
     </header>
   );
-};
+}

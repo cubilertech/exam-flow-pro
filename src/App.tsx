@@ -3,8 +3,9 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
 } from "react-router-dom";
-import { Providers } from "./lib/providers";
+import { Providers } from "./lib/hooks/providers";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -18,6 +19,7 @@ import QuestionBank from "./pages/QuestionBank";
 import QuestionBankDetail from "./pages/QuestionBankDetail";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { StudentRoute } from "./components/auth/StudentRoute";
+import { useAppSelector } from "./lib/hooks";
 
 function App() {
   return (

@@ -16,5 +16,10 @@ export const StudentRoute = ({ children }: StudentRouteProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // If user is an admin, redirect to home page
+  if (user?.isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
