@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +13,7 @@ export interface Exam {
   description: string | null;
   created_at: string;
   updated_at: string;
+  subscription_type: string | null;
 }
 
 const Exams = () => {

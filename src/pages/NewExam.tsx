@@ -23,6 +23,16 @@ import { QuestionsSection } from "@/components/exams/QuestionsSection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
+// Define an interface for the exam data to include subscription_type
+interface ExamData {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+  subscription_type: string | null;
+}
+
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title is too long"),
   description: z.string().optional(),
@@ -80,11 +90,13 @@ const NewExam = () => {
       if (error) throw error;
       
       if (data) {
+        // Type assert data as ExamData to ensure TypeScript recognizes subscription_type
+        const examData = data as ExamData;
         form.reset({
-          title: data.title,
-          description: data.description || "",
-          subscriptionType: data.subscription_type || "",
-          isSubscription: !!data.subscription_type,
+          title: examData.title,
+          description: examData.description || "",
+          subscriptionType: examData.subscription_type || "",
+          isSubscription: !!examData.subscription_type,
         });
       }
     } catch (error: any) {
