@@ -1,12 +1,12 @@
-
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAppDispatch } from "@/lib/hooks";
 import { loginStart, loginSuccess, loginFailure } from "@/features/auth/authSlice";
 import { toast } from "sonner";
+import { signIn } from "@/services/authService";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export const LoginForm = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
+
+  const from = (location.state as any)?.from?.pathname || "/";
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -45,27 +48,20 @@ export const LoginForm = () => {
     try {
       setLoading(true);
       dispatch(loginStart());
-      // Here we would normally have a call to an API or Supabase
-      // For now, we'll simulate a successful login with a mock user
-      setTimeout(() => {
-        const mockUser = {
-          id: "1",
-          username: "testuser",
-          email: data.email,
-          country: "US",
-          gender: "male",
-          isAdmin: data.email.includes("admin"),
-        };
-        
-        dispatch(loginSuccess(mockUser));
-        toast.success("Login successful!");
-        navigate("/");
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
+      
+      const userData = await signIn(data.email, data.password);
+      
+      dispatch(loginSuccess(userData));
+      toast.success("Login successful!");
+      
+      navigate(from, { replace: true });
+    } catch (error: any) {
       setLoading(false);
-      dispatch(loginFailure("Login failed. Please check your credentials."));
-      toast.error("Login failed. Please check your credentials.");
+      const errorMessage = error.message || "Login failed. Please check your credentials.";
+      dispatch(loginFailure(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

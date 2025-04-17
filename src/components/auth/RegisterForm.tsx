@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useAppDispatch } from "@/lib/hooks";
 import { registerStart, registerSuccess, registerFailure } from "@/features/auth/authSlice";
 import { toast } from "sonner";
+import { signUp } from "@/services/authService";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,29 +68,29 @@ export const RegisterForm = () => {
     try {
       setLoading(true);
       dispatch(registerStart());
-      // Here we would normally have a call to an API or Supabase
-      // For now, we'll simulate a successful registration with a mock user
-      setTimeout(() => {
-        const mockUser = {
-          id: "1",
+      
+      const userData = await signUp(
+        data.email,
+        data.password,
+        {
           username: data.username,
-          email: data.email,
           country: data.country,
           gender: data.gender,
           phone: data.phone,
           city: data.city,
-          isAdmin: false,
-        };
-        
-        dispatch(registerSuccess(mockUser));
-        toast.success("Registration successful!");
-        navigate("/");
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
+        }
+      );
+      
+      dispatch(registerSuccess(userData));
+      toast.success("Registration successful!");
+      navigate("/");
+    } catch (error: any) {
       setLoading(false);
-      dispatch(registerFailure("Registration failed. Please try again."));
-      toast.error("Registration failed. Please try again.");
+      const errorMessage = error.message || "Registration failed. Please try again.";
+      dispatch(registerFailure(errorMessage));
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,5 +1,6 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface User {
   id: string;

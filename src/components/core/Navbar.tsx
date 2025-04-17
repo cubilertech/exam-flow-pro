@@ -1,8 +1,8 @@
-
 import * as React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/features/auth/authSlice";
+import { signOut } from "@/services/authService";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,13 +14,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { User, Book, TestTube, BarChart, Settings, LogOut } from "lucide-react";
+import { toast } from "sonner";
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      dispatch(logout());
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error: any) {
+      toast.error(`Logout failed: ${error.message}`);
+    }
   };
 
   return (

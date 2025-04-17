@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Providers } from "@/lib/providers";
 
 import { MainLayout } from "@/layouts/MainLayout";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { PrivateRoute } from "@/components/auth/PrivateRoute";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -28,18 +30,32 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route element={<MainLayout />}>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/study" element={<Study />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/categories" element={<Categories />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
+              <AuthProvider>
+                <Routes>
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/study" element={
+                      <PrivateRoute>
+                        <Study />
+                      </PrivateRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <PrivateRoute requireAdmin>
+                        <Admin />
+                      </PrivateRoute>
+                    } />
+                    <Route path="/categories" element={
+                      <PrivateRoute requireAdmin>
+                        <Categories />
+                      </PrivateRoute>
+                    } />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Routes>
+              </AuthProvider>
             </BrowserRouter>
           </TooltipProvider>
         </Providers>
