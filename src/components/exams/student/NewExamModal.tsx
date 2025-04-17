@@ -37,8 +37,10 @@ const formSchema = z.object({
   examType: z.enum(["test", "study"]),
   categories: z.array(z.string()).min(1, "Select at least one category"),
   difficultyLevels: z.array(z.enum(["all", "easy", "medium", "hard"])).min(1, "Select at least one difficulty level"),
-  numberOfQuestions: z.string().transform(val => parseInt(val, 10))
-    .refine(val => !isNaN(val) && val > 0 && val <= 30, "Enter a number between 1 and 30"),
+  numberOfQuestions: z.number()
+    .int()
+    .min(1, "At least 1 question")
+    .max(30, "Maximum 30 questions"),
   timedMode: z.enum(["timed", "untimed"]),
   examName: z.string().min(3, "Exam name must be at least 3 characters"),
 });
@@ -61,7 +63,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       examType: "test",
       categories: [],
       difficultyLevels: ["all"],
-      numberOfQuestions: "10", // String to match the input type
+      numberOfQuestions: 10, // Now a number instead of a string
       timedMode: "untimed",
       examName: "",
     },
