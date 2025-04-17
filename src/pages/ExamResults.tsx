@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppSelector } from '@/lib/hooks';
@@ -116,11 +115,20 @@ const ExamResults = () => {
     fetchExamResult();
   }, [resultId, navigate, storeResult]);
   
-  const fetchQuestions = async (answers: any[]) => {
+  const fetchQuestions = async (answers: any) => {
     try {
-      if (!answers || answers.length === 0) return;
+      // Make sure answers is an array before proceeding
+      const answersArray = Array.isArray(answers) 
+        ? answers 
+        : typeof answers === 'string' 
+          ? JSON.parse(answers) 
+          : answers && typeof answers === 'object' && answers.hasOwnProperty('length') 
+            ? Array.from(answers) 
+            : [];
+            
+      if (answersArray.length === 0) return;
       
-      const questionIds = answers.map(a => a.questionId);
+      const questionIds = answersArray.map((a: any) => a.questionId);
       
       const { data, error } = await supabase
         .from('questions')
@@ -136,7 +144,7 @@ const ExamResults = () => {
       
       // Transform questions to match our format
       const formattedQuestions = data.map(q => {
-        const answer = answers.find(a => a.questionId === q.id);
+        const answer = answersArray.find((a: any) => a.questionId === q.id);
         
         return {
           id: q.id,
