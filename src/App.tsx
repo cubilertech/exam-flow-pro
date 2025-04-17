@@ -13,6 +13,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Study from "@/pages/Study";
 import Admin from "@/pages/Admin";
+import Categories from "@/pages/Categories";
 import NotFound from "@/pages/NotFound";
 
 // Create a client
@@ -34,6 +35,7 @@ const App = () => {
                   <Route path="/register" element={<Register />} />
                   <Route path="/study" element={<Study />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/categories" element={<Categories />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Route>
