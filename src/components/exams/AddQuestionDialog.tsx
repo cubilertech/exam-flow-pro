@@ -56,7 +56,7 @@ export function AddQuestionDialog({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export function AddQuestionDialog({
       }
       
       // Apply category filter if selected
-      if (selectedCategory) {
+      if (selectedCategory && selectedCategory !== "all") {
         query = query.eq("category_id", selectedCategory);
       }
       
@@ -241,7 +241,7 @@ export function AddQuestionDialog({
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -280,7 +280,7 @@ export function AddQuestionDialog({
             ) : filteredQuestions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  {searchTerm || selectedCategory ? "No questions match your filters" : "No questions available"}
+                  {searchTerm || selectedCategory !== "all" ? "No questions match your filters" : "No questions available"}
                 </TableCell>
               </TableRow>
             ) : (

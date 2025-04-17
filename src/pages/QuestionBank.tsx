@@ -50,7 +50,7 @@ const QuestionBank = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
   const [selectedQuestionBank, setSelectedQuestionBank] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -67,7 +67,7 @@ const QuestionBank = () => {
     } else {
       setCategories([]);
     }
-    setSelectedCategory("");
+    setSelectedCategory("all");
   }, [selectedQuestionBank]);
 
   useEffect(() => {
@@ -142,7 +142,7 @@ const QuestionBank = () => {
         `)
         .order("created_at", { ascending: false });
       
-      if (selectedCategory) {
+      if (selectedCategory && selectedCategory !== "all") {
         query = query.eq("category_id", selectedCategory);
       } else if (selectedQuestionBank) {
         // If no specific category is selected but a question bank is,
@@ -252,7 +252,7 @@ const QuestionBank = () => {
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -288,7 +288,7 @@ const QuestionBank = () => {
           <div className="py-4">
             <QuestionForm 
               questionBankId={selectedQuestionBank}
-              categoryId={selectedCategory} 
+              categoryId={selectedCategory !== "all" ? selectedCategory : ""} 
               initialData={currentQuestion} 
               allCategories={categories}
               onFormSubmitted={handleFormSubmitted}
