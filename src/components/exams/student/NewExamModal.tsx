@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -33,8 +32,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Question } from '@/features/questions/questionsSlice';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
+import { toast } from "sonner";
 
-// Define form schema
 const formSchema = z.object({
   examType: z.enum(["test", "study"]),
   questionBankId: z.string().min(1, "Please select a question bank"),
@@ -77,7 +76,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   
   const selectedQuestionBank = form.watch("questionBankId");
 
-  // Fetch categories when question bank changes
   useEffect(() => {
     if (selectedQuestionBank) {
       fetchCategoriesByQuestionBank(selectedQuestionBank);
@@ -86,7 +84,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     }
   }, [selectedQuestionBank]);
 
-  // Set first question bank as default when modal opens
   useEffect(() => {
     if (open && subscriptions.length > 0 && !selectedQuestionBank) {
       form.setValue("questionBankId", subscriptions[0].id);
@@ -103,17 +100,15 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         
       if (error) throw error;
       
-      // Transform the data to match Category type
       const transformedCategories = data.map(cat => ({
         id: cat.id,
         name: cat.name,
         questionBankId: cat.question_bank_id || undefined,
-        questionCount: 0 // Provide a default value
+        questionCount: 0
       }));
       
       setCategories(transformedCategories);
       
-      // Reset categories selection when question bank changes
       form.setValue("categories", []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -127,54 +122,45 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     console.log("Starting exam with values:", values);
     
     try {
-      // Fetch questions based on selected filters
       let query = supabase
         .from('questions')
         .select('*')
         .in('category_id', values.categories);
 
-      // Apply difficulty filter if not "all"
       if (!values.difficultyLevels.includes("all")) {
-        // Use only valid difficulty levels for the query
         const validDifficulties = values.difficultyLevels.filter(d => d !== "all") as ("easy" | "medium" | "hard")[];
         if (validDifficulties.length > 0) {
           query = query.in('difficulty', validDifficulties);
         }
       }
       
-      // Limit to requested number of questions
       const { data: questionsData, error } = await query.limit(values.numberOfQuestions);
       
       if (error) throw error;
       
       if (!questionsData || questionsData.length === 0) {
-        // Show a message that no questions match criteria
         console.error("No questions match your criteria");
         return;
       }
       
-      // Transform the data to match Question type
       const questions: Question[] = questionsData.map(q => ({
         id: q.id,
-        serialNumber: parseInt(q.serial_number.replace(/\D/g, '')), // Extract number from serial
+        serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
         text: q.text,
-        options: [], // Will be populated later if needed
+        options: [],
         explanation: q.explanation || "",
         imageUrl: q.image_url || undefined,
         categoryId: q.category_id || "",
-        tags: [], // Default empty array
+        tags: [],
         difficulty: q.difficulty || "medium",
         correctAnswerRate: q.answered_correctly_count && q.answered_count ? 
           (q.answered_correctly_count / q.answered_count) * 100 : undefined
       }));
       
-      // Start the test with the fetched questions
       dispatch(startTest(questions));
       
-      // Close the modal
       onOpenChange(false);
       
-      // Navigate to the exam page
       navigate('/exam/take');
       
     } catch (error) {
@@ -354,10 +340,8 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                                   checked={field.value?.includes(item.id as any)}
                                   onCheckedChange={(checked) => {
                                     if (item.id === "all" && checked) {
-                                      // If "All" is checked, uncheck others
                                       return field.onChange(["all"]);
                                     } else if (checked) {
-                                      // If any other is checked, uncheck "All"
                                       const newValue = field.value.filter(v => v !== "all");
                                       return field.onChange([...newValue, item.id as any]);
                                     } else {
