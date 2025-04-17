@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -58,8 +59,10 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { subscriptions } = useQuestionBankSubscriptions();
+  const { user } = useAppSelector((state) => state.auth);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const form = useForm<NewExamFormValues>({
     resolver: zodResolver(formSchema),
@@ -119,12 +122,38 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   };
 
   const handleStartExam = async (values: NewExamFormValues) => {
-    console.log("Starting exam with values:", values);
-    
+    if (!user?.id) {
+      toast.error('You must be logged in to create an exam');
+      return;
+    }
+
     try {
+      setIsSaving(true);
+      
+      // 1. First save the exam to the database
+      const { data: examData, error: examError } = await supabase
+        .from('user_exams')
+        .insert({
+          user_id: user.id,
+          name: values.examName,
+          exam_type: values.examType,
+          question_bank_id: values.questionBankId,
+          category_ids: values.categories,
+          difficulty_levels: values.difficultyLevels.filter(d => d !== "all") as string[],
+          question_count: values.numberOfQuestions,
+          is_timed: values.timedMode === "timed",
+          time_limit: values.timedMode === "timed" ? 60 : null, // Default 60 seconds per question if timed
+          completed: false
+        })
+        .select()
+        .single();
+      
+      if (examError) throw examError;
+      
+      // 2. Fetch questions based on criteria
       let query = supabase
         .from('questions')
-        .select('*')
+        .select('*, question_options(*)')
         .in('category_id', values.categories);
 
       if (!values.difficultyLevels.includes("all")) {
@@ -134,20 +163,25 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         }
       }
       
-      const { data: questionsData, error } = await query.limit(values.numberOfQuestions);
+      const { data: questionsData, error: questionsError } = await query.limit(values.numberOfQuestions);
       
-      if (error) throw error;
+      if (questionsError) throw questionsError;
       
       if (!questionsData || questionsData.length === 0) {
-        console.error("No questions match your criteria");
+        toast.error("No questions match your criteria");
         return;
       }
       
+      // 3. Format the questions for the state
       const questions: Question[] = questionsData.map(q => ({
         id: q.id,
         serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
         text: q.text,
-        options: [],
+        options: q.question_options.map((opt: any) => ({
+          id: opt.id,
+          text: opt.text,
+          isCorrect: opt.is_correct
+        })),
         explanation: q.explanation || "",
         imageUrl: q.image_url || undefined,
         categoryId: q.category_id || "",
@@ -157,14 +191,21 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           (q.answered_correctly_count / q.answered_count) * 100 : undefined
       }));
       
-      dispatch(startTest(questions));
+      // 4. Start the exam
+      dispatch(startTest({
+        questions,
+        examId: examData.id, // Store the exam ID in the state
+        examName: values.examName
+      }));
       
       onOpenChange(false);
-      
       navigate('/exam/take');
       
     } catch (error) {
       console.error("Error starting exam:", error);
+      toast.error("Failed to start the exam. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -441,9 +482,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
               </Button>
               <Button 
                 type="submit" 
-                disabled={!selectedQuestionBank || form.getValues().categories.length === 0}
+                disabled={!selectedQuestionBank || form.getValues().categories.length === 0 || isSaving}
               >
-                Start Exam
+                {isSaving ? "Creating..." : "Start Exam"}
               </Button>
             </DialogFooter>
           </form>

@@ -5,16 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ExamsTable from '@/components/exams/student/ExamsTable';
 import NewExamModal from '@/components/exams/student/NewExamModal';
-import { useAppSelector } from '@/lib/hooks';
 
 const MyExams = () => {
   const [isNewExamModalOpen, setIsNewExamModalOpen] = useState(false);
-  const { testResults } = useAppSelector((state) => state.study);
-
-  // Filter exams by status
-  const allExams = testResults || [];
-  const completedExams = allExams.filter(exam => exam.questionCount === exam.correctCount + exam.incorrectCount);
-  const inProgressExams = allExams.filter(exam => exam.questionCount > exam.correctCount + exam.incorrectCount);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -34,15 +27,15 @@ const MyExams = () => {
         </TabsList>
         
         <TabsContent value="all">
-          <ExamsTable exams={allExams} />
+          <ExamsTable filterStatus="all" />
         </TabsContent>
         
         <TabsContent value="completed">
-          <ExamsTable exams={completedExams} />
+          <ExamsTable filterStatus="completed" />
         </TabsContent>
         
         <TabsContent value="inprogress">
-          <ExamsTable exams={inProgressExams} />
+          <ExamsTable filterStatus="inprogress" />
         </TabsContent>
       </Tabs>
 

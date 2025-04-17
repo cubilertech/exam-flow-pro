@@ -2,23 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ArrowLeft, 
   ArrowRight, 
   Flag, 
   BookOpen, 
   Timer, 
-  Check, 
-  X,
   AlertTriangle
 } from 'lucide-react';
 import { 
@@ -30,6 +25,7 @@ import {
 } from '@/features/study/studySlice';
 import { toast } from 'sonner';
 import { QuestionCard } from '@/components/questions/QuestionCard';
+import { supabase } from '@/integrations/supabase/client';
 
 const TakeExam = () => {
   const navigate = useNavigate();
@@ -40,8 +36,12 @@ const TakeExam = () => {
     answeredQuestions,
     notes,
     flaggedQuestions,
-    currentTestStartTime
+    currentTestStartTime,
+    currentExamId,
+    currentExamName
   } = useAppSelector((state) => state.study);
+  
+  const { user } = useAppSelector((state) => state.auth);
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
@@ -49,10 +49,11 @@ const TakeExam = () => {
   const [showExplanation, setShowExplanation] = useState(false);
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [examDuration, setExamDuration] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Initialize selected answers from previously saved answers
   useEffect(() => {
-    if (answeredQuestions.length > 0 && currentTestQuestions.length > 0) {
+    if (answeredQuestions.length > 0 && currentTestQuestions?.length > 0) {
       const savedAnswers: Record<string, string[]> = {};
       answeredQuestions.forEach(answer => {
         if (currentTestQuestions.some(q => q.id === answer.questionId)) {
@@ -207,54 +208,108 @@ const TakeExam = () => {
     setShowSummaryDialog(true);
   };
 
-  const confirmFinishExam = () => {
-    // Calculate results
-    const allAnswers = Object.keys(selectedAnswers).map(questionId => {
-      const question = currentTestQuestions.find(q => q.id === questionId);
-      const selectedOptionIds = selectedAnswers[questionId] || [];
-      const correctOptionIds = question?.options
-        .filter(option => option.isCorrect)
-        .map(option => option.id) || [];
+  const confirmFinishExam = async () => {
+    if (!user?.id || !currentExamId) {
+      toast.error('You must be logged in to submit an exam');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
       
-      // Calculate if answer is correct
-      const isCorrect = isMultipleChoice
-        ? selectedOptionIds.length === correctOptionIds.length && 
-          selectedOptionIds.every(id => correctOptionIds.includes(id))
-        : selectedOptionIds[0] === correctOptionIds[0];
+      // Calculate results
+      const allAnswers = Object.keys(selectedAnswers).map(questionId => {
+        const question = currentTestQuestions.find(q => q.id === questionId);
+        const selectedOptionIds = selectedAnswers[questionId] || [];
+        const correctOptionIds = question?.options
+          .filter(option => option.isCorrect)
+          .map(option => option.id) || [];
+        
+        // Calculate if answer is correct
+        const isCorrect = question?.options.filter(o => o.isCorrect).length > 1
+          ? selectedOptionIds.length === correctOptionIds.length && 
+            selectedOptionIds.every(id => correctOptionIds.includes(id))
+          : selectedOptionIds[0] === correctOptionIds[0];
+        
+        return {
+          questionId,
+          selectedOptions: selectedOptionIds,
+          isCorrect,
+          answeredAt: new Date().toISOString()
+        };
+      });
       
-      return {
-        questionId,
-        selectedOptions: selectedOptionIds,
-        isCorrect,
-        answeredAt: new Date().toISOString()
+      const correctCount = allAnswers.filter(answer => answer.isCorrect).length;
+      const scorePercentage = (correctCount / currentTestQuestions.length) * 100;
+      
+      // Get unique category IDs from questions
+      const categoryIds = Array.from(new Set(currentTestQuestions.map(q => q.categoryId)));
+      
+      // Update the exam status to completed in the database
+      const { error: examUpdateError } = await supabase
+        .from('user_exams')
+        .update({ completed: true })
+        .eq('id', currentExamId);
+        
+      if (examUpdateError) throw examUpdateError;
+      
+      // Save the exam result to the database
+      const { data: resultData, error: resultError } = await supabase
+        .from('exam_results')
+        .insert({
+          user_exam_id: currentExamId,
+          user_id: user.id,
+          correct_count: correctCount,
+          incorrect_count: currentTestQuestions.length - correctCount,
+          score: Math.round(scorePercentage),
+          time_taken: examDuration,
+          answers: allAnswers,
+          completed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+        
+      if (resultError) throw resultError;
+      
+      // Submit test results to the state
+      const result = {
+        id: resultData.id,
+        testDate: new Date().toISOString(),
+        categoryIds,
+        questionCount: currentTestQuestions.length,
+        correctCount,
+        incorrectCount: currentTestQuestions.length - correctCount,
+        score: Math.round(scorePercentage),
+        timeTaken: examDuration,
+        answers: allAnswers,
+        timeStarted: currentTestStartTime || new Date().toISOString(),
+        timeCompleted: new Date().toISOString(),
+        examId: currentExamId,
+        examName: currentExamName || 'Exam'
       };
-    });
-    
-    const correctCount = allAnswers.filter(answer => answer.isCorrect).length;
-    const scorePercentage = (correctCount / currentTestQuestions.length) * 100;
-    
-    // Get unique category IDs from questions
-    const categoryIds = Array.from(new Set(currentTestQuestions.map(q => q.categoryId)));
-    
-    // Submit test results
-    const result = {
-      id: uuidv4(),
-      testDate: new Date().toISOString(),
-      categoryIds,
-      questionCount: currentTestQuestions.length,
-      correctCount,
-      incorrectCount: currentTestQuestions.length - correctCount,
-      score: Math.round(scorePercentage),
-      timeTaken: examDuration,
-      answers: allAnswers,
-      timeStarted: currentTestStartTime || new Date().toISOString(),
-      timeCompleted: new Date().toISOString()
-    };
-    
-    dispatch(submitTestResult(result));
-    setShowSummaryDialog(false);
-    // Navigate to results page
-    navigate(`/exam-results/${result.id}`);
+      
+      dispatch(submitTestResult(result));
+      setShowSummaryDialog(false);
+      
+      // Update the user_answers table to help with difficulty calculation
+      for (const answer of allAnswers) {
+        await supabase
+          .from('user_answers')
+          .insert({
+            question_id: answer.questionId,
+            user_id: user.id,
+            is_correct: answer.isCorrect
+          });
+      }
+      
+      // Navigate to results page
+      navigate(`/exam-results/${result.id}`);
+    } catch (error) {
+      console.error('Error submitting exam:', error);
+      toast.error('Failed to submit exam. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -429,8 +484,8 @@ const TakeExam = () => {
             <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>
               Continue Exam
             </Button>
-            <Button onClick={confirmFinishExam}>
-              Submit Exam
+            <Button onClick={confirmFinishExam} disabled={isSaving}>
+              {isSaving ? "Submitting..." : "Submit Exam"}
             </Button>
           </DialogFooter>
         </DialogContent>

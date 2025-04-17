@@ -32,6 +32,8 @@ export interface TestResult {
   answers: AnsweredQuestion[];
   timeStarted?: string;
   timeCompleted?: string;
+  examId?: string;
+  examName?: string;
 }
 
 interface StudyState {
@@ -42,6 +44,8 @@ interface StudyState {
   currentStudyMode: 'study' | 'test' | null;
   currentTestQuestions: Question[];
   currentTestStartTime: string | null;
+  currentExamId: string | null; // Add exam ID field
+  currentExamName: string | null; // Add exam name field
   isLoading: boolean;
   error: string | null;
 }
@@ -54,6 +58,8 @@ const initialState: StudyState = {
   currentStudyMode: null,
   currentTestQuestions: [],
   currentTestStartTime: null,
+  currentExamId: null,
+  currentExamName: null,
   isLoading: false,
   error: null,
 };
@@ -104,12 +110,19 @@ const studySlice = createSlice({
     },
     
     // Test management
-    startTest: (state, action: PayloadAction<Question[]>) => {
-      state.currentTestQuestions = action.payload;
+    startTest: (state, action: PayloadAction<{
+      questions: Question[], 
+      examId?: string,
+      examName?: string
+    }>) => {
+      state.currentTestQuestions = action.payload.questions;
       state.currentStudyMode = 'test';
       state.currentTestStartTime = new Date().toISOString();
+      state.currentExamId = action.payload.examId || null;
+      state.currentExamName = action.payload.examName || null;
+      
       // Clear any previous answers for these questions
-      const questionIds = action.payload.map(q => q.id);
+      const questionIds = action.payload.questions.map(q => q.id);
       state.answeredQuestions = state.answeredQuestions.filter(
         a => !questionIds.includes(a.questionId)
       );
@@ -132,12 +145,16 @@ const studySlice = createSlice({
       state.currentTestQuestions = [];
       state.currentStudyMode = null;
       state.currentTestStartTime = null;
+      state.currentExamId = null;
+      state.currentExamName = null;
     },
     
     clearCurrentTest: (state) => {
       state.currentTestQuestions = [];
       state.currentStudyMode = null;
       state.currentTestStartTime = null;
+      state.currentExamId = null;
+      state.currentExamName = null;
     },
     
     // Loading states

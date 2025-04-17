@@ -23,28 +23,152 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuestionCard } from '@/components/questions/QuestionCard';
 import { Question } from '@/features/questions/questionsSlice';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ExamResults = () => {
   const { resultId } = useParams<{ resultId: string }>();
   const navigate = useNavigate();
-  const { testResults, answeredQuestions } = useAppSelector((state) => state.study);
-  const { categories, questions } = useAppSelector((state) => state.questions);
+  const { testResults } = useAppSelector((state) => state.study);
   
   const [activeTab, setActiveTab] = useState<'summary' | 'questions'>('summary');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [examResult, setExamResult] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   
-  // Find the test result
-  const result = testResults.find(result => result.id === resultId);
+  // Find the test result in Redux store first
+  const storeResult = testResults.find(result => result.id === resultId);
   
-  // If no result found, redirect to my exams
   useEffect(() => {
-    if (!result) {
-      navigate('/my-exams');
-    }
-  }, [result, navigate]);
+    const fetchExamResult = async () => {
+      try {
+        setLoading(true);
+        
+        if (storeResult) {
+          setExamResult(storeResult);
+          await fetchQuestions(storeResult.answers);
+          return;
+        }
+        
+        // If not in store, fetch from database
+        const { data, error } = await supabase
+          .from('exam_results')
+          .select(`
+            *,
+            user_exams (
+              name, 
+              question_bank_id,
+              category_ids
+            )
+          `)
+          .eq('id', resultId)
+          .single();
+          
+        if (error) throw error;
+        
+        if (!data) {
+          navigate('/my-exams');
+          return;
+        }
+        
+        // Transform data to match the format we use
+        const transformedResult = {
+          id: data.id,
+          testDate: data.completed_at,
+          correctCount: data.correct_count,
+          incorrectCount: data.incorrect_count,
+          score: Number(data.score),
+          timeTaken: data.time_taken,
+          answers: data.answers,
+          examId: data.user_exam_id,
+          examName: data.user_exams?.name || 'Exam',
+          categoryIds: data.user_exams?.category_ids || [],
+          questionCount: data.correct_count + data.incorrect_count
+        };
+        
+        setExamResult(transformedResult);
+        
+        // Fetch questions based on answer data
+        await fetchQuestions(data.answers);
+        
+        // Fetch categories
+        if (data.user_exams?.category_ids) {
+          const { data: catData } = await supabase
+            .from('categories')
+            .select('id, name')
+            .in('id', data.user_exams.category_ids);
+            
+          if (catData) {
+            setCategories(catData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching exam result:', error);
+        toast.error('Failed to load exam result');
+        navigate('/my-exams');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchExamResult();
+  }, [resultId, navigate, storeResult]);
   
-  if (!result) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  const fetchQuestions = async (answers: any[]) => {
+    try {
+      if (!answers || answers.length === 0) return;
+      
+      const questionIds = answers.map(a => a.questionId);
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          question_options (*)
+        `)
+        .in('id', questionIds);
+        
+      if (error) throw error;
+      
+      if (!data) return;
+      
+      // Transform questions to match our format
+      const formattedQuestions = data.map(q => {
+        const answer = answers.find(a => a.questionId === q.id);
+        
+        return {
+          id: q.id,
+          serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
+          text: q.text,
+          options: q.question_options.map((opt: any) => ({
+            id: opt.id,
+            text: opt.text,
+            isCorrect: opt.is_correct
+          })),
+          explanation: q.explanation || "",
+          imageUrl: q.image_url || undefined,
+          categoryId: q.category_id || "",
+          tags: [],
+          difficulty: q.difficulty || "medium",
+          userAnswer: answer?.selectedOptions || [],
+          isCorrect: answer?.isCorrect
+        };
+      });
+      
+      setQuestions(formattedQuestions);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    }
+  };
+  
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Loading results...</div>;
+  }
+  
+  if (!examResult) {
+    return <div className="flex justify-center items-center h-screen">Exam result not found</div>;
   }
   
   // Format time as mm:ss
@@ -61,36 +185,20 @@ const ExamResults = () => {
   
   // Get category names
   const getCategoryNames = () => {
-    return result.categoryIds
-      .map(id => categories.find(cat => cat.id === id)?.name || 'Unknown')
+    if (categories.length === 0) return 'N/A';
+    return categories
+      .map(cat => cat.name)
       .join(', ');
   };
   
   // Data for pie chart
   const chartData = [
-    { name: 'Correct', value: result.correctCount, color: '#10b981' },
-    { name: 'Incorrect', value: result.incorrectCount, color: '#ef4444' }
+    { name: 'Correct', value: examResult.correctCount, color: '#10b981' },
+    { name: 'Incorrect', value: examResult.incorrectCount, color: '#ef4444' }
   ];
   
-  // Get all questions related to this exam with their answers
-  const getExamQuestions = (): Array<Question & { 
-    userAnswer?: string[], 
-    isCorrect?: boolean 
-  }> => {
-    return result.answers.map(answer => {
-      const question = questions.find(q => q.id === answer.questionId);
-      if (!question) return null;
-      
-      return {
-        ...question,
-        userAnswer: answer.selectedOptions,
-        isCorrect: answer.isCorrect
-      };
-    }).filter(Boolean) as Array<Question & { userAnswer?: string[], isCorrect?: boolean }>;
-  };
-  
-  const examQuestions = getExamQuestions();
-  const currentQuestion = examQuestions[currentQuestionIndex];
+  // Get current question
+  const currentQuestion = questions[currentQuestionIndex];
   
   const handlePrevQuestion = () => {
     if (currentQuestionIndex > 0) {
@@ -99,7 +207,7 @@ const ExamResults = () => {
   };
   
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < examQuestions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -111,9 +219,9 @@ const ExamResults = () => {
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back to My Exams
         </Button>
-        <h1 className="text-3xl font-bold">Exam Results</h1>
+        <h1 className="text-3xl font-bold">{examResult.examName || 'Exam Results'}</h1>
         <p className="text-muted-foreground mt-1">
-          Completed on {formatDate(result.testDate)}
+          Completed on {formatDate(examResult.testDate)}
         </p>
       </div>
       
@@ -154,9 +262,9 @@ const ExamResults = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="text-center mt-4">
-                    <h3 className="text-2xl font-bold">{result.score}%</h3>
+                    <h3 className="text-2xl font-bold">{examResult.score}%</h3>
                     <p className="text-muted-foreground text-sm">
-                      {result.score >= 70 ? 'Excellent!' : result.score >= 50 ? 'Good job!' : 'Keep practicing!'}
+                      {examResult.score >= 70 ? 'Excellent!' : examResult.score >= 50 ? 'Good job!' : 'Keep practicing!'}
                     </p>
                   </div>
                 </div>
@@ -174,24 +282,24 @@ const ExamResults = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Questions</span>
-                    <span className="font-medium">{result.questionCount}</span>
+                    <span className="font-medium">{examResult.questionCount}</span>
                   </div>
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Time Taken</span>
-                    <span className="font-medium">{formatTime(result.timeTaken)}</span>
+                    <span className="font-medium">{formatTime(examResult.timeTaken)}</span>
                   </div>
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Correct</span>
                     <div className="flex items-center">
                       <CheckCircle2 className="h-4 w-4 text-green-500 mr-1.5" />
-                      <span className="font-medium">{result.correctCount}</span>
+                      <span className="font-medium">{examResult.correctCount}</span>
                     </div>
                   </div>
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Incorrect</span>
                     <div className="flex items-center">
                       <XCircle className="h-4 w-4 text-red-500 mr-1.5" />
-                      <span className="font-medium">{result.incorrectCount}</span>
+                      <span className="font-medium">{examResult.incorrectCount}</span>
                     </div>
                   </div>
                 </div>
@@ -207,9 +315,9 @@ const ExamResults = () => {
                 <div className="pt-1">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium">Score</span>
-                    <span className="text-sm font-medium">{result.score}%</span>
+                    <span className="text-sm font-medium">{examResult.score}%</span>
                   </div>
-                  <Progress value={result.score} className="h-2" />
+                  <Progress value={examResult.score} className="h-2" />
                 </div>
               </CardContent>
               <CardFooter>
@@ -230,7 +338,7 @@ const ExamResults = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {result.score < 70 && (
+                {examResult.score < 70 && (
                   <div className="flex items-start p-4 border rounded-md">
                     <AlertCircle className="h-5 w-5 text-amber-500 mr-3 mt-0.5" />
                     <div>
@@ -248,8 +356,8 @@ const ExamResults = () => {
                   <div>
                     <h4 className="font-medium">Time Management</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      You spent an average of {(result.timeTaken / result.questionCount).toFixed(1)} seconds per question.
-                      {result.timeTaken / result.questionCount > 60 
+                      You spent an average of {(examResult.timeTaken / examResult.questionCount).toFixed(1)} seconds per question.
+                      {examResult.timeTaken / examResult.questionCount > 60 
                         ? ' Try to improve your speed for better time management.'
                         : ' Good job managing your time efficiently!'}
                     </p>
@@ -261,58 +369,72 @@ const ExamResults = () => {
         </TabsContent>
         
         <TabsContent value="questions" className="mt-6">
-          <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-xl font-bold">
-              Question {currentQuestionIndex + 1} of {examQuestions.length}
-            </h2>
-            <div className="flex items-center space-x-2">
-              <Badge variant={currentQuestion?.isCorrect ? "success" : "destructive"} className="px-2 py-1">
-                {currentQuestion?.isCorrect ? (
-                  <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Correct</>
+          {questions.length > 0 ? (
+            <>
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-xl font-bold">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={currentQuestion?.isCorrect ? "success" : "destructive"} className="px-2 py-1">
+                    {currentQuestion?.isCorrect ? (
+                      <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Correct</>
+                    ) : (
+                      <><XCircle className="h-3.5 w-3.5 mr-1" /> Incorrect</>
+                    )}
+                  </Badge>
+                </div>
+              </div>
+              
+              {currentQuestion && (
+                <QuestionCard
+                  question={currentQuestion}
+                  showAnswers={true}
+                  selectedOptions={currentQuestion.userAnswer || []}
+                  isAnswered={true}
+                  isTestMode={false}
+                />
+              )}
+              
+              <div className="flex justify-between mt-6">
+                <Button 
+                  onClick={handlePrevQuestion} 
+                  disabled={currentQuestionIndex === 0}
+                  variant="outline"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {currentQuestionIndex + 1} of {questions.length}
+                  </span>
+                </div>
+                
+                {currentQuestionIndex === questions.length - 1 ? (
+                  <Button onClick={() => setActiveTab('summary')} variant="default">
+                    Back to Summary
+                  </Button>
                 ) : (
-                  <><XCircle className="h-3.5 w-3.5 mr-1" /> Incorrect</>
+                  <Button onClick={handleNextQuestion}>
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
                 )}
-              </Badge>
-            </div>
-          </div>
-          
-          {currentQuestion && (
-            <QuestionCard
-              question={currentQuestion}
-              showAnswers={true}
-              selectedOptions={currentQuestion.userAnswer || []}
-              isAnswered={true}
-              isTestMode={false}
-            />
-          )}
-          
-          <div className="flex justify-between mt-6">
-            <Button 
-              onClick={handlePrevQuestion} 
-              disabled={currentQuestionIndex === 0}
-              variant="outline"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {currentQuestionIndex + 1} of {examQuestions.length}
-              </span>
-            </div>
-            
-            {currentQuestionIndex === examQuestions.length - 1 ? (
-              <Button onClick={() => setActiveTab('summary')} variant="default">
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-medium">No questions available</h3>
+              <p className="text-muted-foreground mt-2">
+                Questions for this exam couldn't be loaded.
+              </p>
+              <Button variant="outline" className="mt-4" onClick={() => setActiveTab('summary')}>
                 Back to Summary
               </Button>
-            ) : (
-              <Button onClick={handleNextQuestion}>
-                Next
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

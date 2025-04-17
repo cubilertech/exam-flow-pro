@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -18,15 +18,97 @@ import {
   PlayCircle,
   CheckCircle,
   Clock,
-  BarChart2
+  BarChart2,
+  Loader2
 } from 'lucide-react';
-import { TestResult } from '@/features/study/studySlice';
+import { supabase } from '@/integrations/supabase/client';
+import { useAppSelector } from '@/lib/hooks';
+import { toast } from 'sonner';
 
 interface ExamsTableProps {
-  exams: TestResult[];
+  filterStatus?: 'all' | 'completed' | 'inprogress';
 }
 
-const ExamsTable = ({ exams }: ExamsTableProps) => {
+const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
+  const [exams, setExams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAppSelector((state) => state.auth);
+  
+  useEffect(() => {
+    const fetchExams = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch user exams with their latest result
+        const { data, error } = await supabase
+          .from('user_exams')
+          .select(`
+            *,
+            exam_results (*)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data) {
+          setExams([]);
+          return;
+        }
+        
+        // Format exams for display
+        const formattedExams = data.map(exam => {
+          // Get the latest result if available
+          const latestResult = exam.exam_results && exam.exam_results.length > 0
+            ? exam.exam_results.sort((a: any, b: any) => 
+                new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
+              )[0]
+            : null;
+          
+          return {
+            id: exam.id,
+            name: exam.name,
+            testDate: exam.created_at,
+            questionCount: exam.question_count,
+            completed: exam.completed,
+            score: latestResult ? Number(latestResult.score) : null,
+            timeTaken: latestResult ? latestResult.time_taken : 0,
+            correctCount: latestResult ? latestResult.correct_count : 0,
+            incorrectCount: latestResult ? latestResult.incorrect_count : 0,
+            resultId: latestResult ? latestResult.id : null
+          };
+        });
+        
+        // Filter by status if needed
+        let filteredExams = formattedExams;
+        if (filterStatus === 'completed') {
+          filteredExams = formattedExams.filter(exam => exam.completed);
+        } else if (filterStatus === 'inprogress') {
+          filteredExams = formattedExams.filter(exam => !exam.completed);
+        }
+        
+        setExams(filteredExams);
+      } catch (error) {
+        console.error('Error fetching exams:', error);
+        toast.error('Failed to load exams');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchExams();
+  }, [user?.id, filterStatus]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (exams.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10">
@@ -56,10 +138,8 @@ const ExamsTable = ({ exams }: ExamsTableProps) => {
   };
 
   // Determine exam status
-  const getExamStatus = (exam: TestResult) => {
-    const isComplete = exam.questionCount === (exam.correctCount + exam.incorrectCount);
-    
-    if (isComplete) {
+  const getExamStatus = (exam: any) => {
+    if (exam.completed) {
       return {
         label: 'Completed',
         variant: 'success' as const,
@@ -79,6 +159,7 @@ const ExamsTable = ({ exams }: ExamsTableProps) => {
       <TableCaption>A list of your exams</TableCaption>
       <TableHeader>
         <TableRow>
+          <TableHead>Exam Name</TableHead>
           <TableHead>Date</TableHead>
           <TableHead>Questions</TableHead>
           <TableHead className="hidden md:table-cell">Time Taken</TableHead>
@@ -95,11 +176,14 @@ const ExamsTable = ({ exams }: ExamsTableProps) => {
           return (
             <TableRow key={exam.id}>
               <TableCell className="font-medium">
+                {exam.name}
+              </TableCell>
+              <TableCell>
                 {formatDate(exam.testDate)}
               </TableCell>
               <TableCell>{exam.questionCount}</TableCell>
               <TableCell className="hidden md:table-cell">
-                {formatTime(exam.timeTaken)}
+                {isComplete ? formatTime(exam.timeTaken) : '-'}
               </TableCell>
               <TableCell>
                 {isComplete ? `${exam.score}%` : '-'}
@@ -113,7 +197,7 @@ const ExamsTable = ({ exams }: ExamsTableProps) => {
               <TableCell className="text-right">
                 {isComplete ? (
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/exam-results/${exam.id}`}>
+                    <Link to={`/exam-results/${exam.resultId}`}>
                       <BarChart2 className="h-4 w-4 mr-2" />
                       Results
                     </Link>

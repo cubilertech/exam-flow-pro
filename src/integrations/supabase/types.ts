@@ -95,6 +95,50 @@ export type Database = {
           },
         ]
       }
+      exam_results: {
+        Row: {
+          answers: Json
+          completed_at: string
+          correct_count: number
+          id: string
+          incorrect_count: number
+          score: number
+          time_taken: number
+          user_exam_id: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          correct_count?: number
+          id?: string
+          incorrect_count?: number
+          score?: number
+          time_taken?: number
+          user_exam_id: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          correct_count?: number
+          id?: string
+          incorrect_count?: number
+          score?: number
+          time_taken?: number
+          user_exam_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_results_user_exam_id_fkey"
+            columns: ["user_exam_id"]
+            isOneToOne: false
+            referencedRelation: "user_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exams: {
         Row: {
           created_at: string
@@ -306,6 +350,62 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_exams: {
+        Row: {
+          category_ids: string[]
+          completed: boolean
+          created_at: string
+          difficulty_levels: string[]
+          exam_type: string
+          id: string
+          is_timed: boolean
+          name: string
+          question_bank_id: string
+          question_count: number
+          time_limit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_ids: string[]
+          completed?: boolean
+          created_at?: string
+          difficulty_levels: string[]
+          exam_type: string
+          id?: string
+          is_timed?: boolean
+          name: string
+          question_bank_id: string
+          question_count: number
+          time_limit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_ids?: string[]
+          completed?: boolean
+          created_at?: string
+          difficulty_levels?: string[]
+          exam_type?: string
+          id?: string
+          is_timed?: boolean
+          name?: string
+          question_bank_id?: string
+          question_count?: number
+          time_limit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_exams_question_bank_id_fkey"
+            columns: ["question_bank_id"]
+            isOneToOne: false
+            referencedRelation: "question_banks"
             referencedColumns: ["id"]
           },
         ]
