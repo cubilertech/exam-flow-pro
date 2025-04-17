@@ -35,13 +35,21 @@ interface Question {
 interface Category {
   id: string;
   name: string;
-  examId?: string;
+  questionBankId?: string;
   questionCount?: number;
+}
+
+interface QuestionBank {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 const QuestionBank = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
+  const [selectedQuestionBank, setSelectedQuestionBank] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -50,15 +58,52 @@ const QuestionBank = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCategories();
-    fetchQuestions();
-  }, [selectedCategory]);
+    fetchQuestionBanks();
+  }, []);
 
-  const fetchCategories = async () => {
+  useEffect(() => {
+    if (selectedQuestionBank) {
+      fetchCategories(selectedQuestionBank);
+    } else {
+      setCategories([]);
+    }
+    setSelectedCategory("");
+  }, [selectedQuestionBank]);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [selectedCategory, selectedQuestionBank]);
+
+  const fetchQuestionBanks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("question_banks")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      
+      if (data) {
+        setQuestionBanks(data);
+        if (data.length > 0) {
+          setSelectedQuestionBank(data[0].id);
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load question banks",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchCategories = async (questionBankId: string) => {
     try {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
+        .eq("question_bank_id", questionBankId)
         .order("name");
 
       if (error) throw error;
@@ -67,6 +112,7 @@ const QuestionBank = () => {
         setCategories(data.map(cat => ({
           id: cat.id,
           name: cat.name,
+          questionBankId: cat.question_bank_id,
         })));
       }
     } catch (error: any) {
@@ -98,6 +144,23 @@ const QuestionBank = () => {
       
       if (selectedCategory) {
         query = query.eq("category_id", selectedCategory);
+      } else if (selectedQuestionBank) {
+        // If no specific category is selected but a question bank is,
+        // fetch questions for all categories in that question bank
+        const { data: categoriesData } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("question_bank_id", selectedQuestionBank);
+        
+        if (categoriesData && categoriesData.length > 0) {
+          const categoryIds = categoriesData.map(cat => cat.id);
+          query = query.in("category_id", categoryIds);
+        } else {
+          // If no categories exist for this question bank, return no questions
+          setQuestions([]);
+          setLoading(false);
+          return;
+        }
       }
       
       const { data, error } = await query;
@@ -172,12 +235,24 @@ const QuestionBank = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
+                <Select value={selectedQuestionBank} onValueChange={setSelectedQuestionBank}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Question Bank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {questionBanks.map((qb) => (
+                      <SelectItem key={qb.id} value={qb.id}>
+                        {qb.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-categories">All Categories</SelectItem>
+                    <SelectItem value="">All Categories</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -186,10 +261,13 @@ const QuestionBank = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => {
-                setCurrentQuestion(null);
-                setSheetOpen(true);
-              }}>
+              <Button 
+                onClick={() => {
+                  setCurrentQuestion(null);
+                  setSheetOpen(true);
+                }}
+                disabled={!selectedQuestionBank}
+              >
                 <Plus className="h-4 w-4 mr-2" /> Add Question
               </Button>
             </div>
@@ -209,7 +287,8 @@ const QuestionBank = () => {
           </SheetHeader>
           <div className="py-4">
             <QuestionForm 
-              categoryId={selectedCategory === "all-categories" ? "" : selectedCategory} 
+              questionBankId={selectedQuestionBank}
+              categoryId={selectedCategory} 
               initialData={currentQuestion} 
               allCategories={categories}
               onFormSubmitted={handleFormSubmitted}

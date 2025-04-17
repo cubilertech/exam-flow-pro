@@ -40,9 +40,10 @@ interface ExamQuestion {
 
 interface QuestionsProps {
   examId: string;
+  questionBankId: string;
 }
 
-export function QuestionsSection({ examId }: QuestionsProps) {
+export function QuestionsSection({ examId, questionBankId }: QuestionsProps) {
   const [examQuestions, setExamQuestions] = useState<ExamQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,7 +120,7 @@ export function QuestionsSection({ examId }: QuestionsProps) {
         <h2 className="text-xl font-semibold">Questions</h2>
         <Dialog open={addQuestionOpen} onOpenChange={setAddQuestionOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button disabled={!questionBankId}>
               <Plus className="mr-2 h-4 w-4" /> Add Questions
             </Button>
           </DialogTrigger>
@@ -129,6 +130,7 @@ export function QuestionsSection({ examId }: QuestionsProps) {
             </DialogHeader>
             <AddQuestionDialog 
               examId={examId} 
+              questionBankId={questionBankId}
               onClose={() => setAddQuestionOpen(false)}
               onSuccess={() => {
                 setAddQuestionOpen(false);

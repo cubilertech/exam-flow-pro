@@ -32,21 +32,32 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          question_bank_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          question_bank_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          question_bank_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_question_bank_id_fkey"
+            columns: ["question_bank_id"]
+            isOneToOne: false
+            referencedRelation: "question_banks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exam_questions: {
         Row: {
@@ -89,6 +100,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          question_bank_id: string | null
           subscription_type: string | null
           title: string
           updated_at: string
@@ -97,6 +109,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          question_bank_id?: string | null
           subscription_type?: string | null
           title: string
           updated_at?: string
@@ -105,11 +118,20 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          question_bank_id?: string | null
           subscription_type?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exams_question_bank_id_fkey"
+            columns: ["question_bank_id"]
+            isOneToOne: false
+            referencedRelation: "question_banks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -144,6 +166,30 @@ export type Database = {
           phone_number?: string | null
           updated_at?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      question_banks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }

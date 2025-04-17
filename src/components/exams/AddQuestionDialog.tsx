@@ -32,10 +32,12 @@ interface Question {
 interface Category {
   id: string;
   name: string;
+  question_bank_id: string | null;
 }
 
 interface AddQuestionDialogProps {
   examId: string;
+  questionBankId: string;
   onClose: () => void;
   onSuccess: () => void;
   existingQuestionIds: string[];
@@ -43,6 +45,7 @@ interface AddQuestionDialogProps {
 
 export function AddQuestionDialog({ 
   examId, 
+  questionBankId,
   onClose, 
   onSuccess,
   existingQuestionIds
@@ -53,19 +56,22 @@ export function AddQuestionDialog({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all-categories");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchQuestions();
-    fetchCategories();
-  }, []);
+    if (questionBankId) {
+      fetchCategories();
+      fetchQuestions();
+    }
+  }, [questionBankId]);
 
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
+        .eq("question_bank_id", questionBankId)
         .order("name", { ascending: true });
 
       if (error) throw error;
@@ -84,6 +90,22 @@ export function AddQuestionDialog({
     try {
       setLoading(true);
       
+      // First, get categories for this question bank
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("question_bank_id", questionBankId);
+
+      if (categoriesError) throw categoriesError;
+      
+      if (!categoriesData || categoriesData.length === 0) {
+        setQuestions([]);
+        setLoading(false);
+        return;
+      }
+      
+      const categoryIds = categoriesData.map(cat => cat.id);
+      
       let query = supabase
         .from("questions")
         .select(`
@@ -95,11 +117,17 @@ export function AddQuestionDialog({
           category_id,
           category:category_id(id, name)
         `)
+        .in("category_id", categoryIds)
         .order("created_at", { ascending: false });
       
       // Filter out questions already in the exam
       if (existingQuestionIds.length > 0) {
         query = query.not('id', 'in', `(${existingQuestionIds.join(',')})`);
+      }
+      
+      // Apply category filter if selected
+      if (selectedCategory) {
+        query = query.eq("category_id", selectedCategory);
       }
       
       const { data, error } = await query;
@@ -117,6 +145,12 @@ export function AddQuestionDialog({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (questionBankId) {
+      fetchQuestions();
+    }
+  }, [selectedCategory]);
 
   const handleAddQuestions = async () => {
     if (selectedQuestionIds.length === 0) {
@@ -178,17 +212,13 @@ export function AddQuestionDialog({
     }
   };
 
-  // Filter questions based on search term and category
+  // Filter questions based on search term
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = 
       question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
       question.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = 
-      selectedCategory === "all-categories" || 
-      question.category_id === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   return (
@@ -211,7 +241,7 @@ export function AddQuestionDialog({
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all-categories">All Categories</SelectItem>
+            <SelectItem value="">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -250,7 +280,7 @@ export function AddQuestionDialog({
             ) : filteredQuestions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                  {searchTerm || selectedCategory !== "all-categories" ? "No questions match your filters" : "No questions available"}
+                  {searchTerm || selectedCategory ? "No questions match your filters" : "No questions available"}
                 </TableCell>
               </TableRow>
             ) : (

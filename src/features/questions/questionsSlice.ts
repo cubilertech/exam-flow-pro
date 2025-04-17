@@ -22,8 +22,16 @@ export interface Question {
 export interface Category {
   id: string;
   name: string;
-  examId: string;
+  examId?: string;
+  questionBankId?: string;
   questionCount: number;
+}
+
+export interface QuestionBank {
+  id: string;
+  name: string;
+  description: string | null;
+  categoryCount?: number;
 }
 
 export interface Exam {
@@ -33,12 +41,15 @@ export interface Exam {
   categoryCount: number;
   isSubscription?: boolean;
   subscriptionType?: string;
+  questionBankId?: string;
 }
 
 interface QuestionsState {
+  questionBanks: QuestionBank[];
   exams: Exam[];
   categories: Category[];
   questions: Question[];
+  currentQuestionBank: QuestionBank | null;
   currentExam: Exam | null;
   currentCategory: Category | null;
   currentQuestion: Question | null;
@@ -47,9 +58,11 @@ interface QuestionsState {
 }
 
 const initialState: QuestionsState = {
+  questionBanks: [],
   exams: [],
   categories: [],
   questions: [],
+  currentQuestionBank: null,
   currentExam: null,
   currentCategory: null,
   currentQuestion: null,
@@ -61,6 +74,21 @@ const questionsSlice = createSlice({
   name: 'questions',
   initialState,
   reducers: {
+    fetchQuestionBanksStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchQuestionBanksSuccess: (state, action: PayloadAction<QuestionBank[]>) => {
+      state.questionBanks = action.payload;
+      state.isLoading = false;
+    },
+    fetchQuestionBanksFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    setCurrentQuestionBank: (state, action: PayloadAction<QuestionBank | null>) => {
+      state.currentQuestionBank = action.payload;
+    },
     fetchExamsStart: (state) => {
       state.isLoading = true;
       state.error = null;
@@ -155,10 +183,53 @@ const questionsSlice = createSlice({
     filterQuestionsBySubscription: (state, action: PayloadAction<string>) => {
       state.currentExam = state.exams.find(e => e.subscriptionType === action.payload) || null;
     },
+    addQuestionBankStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    addQuestionBankSuccess: (state, action: PayloadAction<QuestionBank>) => {
+      state.questionBanks.push(action.payload);
+      state.isLoading = false;
+    },
+    addQuestionBankFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    updateQuestionBankStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    updateQuestionBankSuccess: (state, action: PayloadAction<QuestionBank>) => {
+      const index = state.questionBanks.findIndex(qb => qb.id === action.payload.id);
+      if (index !== -1) {
+        state.questionBanks[index] = action.payload;
+      }
+      state.isLoading = false;
+    },
+    updateQuestionBankFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    deleteQuestionBankStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    deleteQuestionBankSuccess: (state, action: PayloadAction<string>) => {
+      state.questionBanks = state.questionBanks.filter(qb => qb.id !== action.payload);
+      state.isLoading = false;
+    },
+    deleteQuestionBankFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
   },
 });
 
 export const {
+  fetchQuestionBanksStart,
+  fetchQuestionBanksSuccess,
+  fetchQuestionBanksFailure,
+  setCurrentQuestionBank,
   fetchExamsStart,
   fetchExamsSuccess,
   fetchExamsFailure,
@@ -182,6 +253,15 @@ export const {
   deleteQuestionFailure,
   setExamSubscriptionType,
   filterQuestionsBySubscription,
+  addQuestionBankStart,
+  addQuestionBankSuccess,
+  addQuestionBankFailure,
+  updateQuestionBankStart,
+  updateQuestionBankSuccess,
+  updateQuestionBankFailure,
+  deleteQuestionBankStart,
+  deleteQuestionBankSuccess,
+  deleteQuestionBankFailure,
 } = questionsSlice.actions;
 
 export default questionsSlice.reducer;

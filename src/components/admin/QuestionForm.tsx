@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
@@ -33,9 +32,11 @@ interface Question {
 interface Category {
   id: string;
   name: string;
+  questionBankId?: string;
 }
 
 interface QuestionFormProps {
+  questionBankId: string;
   categoryId: string;
   initialData: Question | null;
   allCategories: Category[];
@@ -43,6 +44,7 @@ interface QuestionFormProps {
 }
 
 export const QuestionForm = ({ 
+  questionBankId,
   categoryId, 
   initialData, 
   allCategories, 
@@ -50,6 +52,7 @@ export const QuestionForm = ({
 }: QuestionFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<Question>({
     id: initialData?.id || '',
     serialNumber: initialData?.serialNumber || '',
@@ -70,6 +73,44 @@ export const QuestionForm = ({
     initialData?.options.filter(o => o.isCorrect).length > 1 ? 'multiple' : 'single'
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (questionBankId) {
+      fetchCategories(questionBankId);
+    }
+  }, [questionBankId]);
+  
+  useEffect(() => {
+    if (allCategories && allCategories.length > 0) {
+      setCategories(allCategories);
+    }
+  }, [allCategories]);
+
+  const fetchCategories = async (questionBankId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("question_bank_id", questionBankId)
+        .order("name");
+
+      if (error) throw error;
+      
+      if (data) {
+        setCategories(data.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          questionBankId: cat.question_bank_id
+        })));
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load categories",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -317,7 +358,7 @@ export const QuestionForm = ({
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              {allCategories.map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>

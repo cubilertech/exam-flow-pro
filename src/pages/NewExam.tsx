@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +23,7 @@ import { QuestionsSection } from "@/components/exams/QuestionsSection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Define an interface for the exam data to include subscription_type
+// Define an interface for the exam data to include subscription_type and question_bank_id
 interface ExamData {
   id: string;
   title: string;
@@ -30,11 +31,19 @@ interface ExamData {
   created_at: string;
   updated_at: string;
   subscription_type: string | null;
+  question_bank_id: string | null;
+}
+
+interface QuestionBank {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title is too long"),
   description: z.string().optional(),
+  questionBankId: z.string().min(1, "Question Bank is required"),
   subscriptionType: z.string().optional(),
   isSubscription: z.boolean().default(false),
 });
@@ -51,29 +60,60 @@ const SUBSCRIPTION_TYPES = [
 
 const NewExam = () => {
   const { id } = useParams();
+  const location = useLocation();
   const isEditMode = !!id;
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Get question bank ID from query params
+  const queryParams = new URLSearchParams(location.search);
+  const qbankIdFromQuery = queryParams.get('qbankId');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
+      questionBankId: qbankIdFromQuery || "",
       subscriptionType: "",
       isSubscription: false,
     },
   });
 
   const isSubscription = form.watch("isSubscription");
+  const selectedQuestionBank = form.watch("questionBankId");
+
+  useEffect(() => {
+    fetchQuestionBanks();
+  }, []);
 
   useEffect(() => {
     if (isEditMode) {
       fetchExam();
     }
   }, [id]);
+
+  const fetchQuestionBanks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("question_banks")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      
+      setQuestionBanks(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load question banks",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchExam = async () => {
     try {
@@ -92,6 +132,7 @@ const NewExam = () => {
         form.reset({
           title: examData.title,
           description: examData.description || "",
+          questionBankId: examData.question_bank_id || "",
           subscriptionType: examData.subscription_type || "",
           isSubscription: !!examData.subscription_type,
         });
@@ -115,6 +156,7 @@ const NewExam = () => {
       const examData = {
         title: values.title,
         description: values.description,
+        question_bank_id: values.questionBankId,
         subscription_type: values.isSubscription ? values.subscriptionType : null,
         updated_at: new Date().toISOString(),
       };
@@ -188,10 +230,35 @@ const NewExam = () => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
+                name="questionBankId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Question Bank *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select question bank" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {questionBanks.map((qbank) => (
+                          <SelectItem key={qbank.id} value={qbank.id}>
+                            {qbank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Title *</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter exam title" {...field} />
                     </FormControl>
@@ -264,7 +331,7 @@ const NewExam = () => {
                 />
               )}
               
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || !selectedQuestionBank}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -279,7 +346,7 @@ const NewExam = () => {
         </div>
         
         {isEditMode && (
-          <QuestionsSection examId={id} />
+          <QuestionsSection examId={id} questionBankId={selectedQuestionBank} />
         )}
       </div>
     </div>
