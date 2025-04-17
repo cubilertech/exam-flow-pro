@@ -8,13 +8,13 @@ import { mockQuestions } from "@/data/mockQuestions";
 
 export const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { exams } = useAppSelector((state) => state.questions);
-  const { flaggedQuestions, testResults } = useAppSelector((state) => state.study);
+  const { exams = [], questionBanks = [] } = useAppSelector((state) => state.questions);
+  const { flaggedQuestions = [], testResults = [] } = useAppSelector((state) => state.study);
   
   return (
     <div className="container max-w-7xl mx-auto py-10 px-4 md:px-6">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold mb-2">Welcome, {user?.username}!</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome, {user?.username || 'User'}!</h1>
         <p className="text-muted-foreground">
           Track your progress and continue your exam preparation
         </p>
@@ -26,16 +26,16 @@ export const Dashboard = () => {
             <BookOpen className="h-8 w-8 text-primary" />
           </div>
           <CardHeader>
-            <CardTitle>Study Mode</CardTitle>
+            <CardTitle>Question Banks</CardTitle>
             <CardDescription>Browse and learn at your own pace</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{exams.length}</p>
-            <p className="text-sm text-muted-foreground">Available exams</p>
+            <p className="text-3xl font-bold">{questionBanks.length}</p>
+            <p className="text-sm text-muted-foreground">Available question banks</p>
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/study">Start Studying</Link>
+              <Link to="/questions">Browse Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -54,7 +54,7 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline">
-              <Link to="/test">Take a Test</Link>
+              <Link to="/my-exams">My Exams</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -84,7 +84,7 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline">
-              <Link to="/analytics">View Analytics</Link>
+              <Link to="/my-exams">View Analytics</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -94,39 +94,39 @@ export const Dashboard = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Recent Exams</CardTitle>
+              <CardTitle>Question Banks</CardTitle>
               <BookMarked className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            {exams.length > 0 ? (
+            {questionBanks && questionBanks.length > 0 ? (
               <ul className="space-y-2">
-                {exams.slice(0, 5).map((exam) => (
+                {questionBanks.slice(0, 5).map((qb) => (
                   <li
-                    key={exam.id}
+                    key={qb.id}
                     className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
                   >
                     <div>
-                      <p className="font-medium">{exam.title}</p>
+                      <p className="font-medium">{qb.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {exam.categoryCount} categories
+                        {qb.categoryCount || 0} categories
                       </p>
                     </div>
                     <Button size="sm" variant="ghost" asChild>
-                      <Link to={`/study?exam=${exam.id}`}>Study</Link>
+                      <Link to={`/questions/${qb.id}`}>View</Link>
                     </Button>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="text-center p-6">
-                <p className="text-muted-foreground">No exams available yet</p>
+                <p className="text-muted-foreground">No question banks available yet</p>
               </div>
             )}
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/study">View All Exams</Link>
+              <Link to="/questions">View All Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -139,7 +139,7 @@ export const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {flaggedQuestions.length > 0 ? (
+            {flaggedQuestions && flaggedQuestions.length > 0 ? (
               <ul className="space-y-2">
                 {flaggedQuestions.slice(0, 5).map((flagged) => {
                   const question = mockQuestions.find(
@@ -159,7 +159,7 @@ export const Dashboard = () => {
                         </p>
                       </div>
                       <Button size="sm" variant="ghost" asChild>
-                        <Link to={`/study?question=${question.id}`}>Review</Link>
+                        <Link to={`/exam/take?question=${question.id}`}>Review</Link>
                       </Button>
                     </li>
                   ) : null;
@@ -168,7 +168,7 @@ export const Dashboard = () => {
             ) : (
               <div className="text-center p-6">
                 <p className="text-muted-foreground">
-                  No flagged questions yet. Flag important questions during study
+                  No flagged questions yet. Flag important questions during exams
                   to review them later.
                 </p>
               </div>
@@ -176,7 +176,7 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/study?flagged=true">View All Flagged</Link>
+              <Link to="/my-exams">View My Exams</Link>
             </Button>
           </CardFooter>
         </Card>

@@ -35,10 +35,18 @@ export interface QuestionBank {
   categoryCount?: number;
 }
 
+export interface Exam {
+  id: string;
+  title: string;
+  description?: string;
+  categoryCount: number;
+}
+
 interface QuestionsState {
   questionBanks: QuestionBank[];
   categories: Category[];
   questions: Question[];
+  exams: Exam[]; // Add exams array
   currentQuestionBank: QuestionBank | null;
   currentCategory: Category | null;
   currentQuestion: Question | null;
@@ -51,6 +59,7 @@ const initialState: QuestionsState = {
   questionBanks: [],
   categories: [],
   questions: [],
+  exams: [], // Initialize empty exams array
   currentQuestionBank: null,
   currentCategory: null,
   currentQuestion: null,

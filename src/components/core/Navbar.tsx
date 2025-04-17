@@ -1,6 +1,5 @@
 
 import * as React from "react";
-import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/features/auth/authSlice";
@@ -15,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Book, TestTube, BarChart, HelpCircle, LogOut, ChevronDown } from "lucide-react";
+import { User, Book, TestTube, HelpCircle, LogOut, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
 
@@ -57,16 +56,10 @@ export const Navbar = () => {
               {!isAdmin && (
                 <>
                   <Link
-                    to="/study"
+                    to="/my-exams"
                     className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    Study Mode
-                  </Link>
-                  <Link
-                    to="/exams"
-                    className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    Exams
+                    My Exams
                   </Link>
                 </>
               )}
@@ -146,15 +139,9 @@ export const Navbar = () => {
                 {!isAdmin && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link to="/study" className="flex items-center cursor-pointer">
-                        <Book className="mr-2 h-4 w-4" />
-                        <span>Study Mode</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/exams" className="flex items-center cursor-pointer">
+                      <Link to="/my-exams" className="flex items-center cursor-pointer">
                         <TestTube className="mr-2 h-4 w-4" />
-                        <span>Exams</span>
+                        <span>My Exams</span>
                       </Link>
                     </DropdownMenuItem>
                   </>
