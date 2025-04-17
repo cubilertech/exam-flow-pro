@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
@@ -13,13 +14,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Book, TestTube, BarChart, Settings, LogOut } from "lucide-react";
+import { User, Book, TestTube, BarChart, HelpCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const isAdmin = user?.isAdmin || false;
 
   const handleLogout = async () => {
     try {
@@ -51,23 +53,17 @@ export const Navbar = () => {
                 Study Mode
               </Link>
               <Link
-                to="/test"
+                to="/exams"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Test Mode
+                Exams
               </Link>
-              <Link
-                to="/analytics"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Analytics
-              </Link>
-              {user?.isAdmin && (
+              {isAdmin && (
                 <Link
-                  to="/admin"
+                  to="/questions"
                   className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  Admin
+                  Question Banks
                 </Link>
               )}
             </>
@@ -101,22 +97,16 @@ export const Navbar = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/test" className="flex items-center cursor-pointer">
+                  <Link to="/exams" className="flex items-center cursor-pointer">
                     <TestTube className="mr-2 h-4 w-4" />
-                    <span>Test Mode</span>
+                    <span>Exams</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/analytics" className="flex items-center cursor-pointer">
-                    <BarChart className="mr-2 h-4 w-4" />
-                    <span>Analytics</span>
-                  </Link>
-                </DropdownMenuItem>
-                {user?.isAdmin && (
+                {isAdmin && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="flex items-center cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Admin</span>
+                    <Link to="/questions" className="flex items-center cursor-pointer">
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Question Banks</span>
                     </Link>
                   </DropdownMenuItem>
                 )}

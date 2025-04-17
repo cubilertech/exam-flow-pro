@@ -13,6 +13,13 @@ import {
   SheetHeader, 
   SheetTitle 
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { 
   Card, 
   CardHeader, 
@@ -22,6 +29,18 @@ import {
 } from "@/components/ui/card";
 import { Plus, Search, ArrowLeft, PenSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Question {
   id: string;
@@ -51,6 +70,11 @@ interface QuestionBank {
   description: string | null;
 }
 
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  description: z.string().optional(),
+});
+
 const QuestionBankDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -60,9 +84,19 @@ const QuestionBankDetail = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
 
   useEffect(() => {
     if (id) {
@@ -70,6 +104,15 @@ const QuestionBankDetail = () => {
       fetchCategories();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (questionBank) {
+      form.reset({
+        name: questionBank.name,
+        description: questionBank.description || "",
+      });
+    }
+  }, [questionBank, form]);
 
   useEffect(() => {
     fetchQuestions();
@@ -208,6 +251,41 @@ const QuestionBankDetail = () => {
     fetchQuestions();
   };
 
+  const onEditQuestionBank = async (values: z.infer<typeof formSchema>) => {
+    if (!id) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      const { error } = await supabase
+        .from("question_banks")
+        .update({
+          name: values.name,
+          description: values.description || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Question bank updated successfully",
+      });
+      
+      setEditDialogOpen(false);
+      fetchQuestionBank();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update question bank",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const filteredQuestions = questions.filter(question => 
     question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
     question.serialNumber.toString().includes(searchTerm)
@@ -231,7 +309,10 @@ const QuestionBankDetail = () => {
         <h1 className="text-3xl font-bold flex-1">
           {questionBank?.name}
         </h1>
-        <Button variant="outline">
+        <Button 
+          variant="outline"
+          onClick={() => setEditDialogOpen(true)}
+        >
           <PenSquare className="mr-2 h-4 w-4" />
           Edit Bank
         </Button>
@@ -321,6 +402,68 @@ const QuestionBankDetail = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Question Bank</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditQuestionBank)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter question bank name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter description (optional)" 
+                        className="resize-none" 
+                        {...field} 
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="pt-4">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => setEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Updating..." : "Update Question Bank"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

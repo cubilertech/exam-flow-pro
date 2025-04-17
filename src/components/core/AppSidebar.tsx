@@ -1,6 +1,7 @@
 
-import { Home, BookOpen, FolderTree, Users, Settings, BookCheck, HelpCircle } from "lucide-react";
+import { Home, BookOpen, BookCheck, HelpCircle } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
+import { useAppSelector } from "@/lib/hooks";
 import {
   Sidebar,
   SidebarContent,
@@ -14,8 +15,11 @@ import {
 
 export function AppSidebar() {
   const location = useLocation();
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.isAdmin || false;
   
-  const menuItems = [
+  // Define menu items based on role
+  const studentMenuItems = [
     {
       title: "Dashboard",
       url: "/",
@@ -27,26 +31,25 @@ export function AppSidebar() {
       icon: BookOpen,
     },
     {
-      title: "Categories",
-      url: "/categories",
-      icon: FolderTree,
-    },
-    {
       title: "Exams",
       url: "/exams",
       icon: BookCheck,
     },
+  ];
+  
+  // Admin-only menu items
+  const adminMenuItems = [
     {
-      title: "Questions",
+      title: "Question Banks",
       url: "/questions",
       icon: HelpCircle,
     },
-    {
-      title: "Admin",
-      url: "/admin",
-      icon: Settings,
-    },
   ];
+  
+  // Combine the appropriate menu items based on user role
+  const menuItems = isAdmin 
+    ? [...studentMenuItems, ...adminMenuItems]
+    : studentMenuItems;
 
   return (
     <Sidebar>
