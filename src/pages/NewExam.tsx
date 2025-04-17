@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { z } from "zod";
@@ -68,7 +67,6 @@ const NewExam = () => {
     },
   });
 
-  // Watch the isSubscription value to conditionally show subscription type
   const isSubscription = form.watch("isSubscription");
 
   useEffect(() => {
@@ -90,7 +88,6 @@ const NewExam = () => {
       if (error) throw error;
       
       if (data) {
-        // Type assert data as ExamData to ensure TypeScript recognizes subscription_type
         const examData = data as ExamData;
         form.reset({
           title: examData.title,
@@ -123,7 +120,6 @@ const NewExam = () => {
       };
       
       if (isEditMode) {
-        // Update existing exam
         const { error } = await supabase
           .from("exams")
           .update(examData)
@@ -136,7 +132,6 @@ const NewExam = () => {
           description: "Exam updated successfully",
         });
       } else {
-        // Create new exam
         const { data, error } = await supabase
           .from("exams")
           .insert(examData)
@@ -149,7 +144,6 @@ const NewExam = () => {
           description: "Exam created successfully",
         });
         
-        // Navigate to edit page for the new exam
         if (data && data.length > 0) {
           navigate(`/exams/${data[0].id}/edit`);
         } else {
