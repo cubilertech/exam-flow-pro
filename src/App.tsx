@@ -16,6 +16,8 @@ import Register from "@/pages/Register";
 import Study from "@/pages/Study";
 import Admin from "@/pages/Admin";
 import Categories from "@/pages/Categories";
+import Exams from "@/pages/Exams";
+import NewExam from "@/pages/NewExam";
 import NotFound from "@/pages/NotFound";
 
 // Create a client
@@ -49,6 +51,21 @@ const App = () => {
                     <Route path="/categories" element={
                       <PrivateRoute requireAdmin>
                         <Categories />
+                      </PrivateRoute>
+                    } />
+                    <Route path="/exams" element={
+                      <PrivateRoute requireAdmin>
+                        <Exams />
+                      </PrivateRoute>
+                    } />
+                    <Route path="/exams/new" element={
+                      <PrivateRoute requireAdmin>
+                        <NewExam />
+                      </PrivateRoute>
+                    } />
+                    <Route path="/exams/:id/edit" element={
+                      <PrivateRoute requireAdmin>
+                        <NewExam />
                       </PrivateRoute>
                     } />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
