@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { MainLayout } from "./layouts/MainLayout";
 import QuestionBank from "./pages/QuestionBank";
+import QuestionBankDetail from "./pages/QuestionBankDetail";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/exams/new" element={<PrivateRoute><MainLayout><NewExam/></MainLayout></PrivateRoute>}/>
             <Route path="/exams/:id/edit" element={<PrivateRoute><MainLayout><NewExam/></MainLayout></PrivateRoute>}/>
             <Route path="/questions" element={<PrivateRoute><MainLayout><QuestionBank/></MainLayout></PrivateRoute>}/>
+            <Route path="/questions/:id" element={<PrivateRoute><MainLayout><QuestionBankDetail/></MainLayout></PrivateRoute>}/>
             <Route path="*" element={<NotFound/>}/>
           </Routes>
         </Router>

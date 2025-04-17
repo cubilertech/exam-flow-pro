@@ -1,18 +1,28 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QuestionsList } from "@/components/admin/QuestionsList";
 import { QuestionForm } from "@/components/admin/QuestionForm";
+import { QuestionBankModal } from "@/components/admin/QuestionBankModal";
 import { 
   Sheet, 
   SheetContent, 
   SheetHeader, 
   SheetTitle 
 } from "@/components/ui/sheet";
-import { Plus, Search } from "lucide-react";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent, 
+  CardFooter 
+} from "@/components/ui/card";
+import { Plus, Search, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -43,9 +53,12 @@ interface QuestionBank {
   id: string;
   name: string;
   description: string | null;
+  categoryCount?: number;
+  questionCount?: number;
 }
 
 const QuestionBank = () => {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [questionBanks, setQuestionBanks] = useState<QuestionBank[]>([]);
@@ -53,6 +66,7 @@ const QuestionBank = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [bankModalOpen, setBankModalOpen] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -84,9 +98,48 @@ const QuestionBank = () => {
       if (error) throw error;
       
       if (data) {
-        setQuestionBanks(data);
-        if (data.length > 0) {
-          setSelectedQuestionBank(data[0].id);
+        // Get category counts for each question bank
+        const banksWithCounts = await Promise.all(data.map(async (bank) => {
+          // Get category count
+          const { count: categoryCount, error: catError } = await supabase
+            .from("categories")
+            .select("*", { count: 'exact', head: true })
+            .eq("question_bank_id", bank.id);
+          
+          if (catError) throw catError;
+          
+          // Get question count via categories
+          const { data: cats } = await supabase
+            .from("categories")
+            .select("id")
+            .eq("question_bank_id", bank.id);
+            
+          if (cats && cats.length > 0) {
+            const categoryIds = cats.map(c => c.id);
+            const { count: questionCount, error: qError } = await supabase
+              .from("questions")
+              .select("*", { count: 'exact', head: true })
+              .in("category_id", categoryIds);
+            
+            if (qError) throw qError;
+            
+            return {
+              ...bank,
+              categoryCount: categoryCount || 0,
+              questionCount: questionCount || 0
+            };
+          }
+          
+          return {
+            ...bank,
+            categoryCount: categoryCount || 0,
+            questionCount: 0
+          };
+        }));
+        
+        setQuestionBanks(banksWithCounts);
+        if (banksWithCounts.length > 0 && !selectedQuestionBank) {
+          setSelectedQuestionBank(banksWithCounts[0].id);
         }
       }
     } catch (error: any) {
@@ -208,6 +261,14 @@ const QuestionBank = () => {
     fetchQuestions();
   };
 
+  const handleBankCreated = () => {
+    fetchQuestionBanks();
+  };
+
+  const viewBankDetails = (bankId: string) => {
+    navigate(`/questions/${bankId}`);
+  };
+
   const filteredQuestions = questions.filter(question => 
     question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
     question.serialNumber.toString().includes(searchTerm)
@@ -215,12 +276,65 @@ const QuestionBank = () => {
 
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Question Bank</h1>
+      <h1 className="text-3xl font-bold mb-6">Question Banks</h1>
 
-      <Tabs defaultValue="questions" className="space-y-6">
+      <Tabs defaultValue="banks" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="banks">Banks</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="banks">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-medium">All Question Banks</h2>
+            <Button onClick={() => setBankModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> New Question Bank
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {questionBanks.map((bank) => (
+              <Card key={bank.id} className="transition-shadow hover:shadow-md">
+                <CardHeader>
+                  <CardTitle>{bank.name}</CardTitle>
+                  {bank.description && (
+                    <CardDescription className="line-clamp-2">{bank.description}</CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="flex space-x-4 text-sm">
+                    <div>
+                      <span className="font-medium">{bank.categoryCount}</span> Categories
+                    </div>
+                    <div>
+                      <span className="font-medium">{bank.questionCount}</span> Questions
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-auto"
+                    onClick={() => viewBankDetails(bank.id)}
+                  >
+                    View Details
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+
+            {questionBanks.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center p-8 bg-muted rounded-md">
+                <p className="mb-4 text-muted-foreground">No question banks found</p>
+                <Button onClick={() => setBankModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Create Your First Question Bank
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
 
         <TabsContent value="questions">
           <div className="bg-card rounded-lg border p-6">
@@ -296,6 +410,12 @@ const QuestionBank = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <QuestionBankModal 
+        open={bankModalOpen} 
+        onOpenChange={setBankModalOpen} 
+        onSuccess={handleBankCreated}
+      />
     </div>
   );
 };
