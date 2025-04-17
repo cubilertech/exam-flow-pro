@@ -29,7 +29,8 @@ const Admin = () => {
     // Load mock data on component mount
     dispatch(fetchExamsSuccess(mockExams));
     dispatch(fetchCategoriesSuccess(mockCategories));
-    dispatch(fetchQuestionsSuccess(mockQuestions));
+    // Cast mockQuestions as Question[] to ensure type compatibility
+    dispatch(fetchQuestionsSuccess(mockQuestions as Question[]));
   }, [dispatch]);
 
   const filteredCategories = categories.filter(

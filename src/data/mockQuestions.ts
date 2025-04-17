@@ -13,7 +13,7 @@ export const mockQuestions = [
     explanation: "Mean is a measure of central tendency. Standard deviation, variance, and range are measures of dispersion.",
     categoryId: "cat1",
     tags: ["Epidemiology", "Biostatistics"],
-    difficulty: "easy",
+    difficulty: "easy" as const,
     correctAnswerRate: 85
   },
   {
@@ -29,7 +29,7 @@ export const mockQuestions = [
     explanation: "Case-control studies are designed to identify potential risk factors for a disease by comparing cases (people with the disease) to controls (people without the disease).",
     categoryId: "cat1",
     tags: ["Epidemiology", "Study Design"],
-    difficulty: "medium",
+    difficulty: "medium" as const,
     correctAnswerRate: 55
   },
   {
@@ -45,7 +45,7 @@ export const mockQuestions = [
     explanation: "A Deque (Double-ended queue) allows insertions and deletions at both ends in constant time O(1).",
     categoryId: "cat2",
     tags: ["Data Structures", "Algorithms"],
-    difficulty: "medium",
+    difficulty: "medium" as const,
     correctAnswerRate: 45
   },
   {
@@ -61,7 +61,7 @@ export const mockQuestions = [
     explanation: "An operating system manages computer hardware and software resources including memory, processes, and devices. It does not compile source code, which is the job of a compiler.",
     categoryId: "cat3",
     tags: ["Operating Systems"],
-    difficulty: "hard",
+    difficulty: "hard" as const,
     correctAnswerRate: 25,
     imageUrl: "https://example.com/os-diagram.jpg"
   },
@@ -78,7 +78,7 @@ export const mockQuestions = [
     explanation: "The margin property in CSS is used to create space around elements, outside of any defined borders.",
     categoryId: "cat4",
     tags: ["HTML & CSS"],
-    difficulty: "easy",
+    difficulty: "easy" as const,
     correctAnswerRate: 78
   },
   {
@@ -94,7 +94,7 @@ export const mockQuestions = [
     explanation: "The push() method adds one or more elements to the end of an array and returns the new length of the array.",
     categoryId: "cat5",
     tags: ["JavaScript"],
-    difficulty: "easy",
+    difficulty: "easy" as const,
     correctAnswerRate: 90
   },
   {
@@ -110,7 +110,7 @@ export const mockQuestions = [
     explanation: "REST APIs are stateless, follow client-server architecture, and support cacheable responses. RESTful APIs can use various formats like JSON, XML, etc., but don't specifically require XML.",
     categoryId: "cat6",
     tags: ["Backend Development", "API"],
-    difficulty: "medium",
+    difficulty: "medium" as const,
     correctAnswerRate: 62
   },
   {
@@ -126,7 +126,7 @@ export const mockQuestions = [
     explanation: "The WHERE clause in SQL is used to filter records based on a specified condition. It specifies which records to select from the database.",
     categoryId: "cat7",
     tags: ["SQL", "Databases"],
-    difficulty: "easy",
+    difficulty: "easy" as const,
     correctAnswerRate: 88
   }
 ];
