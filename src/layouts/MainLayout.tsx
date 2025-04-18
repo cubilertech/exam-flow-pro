@@ -4,6 +4,7 @@ import { Navbar } from "@/components/core/Navbar";
 import { useAppSelector } from "@/lib/hooks";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/core/AppSidebar";
+import { useLocation } from "react-router-dom";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -11,13 +12,15 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col w-full bg-background">
         <Navbar />
         <div className="flex flex-1">
-          <AppSidebar />
+          {!isHomePage && <AppSidebar />}
           <SidebarInset className="flex-1">
             <main className="flex-1 p-4">
               {children}
