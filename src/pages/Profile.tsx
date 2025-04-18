@@ -1,14 +1,15 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppSelector } from '@/lib/hooks';
 import { MainLayout } from '@/layouts/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Globe } from 'lucide-react';
-import { ProfileForm } from '@/components/profile/ProfileForm';
+import { Button } from '@/components/ui/button';
+import { User, Globe, Pencil } from 'lucide-react';
+import { EditProfileModal } from '@/components/profile/EditProfileModal';
 
 const Profile = () => {
   const { user } = useAppSelector((state) => state.auth);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   if (!user) {
     return (
@@ -31,14 +32,24 @@ const Profile = () => {
         <div className="flex flex-col space-y-8">
           <Card>
             <CardHeader>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10">
-                  <User className="h-8 w-8 text-primary" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl">{user.username || 'User'}</CardTitle>
+                    <CardDescription>{user.email}</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-2xl">{user.username || 'User'}</CardTitle>
-                  <CardDescription>{user.email}</CardDescription>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -52,28 +63,36 @@ const Profile = () => {
                         {user.isAdmin ? 'Admin' : 'Student'}
                       </Badge>
                     </div>
-                    {!user.isAdmin && (
-                      <div className="flex items-center">
-                        <span className="w-24 text-muted-foreground">Country:</span>
-                        <span className="flex items-center">
-                          <Globe className="h-4 w-4 mr-2" />
-                          {user.country || 'Not specified'}
-                        </span>
-                      </div>
-                    )}
+                    <div className="flex items-center">
+                      <span className="w-24 text-muted-foreground">Country:</span>
+                      <span className="flex items-center">
+                        <Globe className="h-4 w-4 mr-2" />
+                        {user.country || 'Not specified'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Profile Edit Form */}
-                <div className="mt-8">
-                  <h3 className="text-lg font-medium mb-4">Edit Profile</h3>
-                  <ProfileForm />
-                </div>
+                {/* Show subscription section only for students */}
+                {!user.isAdmin && (
+                  <div className="mt-8">
+                    <h3 className="text-lg font-medium mb-4">My Subscriptions</h3>
+                    <div>
+                      <p>Here you can manage your subscriptions.</p>
+                      {/* Add subscription content here */}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <EditProfileModal 
+        open={isEditModalOpen} 
+        onOpenChange={setIsEditModalOpen} 
+      />
     </MainLayout>
   );
 };

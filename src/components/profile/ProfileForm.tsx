@@ -31,7 +31,11 @@ interface ProfileFormData {
   city?: string;
 }
 
-export const ProfileForm = () => {
+interface ProfileFormProps {
+  onSuccess?: () => void;
+}
+
+export const ProfileForm = ({ onSuccess }: ProfileFormProps) => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
@@ -62,6 +66,7 @@ export const ProfileForm = () => {
 
       dispatch(updateProfileSuccess(data));
       toast.success('Profile updated successfully');
+      onSuccess?.();
     } catch (error: any) {
       toast.error('Failed to update profile');
     }
