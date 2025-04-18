@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/lib/hooks';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,10 +15,11 @@ import { toast } from 'sonner';
 import { User, Globe, Book, CheckCircle, Lock } from 'lucide-react';
 
 const Profile = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, isAdmin } = useAppSelector((state) => state.auth);
   const { subscriptions, subscribeToQuestionBank, activeQuestionBankId, setActiveQuestionBankById } = useQuestionBankSubscriptions();
   const [availableQuestionBanks, setAvailableQuestionBanks] = useState<QuestionBank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchAvailableQuestionBanks = async () => {
@@ -77,14 +77,19 @@ const Profile = () => {
         <div className="flex flex-col space-y-8">
           <Card>
             <CardHeader>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10">
-                  <User className="h-8 w-8 text-primary" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10">
+                    <User className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl">{user.username || 'User'}</CardTitle>
+                    <CardDescription>{user.email}</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-2xl">{user.username || 'User'}</CardTitle>
-                  <CardDescription>{user.email}</CardDescription>
-                </div>
+                <Button onClick={() => setEditModalOpen(true)} variant="outline" size="sm">
+                  Edit Profile
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -136,145 +141,148 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="subscriptions">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="subscriptions">My Subscriptions</TabsTrigger>
-              <TabsTrigger value="available">Available Question Banks</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="subscriptions" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Book className="h-5 w-5 mr-2" />
-                    Subscribed Question Banks
-                  </CardTitle>
-                  <CardDescription>
-                    You are currently subscribed to {subscriptions.length} question bank(s).
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {subscriptions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <Lock className="h-12 w-12 text-muted-foreground mb-2" />
-                      <p className="text-muted-foreground mb-4">You haven't subscribed to any question banks yet.</p>
-                      <Button variant="outline" onClick={() => document.getElementById('available-tab-trigger')?.click()}>
-                        Browse Available Question Banks
-                      </Button>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {subscriptions.map((bank) => (
-                          <TableRow key={bank.id}>
-                            <TableCell className="font-medium">{bank.name}</TableCell>
-                            <TableCell>{bank.description || 'No description available'}</TableCell>
-                            <TableCell>
-                              {bank.id === activeQuestionBankId ? (
-                                <Badge className="flex items-center bg-green-500 text-white">
-                                  <CheckCircle className="h-3 w-3 mr-1" /> Active
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline">Subscribed</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {bank.id !== activeQuestionBankId && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setActiveQuestionBankById(bank.id)}
-                                >
-                                  Set Active
-                                </Button>
-                              )}
-                            </TableCell>
+          {!isAdmin && (
+            <Tabs defaultValue="subscriptions">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="subscriptions">My Subscriptions</TabsTrigger>
+                <TabsTrigger value="available">Available Question Banks</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="subscriptions" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Book className="h-5 w-5 mr-2" />
+                      Subscribed Question Banks
+                    </CardTitle>
+                    <CardDescription>
+                      You are currently subscribed to {subscriptions.length} question bank(s).
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {subscriptions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <Lock className="h-12 w-12 text-muted-foreground mb-2" />
+                        <p className="text-muted-foreground mb-4">You haven't subscribed to any question banks yet.</p>
+                        <Button variant="outline" onClick={() => document.getElementById('available-tab-trigger')?.click()}>
+                          Browse Available Question Banks
+                        </Button>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Action</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="available" className="mt-4" id="available-tab">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Book className="h-5 w-5 mr-2" />
-                    Available Question Banks
-                  </CardTitle>
-                  <CardDescription>
-                    Subscribe to question banks to access their content.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="flex justify-center py-8">
-                      <p>Loading available question banks...</p>
-                    </div>
-                  ) : availableQuestionBanks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <CheckCircle className="h-12 w-12 text-primary mb-2" />
-                      <p className="text-muted-foreground">You've subscribed to all available question banks!</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {availableQuestionBanks.map((bank) => (
-                        <Card key={bank.id} className="border border-border">
-                          <CardHeader>
-                            <CardTitle className="text-lg">{bank.name}</CardTitle>
-                            <CardDescription>
-                              {bank.description || 'No description available'}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardFooter className="flex justify-end">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="default" size="sm">Subscribe</Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Subscribe to {bank.name}</DialogTitle>
-                                  <DialogDescription>
-                                    You are about to subscribe to this question bank. This will give you access to all its content.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4">
-                                  <p className="text-muted-foreground">{bank.description || 'No description available'}</p>
-                                </div>
-                                <DialogFooter>
-                                  <DialogClose asChild>
-                                    <Button variant="outline">Cancel</Button>
-                                  </DialogClose>
+                        </TableHeader>
+                        <TableBody>
+                          {subscriptions.map((bank) => (
+                            <TableRow key={bank.id}>
+                              <TableCell className="font-medium">{bank.name}</TableCell>
+                              <TableCell>{bank.description || 'No description available'}</TableCell>
+                              <TableCell>
+                                {bank.id === activeQuestionBankId ? (
+                                  <Badge className="flex items-center bg-green-500 text-white">
+                                    <CheckCircle className="h-3 w-3 mr-1" /> Active
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">Subscribed</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {bank.id !== activeQuestionBankId && (
                                   <Button 
-                                    onClick={() => handleSubscribe(bank.id)}
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setActiveQuestionBankById(bank.id)}
                                   >
-                                    Confirm Subscription
+                                    Set Active
                                   </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          </CardFooter>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="available" className="mt-4" id="available-tab">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Book className="h-5 w-5 mr-2" />
+                      Available Question Banks
+                    </CardTitle>
+                    <CardDescription>
+                      Subscribe to question banks to access their content.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="flex justify-center py-8">
+                        <p>Loading available question banks...</p>
+                      </div>
+                    ) : availableQuestionBanks.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <CheckCircle className="h-12 w-12 text-primary mb-2" />
+                        <p className="text-muted-foreground">You've subscribed to all available question banks!</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {availableQuestionBanks.map((bank) => (
+                          <Card key={bank.id} className="border border-border">
+                            <CardHeader>
+                              <CardTitle className="text-lg">{bank.name}</CardTitle>
+                              <CardDescription>
+                                {bank.description || 'No description available'}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardFooter className="flex justify-end">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="default" size="sm">Subscribe</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Subscribe to {bank.name}</DialogTitle>
+                                    <DialogDescription>
+                                      You are about to subscribe to this question bank. This will give you access to all its content.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="py-4">
+                                    <p className="text-muted-foreground">{bank.description || 'No description available'}</p>
+                                  </div>
+                                  <DialogFooter>
+                                    <DialogClose asChild>
+                                      <Button variant="outline">Cancel</Button>
+                                    </DialogClose>
+                                    <Button 
+                                      onClick={() => handleSubscribe(bank.id)}
+                                    >
+                                      Confirm Subscription
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
+      <EditProfileModal open={editModalOpen} onOpenChange={setEditModalOpen} />
     </MainLayout>
   );
 };

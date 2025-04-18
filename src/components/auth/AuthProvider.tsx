@@ -11,9 +11,10 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const dispatch = useAppDispatch();
   const [isInitialized, setIsInitialized] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
@@ -21,10 +22,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (event === 'SIGNED_IN' && session) {
           const { user } = session;
           
-          // Use setTimeout to prevent blocking the auth state change
           setTimeout(async () => {
             try {
-              // Fetch user profile data
               const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
@@ -35,17 +34,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 console.error('Error fetching profile:', profileError);
               }
               
-              // If profile exists, use it; otherwise create minimal profile
               const profile = profileData || { username: user.email?.split('@')[0] || 'user' };
               
-              // Check if the user is an admin
               const { data: adminData } = await supabase
                 .from('admin_users')
                 .select('*')
                 .eq('user_id', user.id)
                 .maybeSingle();
               
-              console.log('Dispatching login success with profile data');
               dispatch(loginSuccess({
                 id: user.id,
                 email: user.email || '',
@@ -56,6 +52,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 city: 'city' in profile ? profile.city || '' : '',
                 isAdmin: !!adminData
               }));
+
+              // Redirect based on role
+              if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
+                if (!!adminData) {
+                  navigate('/questions');
+                } else {
+                  navigate('/my-exams');
+                }
+              }
             } catch (error) {
               console.error('Error processing auth state change:', error);
             }
