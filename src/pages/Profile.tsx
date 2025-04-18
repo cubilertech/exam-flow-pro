@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/lib/hooks';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,9 +14,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { User, Globe, Book, CheckCircle, Lock } from 'lucide-react';
+import { EditProfileModal } from '@/components/profile/EditProfileModal';
 
 const Profile = () => {
-  const { user, isAdmin } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.isAdmin || false;
   const { subscriptions, subscribeToQuestionBank, activeQuestionBankId, setActiveQuestionBankById } = useQuestionBankSubscriptions();
   const [availableQuestionBanks, setAvailableQuestionBanks] = useState<QuestionBank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,8 +130,8 @@ const Profile = () => {
                   <div className="space-y-2">
                     <div className="flex items-center">
                       <span className="w-24 text-muted-foreground">Role:</span>
-                      <Badge variant={user.isAdmin ? "destructive" : "default"}>
-                        {user.isAdmin ? 'Admin' : 'Student'}
+                      <Badge variant={isAdmin ? "destructive" : "default"}>
+                        {isAdmin ? 'Admin' : 'Student'}
                       </Badge>
                     </div>
                     <div className="flex items-center">

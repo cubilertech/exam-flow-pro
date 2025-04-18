@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '@/lib/hooks';
 import { loginSuccess, logout } from '@/features/auth/authSlice';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,7 +127,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authListener.subscription.unsubscribe();
       }
     };
-  }, [dispatch]);
+  }, [dispatch, navigate, location]);
 
   // Return a loading indicator if auth is not initialized yet
   if (!isInitialized) {
