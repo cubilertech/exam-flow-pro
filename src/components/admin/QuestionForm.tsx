@@ -212,20 +212,29 @@ export const QuestionForm = ({
     try {
       setIsUploading(true);
       
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('question-images');
+      // First check if bucket exists, create it if it doesn't
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
-      if (bucketError && bucketError.message.includes('does not exist')) {
-        const { error: createError } = await supabase.storage.createBucket('question-images', {
+      if (bucketsError) {
+        throw bucketsError;
+      }
+      
+      const bucketExists = buckets.some(b => b.name === 'question-images');
+      
+      if (!bucketExists) {
+        const { data, error: createError } = await supabase.storage.createBucket('question-images', {
           public: true,
-          fileSizeLimit: 2097152,
+          fileSizeLimit: 2097152, // 2MB
         });
         
         if (createError) throw createError;
+        console.log("Created new bucket:", data);
       }
       
+      // Upload the file
       const fileExt = file.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = fileName;
       
       const { error: uploadError } = await supabase.storage
         .from('question-images')
@@ -236,6 +245,7 @@ export const QuestionForm = ({
       
       if (uploadError) throw uploadError;
       
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('question-images')
         .getPublicUrl(filePath);
