@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -86,10 +85,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const timedMode = form.watch("timedMode");
   const timeLimitType = form.watch("timeLimitType");
   
-  // Auto-select the first subscription when opening the modal
   useEffect(() => {
     if (open && subscriptions.length > 0) {
-      fetchCategoriesByQuestionBank(subscriptions[0].question_bank_id);
+      fetchCategoriesByQuestionBank(subscriptions[0].id);
     }
   }, [open, subscriptions]);
 
@@ -129,9 +127,8 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     if (values.timeLimitType === "seconds_per_question") {
       return values.timeLimit;
     } else {
-      // Convert total time (minutes and seconds) to seconds
       const totalSeconds = (values.minutes || 0) * 60 + (values.seconds || 0);
-      return totalSeconds > 0 ? totalSeconds : 60; // Default to 60 seconds if no time specified
+      return totalSeconds > 0 ? totalSeconds : 60;
     }
   };
 
@@ -149,13 +146,10 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     try {
       setIsSaving(true);
       
-      // Get the first subscription's question bank ID
-      const questionBankId = subscriptions[0].question_bank_id;
+      const questionBankId = subscriptions[0].id;
       
-      // Calculate the time limit based on the time mode and type
       const timeLimit = calculateTimeLimit(values);
       
-      // 1. First save the exam to the database
       const { data: examData, error: examError } = await supabase
         .from('user_exams')
         .insert({
@@ -176,7 +170,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       
       if (examError) throw examError;
       
-      // 2. Fetch questions based on criteria
       let query = supabase
         .from('questions')
         .select('*, question_options(*)')
@@ -198,7 +191,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         return;
       }
       
-      // 3. Format the questions for the state
       const questions: Question[] = questionsData.map(q => ({
         id: q.id,
         serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
@@ -217,10 +209,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           (q.answered_correctly_count / q.answered_count) * 100 : undefined
       }));
       
-      // 4. Start the exam
       dispatch(startTest({
         questions,
-        examId: examData.id, // Store the exam ID in the state
+        examId: examData.id,
         examName: values.examName
       }));
       
