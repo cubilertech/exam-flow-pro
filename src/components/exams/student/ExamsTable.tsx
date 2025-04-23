@@ -23,8 +23,14 @@ import {
   BookOpen
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAppSelector } from '@/lib/hooks';
+import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { 
+  setCurrentExam, 
+  startExam, 
+  loadExamQuestions 
+} from '@/features/study/studySlice';
 
 interface ExamsTableProps {
   filterStatus?: 'all' | 'completed' | 'inprogress';
@@ -35,6 +41,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAppSelector((state) => state.auth);
   const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -82,7 +90,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
             timeTaken: latestResult ? latestResult.time_taken : 0,
             correctCount: latestResult ? latestResult.correct_count : 0,
             incorrectCount: latestResult ? latestResult.incorrect_count : 0,
-            resultId: latestResult ? latestResult.id : null
+            resultId: latestResult ? latestResult.id : null,
+            categoryIds: exam.category_ids,
+            difficulty_levels: exam.difficulty_levels,
+            is_timed: exam.is_timed,
+            time_limit: exam.time_limit,
+            time_limit_type: exam.time_limit_type
           };
         });
         
@@ -105,6 +118,69 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     
     fetchExams();
   }, [user?.id, filterStatus, activeQuestionBankId]);
+
+  const handleContinueExam = async (exam: any) => {
+    try {
+      // Set current exam in the Redux store
+      dispatch(setCurrentExam({
+        id: exam.id,
+        name: exam.name,
+        categoryIds: exam.categoryIds,
+        difficultyLevels: exam.difficulty_levels,
+        questionCount: exam.questionCount,
+        isTimed: exam.is_timed,
+        timeLimit: exam.time_limit,
+        timeLimitType: exam.time_limit_type
+      }));
+
+      // Fetch exam questions based on categories and difficulty
+      const { data: questions, error } = await supabase
+        .from('questions')
+        .select(`
+          *,
+          question_options (*)
+        `)
+        .in('category_id', exam.categoryIds)
+        .in('difficulty', exam.difficulty_levels)
+        .limit(exam.questionCount);
+
+      if (error) throw error;
+
+      if (!questions || questions.length === 0) {
+        toast.error('No questions found for this exam');
+        return;
+      }
+
+      // Format questions for the exam
+      const formattedQuestions = questions.map((q: any) => ({
+        id: q.id,
+        text: q.text,
+        serialNumber: q.serial_number,
+        explanation: q.explanation,
+        imageUrl: q.image_url,
+        categoryId: q.category_id,
+        difficulty: q.difficulty,
+        options: q.question_options.map((opt: any) => ({
+          id: opt.id,
+          text: opt.text,
+          isCorrect: opt.is_correct
+        }))
+      }));
+
+      // Load questions and start exam
+      dispatch(loadExamQuestions(formattedQuestions));
+      dispatch(startExam({
+        mode: 'test',
+        startTime: new Date().toISOString()
+      }));
+
+      // Navigate to take exam page
+      navigate('/exam/take');
+    } catch (error) {
+      console.error('Error continuing exam:', error);
+      toast.error('Failed to continue exam');
+    }
+  };
 
   if (!activeQuestionBankId) {
     return (
@@ -215,11 +291,13 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     </Link>
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/exam/take">
-                      <PlayCircle className="h-4 w-4 mr-2" />
-                      Continue
-                    </Link>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleContinueExam(exam)}
+                  >
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Continue
                   </Button>
                 )}
               </TableCell>
