@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Clock,
   BarChart2,
-  Loader2
+  Loader2,
+  BookOpen
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/lib/hooks';
@@ -33,15 +34,19 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAppSelector((state) => state.auth);
-  
+  const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
+
   useEffect(() => {
     const fetchExams = async () => {
-      if (!user?.id) return;
+      if (!user?.id || !activeQuestionBankId) {
+        setExams([]);
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
         
-        // Fetch user exams with their latest result
         const { data, error } = await supabase
           .from('user_exams')
           .select(`
@@ -49,6 +54,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
             exam_results (*)
           `)
           .eq('user_id', user.id)
+          .eq('question_bank_id', activeQuestionBankId)
           .order('created_at', { ascending: false });
         
         if (error) throw error;
@@ -60,7 +66,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         
         // Format exams for display
         const formattedExams = data.map(exam => {
-          // Get the latest result if available
           const latestResult = exam.exam_results && exam.exam_results.length > 0
             ? exam.exam_results.sort((a: any, b: any) => 
                 new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
@@ -99,7 +104,19 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     };
     
     fetchExams();
-  }, [user?.id, filterStatus]);
+  }, [user?.id, filterStatus, activeQuestionBankId]);
+
+  if (!activeQuestionBankId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium">Select a Question Bank</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Please select a question bank from the dropdown above to view your exams.
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -114,12 +131,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       <div className="flex flex-col items-center justify-center py-10">
         <div className="text-center">
           <h3 className="mt-2 text-lg font-medium">No exams found</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating a new exam.</p>
-          <div className="mt-6">
-            <Button asChild>
-              <Link to="/my-exams">Create Exam</Link>
-            </Button>
-          </div>
+          <p className="mt-1 text-sm text-muted-foreground">Get started by creating a new exam.</p>
         </div>
       </div>
     );
