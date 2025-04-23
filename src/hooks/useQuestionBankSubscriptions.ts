@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
@@ -23,16 +24,7 @@ export const useQuestionBankSubscriptions = () => {
 
       if (error) throw error;
 
-      const activeQuestionBanks = data?.map(item => {
-        // Transform to match our QuestionBank interface
-        return {
-          id: item.question_banks.id,
-          name: item.question_banks.name,
-          description: item.question_banks.description,
-          question_bank_id: item.question_banks.id // Add for backward compatibility
-        };
-      }) || [];
-      
+      const activeQuestionBanks = data?.map(item => item.question_banks) || [];
       setSubscriptions(activeQuestionBanks);
 
       // Set the first subscribed question bank as active by default

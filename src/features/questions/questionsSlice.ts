@@ -1,3 +1,4 @@
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface Option {
@@ -32,7 +33,6 @@ export interface QuestionBank {
   name: string;
   description: string | null;
   categoryCount?: number;
-  question_bank_id?: string;
 }
 
 export interface Exam {
@@ -46,7 +46,7 @@ interface QuestionsState {
   questionBanks: QuestionBank[];
   categories: Category[];
   questions: Question[];
-  exams: Exam[];
+  exams: Exam[]; // Add exams array
   currentQuestionBank: QuestionBank | null;
   currentCategory: Category | null;
   currentQuestion: Question | null;
@@ -59,7 +59,7 @@ const initialState: QuestionsState = {
   questionBanks: [],
   categories: [],
   questions: [],
-  exams: [],
+  exams: [], // Initialize empty exams array
   currentQuestionBank: null,
   currentCategory: null,
   currentQuestion: null,

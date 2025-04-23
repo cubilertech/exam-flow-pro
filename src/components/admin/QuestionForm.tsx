@@ -7,8 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, X, Upload, Image, Loader2, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, X, Upload, Image, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 
@@ -76,12 +75,6 @@ export const QuestionForm = ({
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [validationErrors, setValidationErrors] = useState<{
-    text?: string;
-    categoryId?: string;
-    options?: string;
-    optionTexts?: string;
-  }>({});
 
   useEffect(() => {
     if (questionBankId) {
@@ -133,6 +126,13 @@ export const QuestionForm = ({
     });
   };
   
+  /* Commented out tags field
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+    setFormData({ ...formData, tags });
+  };
+  */
+
   const handleOptionTextChange = (id: string, value: string) => {
     setFormData({
       ...formData,
@@ -212,27 +212,20 @@ export const QuestionForm = ({
     try {
       setIsUploading(true);
       
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('question-images');
       
-      if (bucketsError) {
-        throw bucketsError;
-      }
-      
-      const bucketExists = buckets.some(b => b.name === 'question-images');
-      
-      if (!bucketExists) {
-        const { data, error: createError } = await supabase.storage.createBucket('question-images', {
+      if (bucketError && bucketError.message.includes('does not exist')) {
+        const { error: createError } = await supabase.storage.createBucket('question-images', {
           public: true,
-          fileSizeLimit: 2097152, // 2MB
+          fileSizeLimit: 2097152,
         });
         
         if (createError) throw createError;
-        console.log("Created new bucket:", data);
       }
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = fileName;
+      const filePath = `${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('question-images')
@@ -280,45 +273,49 @@ export const QuestionForm = ({
   };
 
   const validateForm = (): boolean => {
-    const errors: {
-      text?: string;
-      categoryId?: string;
-      options?: string;
-      optionTexts?: string;
-    } = {};
-
     if (!formData.text.trim()) {
-      errors.text = "Question text is required";
+      toast({
+        title: "Validation Error",
+        description: "Question text is required",
+        variant: "destructive"
+      });
+      return false;
     }
     
     if (!formData.categoryId) {
-      errors.categoryId = "Category is required";
+      toast({
+        title: "Validation Error",
+        description: "Category is required",
+        variant: "destructive"
+      });
+      return false;
     }
     
     if (!formData.options.some(opt => opt.isCorrect)) {
-      errors.options = "At least one correct answer must be selected";
+      toast({
+        title: "Validation Error",
+        description: "At least one correct answer must be selected",
+        variant: "destructive"
+      });
+      return false;
     }
     
     if (formData.options.some(opt => !opt.text.trim())) {
-      errors.optionTexts = "All option texts are required";
+      toast({
+        title: "Validation Error",
+        description: "All option texts are required",
+        variant: "destructive"
+      });
+      return false;
     }
-
-    setValidationErrors(errors);
     
-    return Object.keys(errors).length === 0;
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fix the highlighted errors before submitting",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (!validateForm()) return;
     
     try {
       setIsSubmitting(true);
@@ -402,49 +399,26 @@ export const QuestionForm = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        {Object.keys(validationErrors).length > 0 && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Please fix the following errors:
-              <ul className="list-disc pl-4 mt-2">
-                {Object.values(validationErrors).map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
         <div>
-          <Label htmlFor="text" className={validationErrors.text ? "text-destructive" : ""}>
-            Question Text *
-          </Label>
+          <Label htmlFor="text">Question Text *</Label>
           <Textarea
             id="text"
             name="text"
             value={formData.text}
             onChange={handleTextChange}
             placeholder="Enter the question text"
-            className={cn(
-              "min-h-[100px]",
-              validationErrors.text && "border-destructive focus-visible:ring-destructive"
-            )}
+            className="min-h-[100px]"
+            required
           />
         </div>
 
         <div>
-          <Label htmlFor="category" className={validationErrors.categoryId ? "text-destructive" : ""}>
-            Category *
-          </Label>
+          <Label htmlFor="category">Category *</Label>
           <Select
             value={formData.categoryId}
             onValueChange={handleCategoryChange}
           >
-            <SelectTrigger 
-              id="category"
-              className={validationErrors.categoryId ? "border-destructive" : ""}
-            >
+            <SelectTrigger id="category">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
@@ -477,9 +451,7 @@ export const QuestionForm = ({
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className={validationErrors.options || validationErrors.optionTexts ? "text-destructive" : ""}>
-              Answer Options *
-            </Label>
+            <Label>Answer Options *</Label>
             <Button 
               type="button" 
               variant="outline" 
@@ -505,10 +477,7 @@ export const QuestionForm = ({
                       <RadioGroupItem 
                         value={option.id} 
                         id={`radio-${option.id}`} 
-                        className={cn(
-                          "mt-0.5",
-                          validationErrors.options && "border-destructive"
-                        )}
+                        className="mt-0.5" 
                       />
                     </RadioGroup>
                   ) : (
@@ -518,10 +487,7 @@ export const QuestionForm = ({
                       onCheckedChange={(checked) => 
                         handleOptionCorrectChange(option.id, checked === true)
                       }
-                      className={cn(
-                        "mt-0.5",
-                        validationErrors.options && "border-destructive"
-                      )}
+                      className="mt-0.5"
                     />
                   )}
                 </div>
@@ -530,7 +496,7 @@ export const QuestionForm = ({
                     value={option.text}
                     onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
                     placeholder={`Option ${index + 1}`}
-                    className={validationErrors.optionTexts ? "border-destructive" : ""}
+                    required
                   />
                 </div>
                 <Button

@@ -1,28 +1,22 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Search, Image } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
+import { Edit, Trash2, Search, Image } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface Option {
   id: string;
@@ -39,7 +33,7 @@ interface Question {
   imageUrl?: string;
   categoryId: string;
   tags: string[];
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: 'easy' | 'medium' | 'hard';
 }
 
 interface QuestionsListProps {
@@ -48,10 +42,8 @@ interface QuestionsListProps {
 }
 
 export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(
-    null
-  );
+  const [searchTerm, setSearchTerm] = useState('');
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
@@ -69,27 +61,27 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
     if (questionToDelete) {
       try {
         setIsDeleting(true);
-
+        
         // Delete the question from the database
         const { error } = await supabase
-          .from("questions")
+          .from('questions')
           .delete()
-          .eq("id", questionToDelete.id);
+          .eq('id', questionToDelete.id);
 
         if (error) throw error;
-
+        
         toast({
           title: "Success",
-          description: "Question deleted successfully",
+          description: "Question deleted successfully"
         });
-
+        
         // Refresh the questions list
         window.location.reload();
       } catch (error: any) {
         toast({
           title: "Error",
           description: error.message || "Failed to delete question",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setIsDeleting(false);
@@ -100,19 +92,50 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "hard":
-        return "bg-red-600";
-      case "medium":
-        return "bg-yellow-600";
-      case "easy":
-        return "bg-green-600";
+      case 'hard':
+        return 'bg-red-600';
+      case 'medium':
+        return 'bg-yellow-600';
+      case 'easy':
+        return 'bg-green-600';
       default:
-        return "bg-gray-600";
+        return 'bg-gray-600';
     }
   };
 
   return (
     <div>
+      <div className="flex items-center mb-4 relative">
+        <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search questions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+        />
+        <Button 
+          variant="default" 
+          onClick={() => onEdit({
+            id: "",
+            serialNumber: "",
+            text: "",
+            options: [
+              { id: "1", text: "", isCorrect: false },
+              { id: "2", text: "", isCorrect: false },
+              { id: "3", text: "", isCorrect: false },
+              { id: "4", text: "", isCorrect: false }
+            ],
+            explanation: "",
+            categoryId: "",
+            tags: [],
+            difficulty: "medium"
+          })}
+          className="ml-2"
+        >
+          Add New
+        </Button>
+      </div>
+
       {filteredQuestions.length > 0 ? (
         <div className="border rounded-md overflow-hidden">
           <Table>
@@ -128,51 +151,32 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
             <TableBody>
               {filteredQuestions.map((question) => (
                 <TableRow key={question.id}>
-                  <TableCell className="font-medium">
-                    {question.serialNumber}
-                  </TableCell>
+                  <TableCell className="font-medium">{question.serialNumber}</TableCell>
                   <TableCell>
-                    <div className="truncate max-w-md">{question.text}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      {question.options.filter((opt) => opt.isCorrect).length >
-                      1 ? (
-                        <Badge variant="outline" className="bg-blue-100">
-                          Multiple
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-purple-100">
-                          Single
-                        </Badge>
-                      )}
-                      {question.imageUrl && (
-                        <Image className="w-4 h-4 text-gray-500" />
-                      )}
+                    <div className="truncate max-w-md">
+                      {question.text}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      className={`${getDifficultyColor(
-                        question.difficulty
-                      )} text-white capitalize`}
-                    >
+                    <div className="flex items-center space-x-1">
+                      {question.options.filter(opt => opt.isCorrect).length > 1 ? (
+                        <Badge variant="outline" className="bg-blue-100">Multiple</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-purple-100">Single</Badge>
+                      )}
+                      {question.imageUrl && <Image className="w-4 h-4 text-gray-500" />}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={`${getDifficultyColor(question.difficulty)} text-white capitalize`}>
                       {question.difficulty}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(question)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(question)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteQuestion(question)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteQuestion(question)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </TableCell>
@@ -184,9 +188,9 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
       ) : (
         <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md">
           <p className="mb-4 text-muted-foreground">No questions found</p>
-          <Button
-            variant="outline"
-            onClick={() => setSearchTerm("")}
+          <Button 
+            variant="outline" 
+            onClick={() => setSearchTerm('')}
             className="mt-2"
           >
             Clear search
@@ -194,22 +198,18 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
         </div>
       )}
 
-      <AlertDialog
-        open={!!questionToDelete}
-        onOpenChange={(open) => !open && setQuestionToDelete(null)}
-      >
+      <AlertDialog open={!!questionToDelete} onOpenChange={(open) => !open && setQuestionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete question #
-              {questionToDelete?.serialNumber}? This action cannot be undone.
+              Are you sure you want to delete question #{questionToDelete?.serialNumber}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
+            <AlertDialogAction 
+              onClick={confirmDelete} 
               className="bg-red-500 hover:bg-red-600"
               disabled={isDeleting}
             >

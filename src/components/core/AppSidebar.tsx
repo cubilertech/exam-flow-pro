@@ -1,3 +1,4 @@
+
 import { Home, HelpCircle, FileText } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAppSelector } from "@/lib/hooks";
@@ -16,25 +17,35 @@ export function AppSidebar() {
   const location = useLocation();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
-
+  
   // Define menu items based on role
   const studentMenuItems = [
+    {
+      title: "Dashboard",
+      url: "/",
+      icon: Home,
+    },
     {
       title: "My Exams",
       url: "/my-exams",
       icon: FileText,
     },
   ];
-
+  
   // Admin-only menu items
   const adminMenuItems = [
+    {
+      title: "Dashboard",
+      url: "/",
+      icon: Home,
+    },
     {
       title: "Question Banks",
       url: "/questions",
       icon: HelpCircle,
     },
   ];
-
+  
   // Use the appropriate menu items based on user role
   const menuItems = isAdmin ? adminMenuItems : studentMenuItems;
 
@@ -44,11 +55,11 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="mt-12">
+            <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
+                  <SidebarMenuButton 
+                    asChild 
                     isActive={location.pathname === item.url}
                     tooltip={item.title}
                   >
