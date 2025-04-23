@@ -119,23 +119,24 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       if (categoriesError) throw categoriesError;
       
       const categoriesWithCounts = await Promise.all(categoriesData.map(async (category) => {
-        const { data: questionStats, error: statsError } = await supabase
+        // First, query for all questions for this category
+        const { data: questions, error: questionsError } = await supabase
           .from('questions')
-          .select('difficulty, count')
-          .eq('category_id', category.id)
-          .groupBy('difficulty');
+          .select('id, difficulty')
+          .eq('category_id', category.id);
         
-        if (statsError) throw statsError;
+        if (questionsError) throw questionsError;
         
+        // Count the occurrences of each difficulty level manually
         const difficultyCount = {
           easy: 0,
           medium: 0,
           hard: 0
         };
         
-        questionStats?.forEach((stat: any) => {
-          if (stat.difficulty in difficultyCount) {
-            difficultyCount[stat.difficulty as keyof typeof difficultyCount] = parseInt(stat.count);
+        questions?.forEach((question) => {
+          if (question.difficulty in difficultyCount) {
+            difficultyCount[question.difficulty as keyof typeof difficultyCount]++;
           }
         });
         
@@ -143,7 +144,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           id: category.id,
           name: category.name,
           questionBankId: category.question_bank_id,
-          questionCount: questionStats.reduce((acc: number, curr: any) => acc + parseInt(curr.count), 0),
+          questionCount: questions?.length || 0,
           difficultyCount
         };
       }));
@@ -382,7 +383,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                                               field.value?.filter(
                                                 (value) => value !== category.id
                                               )
-                                          );
+                                            );
                                       }}
                                     />
                                   </FormControl>
