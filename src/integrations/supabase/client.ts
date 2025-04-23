@@ -9,22 +9,38 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Initialize the Supabase client
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
 // Initialize storage bucket for question images if it doesn't exist
 const createStorageBucket = async () => {
   try {
-    const { data, error } = await supabase.storage.getBucket('question-images');
-    if (error && error.message.includes('does not exist')) {
-      await supabase.storage.createBucket('question-images', {
+    // First check if the bucket already exists
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error checking buckets:', listError);
+      return;
+    }
+    
+    const bucketExists = buckets.some(b => b.name === 'question-images');
+    
+    if (!bucketExists) {
+      const { data, error } = await supabase.storage.createBucket('question-images', {
         public: true,
         fileSizeLimit: 2097152, // 2MB
       });
+      
+      if (error) {
+        console.error('Error creating storage bucket:', error);
+      } else {
+        console.log('Storage bucket created successfully:', data);
+      }
     }
   } catch (error) {
-    console.error('Error checking/creating storage bucket:', error);
+    console.error('Error initializing storage bucket:', error);
   }
 };
 
 // Run this once when the client initializes
 createStorageBucket();
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);

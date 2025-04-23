@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/features/auth/authSlice";
 import { signOut } from "@/services/authService";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,15 +13,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Book, TestTube, HelpCircle, LogOut, ChevronDown } from "lucide-react";
+import { ChevronDown, User, LogOut, Book } from "lucide-react";
 import { toast } from "sonner";
 import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const isAdmin = user?.isAdmin || false;
+  const { subscriptions, activeQuestionBankId, setActiveQuestionBankById } = useQuestionBankSubscriptions();
 
   const handleLogout = async () => {
     try {
@@ -35,11 +41,9 @@ export const Navbar = () => {
     }
   };
 
-  const { 
-    subscriptions, 
-    activeQuestionBankId,
-    setActiveQuestionBankById
-  } = useQuestionBankSubscriptions();
+  const handleQuestionBankChange = (questionBankId: string) => {
+    setActiveQuestionBankById(questionBankId);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -50,72 +54,36 @@ export const Navbar = () => {
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {isAuthenticated && (
-            <>
-              {!isAdmin && (
-                <>
-                  <Link
-                    to="/my-exams"
-                    className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    My Exams
-                  </Link>
-                </>
-              )}
-              {isAdmin && (
-                <Link
-                  to="/questions"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Question Banks
-                </Link>
-              )}
-            </>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          {isAuthenticated && !isAdmin && (
-            <div className="flex items-center space-x-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center">
-                    <Book className="mr-2 h-4 w-4" />
-                    {subscriptions.find(qb => qb.id === activeQuestionBankId)?.name || 'Select Question Bank'}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuLabel>Subscribed Question Banks</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {subscriptions.length === 0 ? (
-                    <DropdownMenuItem disabled>No subscriptions available</DropdownMenuItem>
-                  ) : (
-                    subscriptions.map(questionBank => (
-                      <DropdownMenuItem 
-                        key={questionBank.id}
-                        className={cn(
-                          questionBank.id === activeQuestionBankId && "bg-accent text-accent-foreground",
-                          "cursor-pointer"
-                        )}
-                        onClick={() => setActiveQuestionBankById(questionBank.id)}
-                      >
-                        {questionBank.name}
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="cursor-pointer">
-                      <Book className="mr-2 h-4 w-4" />
-                      Manage Subscriptions
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+        <div className="flex-1 flex items-center justify-center">
+          {isAuthenticated && subscriptions.length > 0 && (
+            <div className="max-w-xs w-full">
+              <Select
+                value={activeQuestionBankId || undefined}
+                onValueChange={handleQuestionBankChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Question Bank">
+                    {activeQuestionBankId ? 
+                      subscriptions.find(qb => qb.id === activeQuestionBankId)?.name || "Select Question Bank" 
+                      : "Select Question Bank"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {subscriptions.map((qb) => (
+                    <SelectItem key={qb.id} value={qb.id}>
+                      <div className="flex items-center">
+                        <Book className="mr-2 h-4 w-4" />
+                        <span>{qb.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
+        </div>
+
+        <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -135,26 +103,6 @@ export const Navbar = () => {
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                
-                {!isAdmin && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to="/my-exams" className="flex items-center cursor-pointer">
-                        <TestTube className="mr-2 h-4 w-4" />
-                        <span>My Exams</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-                
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/questions" className="flex items-center cursor-pointer">
-                      <HelpCircle className="mr-2 h-4 w-4" />
-                      <span>Question Banks</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -176,4 +124,4 @@ export const Navbar = () => {
       </div>
     </header>
   );
-}
+};
