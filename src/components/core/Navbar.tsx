@@ -3,7 +3,7 @@ import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/features/auth/authSlice";
-import { signOut } from "@/services/authService";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -32,11 +32,19 @@ export const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      // Call Supabase's signOut method directly, don't use the service function
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Dispatch logout action to update Redux state
       dispatch(logout());
       toast.success("Logged out successfully");
       navigate("/login");
     } catch (error: any) {
+      console.error("Logout error:", error);
       toast.error(`Logout failed: ${error.message}`);
     }
   };
@@ -125,3 +133,4 @@ export const Navbar = () => {
     </header>
   );
 };
+
