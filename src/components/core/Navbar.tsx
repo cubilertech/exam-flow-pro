@@ -13,22 +13,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, User, LogOut, Book } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { subscriptions, activeQuestionBankId, setActiveQuestionBankById } = useQuestionBankSubscriptions();
 
   const handleLogout = async () => {
     try {
@@ -41,10 +33,6 @@ export const Navbar = () => {
     }
   };
 
-  const handleQuestionBankChange = (questionBankId: string) => {
-    setActiveQuestionBankById(questionBankId);
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -52,35 +40,6 @@ export const Navbar = () => {
           <Link to="/" className="font-bold text-2xl text-primary">
             ExamFlowPro
           </Link>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center">
-          {isAuthenticated && subscriptions.length > 0 && (
-            <div className="max-w-xs w-full">
-              <Select
-                value={activeQuestionBankId || undefined}
-                onValueChange={handleQuestionBankChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Question Bank">
-                    {activeQuestionBankId ? 
-                      subscriptions.find(qb => qb.id === activeQuestionBankId)?.name || "Select Question Bank" 
-                      : "Select Question Bank"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {subscriptions.map((qb) => (
-                    <SelectItem key={qb.id} value={qb.id}>
-                      <div className="flex items-center">
-                        <Book className="mr-2 h-4 w-4" />
-                        <span>{qb.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
 
         <div className="flex items-center gap-2">

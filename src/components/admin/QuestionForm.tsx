@@ -11,7 +11,6 @@ import { Plus, X, Upload, Image, Loader2, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from "@/lib/utils";
 
 interface Option {
   id: string;
@@ -404,12 +403,7 @@ export const QuestionForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         {Object.keys(validationErrors).length > 0 && (
-          <Alert 
-            variant="destructive" 
-            className={cn("mb-6", {
-              "border-destructive": Object.keys(validationErrors).length > 0
-            })}
-          >
+          <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Please fix the following errors:
@@ -423,12 +417,7 @@ export const QuestionForm = ({
         )}
 
         <div>
-          <Label 
-            htmlFor="text" 
-            className={cn(
-              validationErrors.text && "text-destructive"
-            )}
-          >
+          <Label htmlFor="text" className={validationErrors.text ? "text-destructive" : ""}>
             Question Text *
           </Label>
           <Textarea
