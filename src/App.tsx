@@ -24,8 +24,8 @@ import { PrivateRoute } from "./components/auth/PrivateRoute";
 function App() {
   return (
     <div className="App">
-      <Providers>
-        <Router>
+      <Router>
+        <Providers>
           <AuthProvider>
             <Routes>
               <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
@@ -40,11 +40,10 @@ function App() {
               <Route path="*" element={<NotFound/>}/>
             </Routes>
           </AuthProvider>
-        </Router>
-      </Providers>
+        </Providers>
+      </Router>
     </div>
   );
 }
 
 export default App;
-

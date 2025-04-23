@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -122,11 +123,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           .from('questions')
           .select('difficulty, count')
           .eq('category_id', category.id)
-          .select(`
-            difficulty,
-            count(*) as count
-          `)
-          .group('difficulty');
+          .groupBy('difficulty');
         
         if (statsError) throw statsError;
         
@@ -188,7 +185,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     try {
       setIsSaving(true);
       
-      const questionBankId = subscriptions[0].id;
+      const questionBankId = selectedQuestionBank || subscriptions[0].id;
       
       const timeLimit = calculateTimeLimit(values);
       
@@ -322,36 +319,27 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
               />
 
               {subscriptions.length > 0 && (
-                <FormField
-                  control={form.control}
-                  name="questionBank"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Question Bank</FormLabel>
-                      <Select
-                        value={selectedQuestionBank || undefined}
-                        onValueChange={(value) => {
-                          setSelectedQuestionBank(value);
-                          fetchCategoriesByQuestionBank(value);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a question bank" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {subscriptions.map((bank) => (
-                            <SelectItem key={bank.id} value={bank.id}>
-                              {bank.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Question Bank</FormLabel>
+                  <Select
+                    value={selectedQuestionBank || undefined}
+                    onValueChange={(value) => {
+                      setSelectedQuestionBank(value);
+                      fetchCategoriesByQuestionBank(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a question bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subscriptions.map((bank) => (
+                        <SelectItem key={bank.id} value={bank.id}>
+                          {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
               )}
 
               <FormField
