@@ -36,6 +36,18 @@ export interface TestResult {
   examName?: string;
 }
 
+// Add interface for exam data
+export interface ExamData {
+  id: string;
+  name: string;
+  categoryIds: string[];
+  difficultyLevels: string[];
+  questionCount: number;
+  isTimed: boolean;
+  timeLimit: number | null;
+  timeLimitType: string | null;
+}
+
 interface StudyState {
   notes: UserNote[];
   flaggedQuestions: FlaggedQuestion[];
@@ -44,8 +56,9 @@ interface StudyState {
   currentStudyMode: 'study' | 'test' | null;
   currentTestQuestions: Question[];
   currentTestStartTime: string | null;
-  currentExamId: string | null; // Add exam ID field
-  currentExamName: string | null; // Add exam name field
+  currentExamId: string | null;
+  currentExamName: string | null;
+  currentExam: ExamData | null; // Add current exam field
   isLoading: boolean;
   error: string | null;
 }
@@ -60,6 +73,7 @@ const initialState: StudyState = {
   currentTestStartTime: null,
   currentExamId: null,
   currentExamName: null,
+  currentExam: null, // Initialize current exam as null
   isLoading: false,
   error: null,
 };
@@ -165,6 +179,25 @@ const studySlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+
+    // Add new action creators for exam functionality
+    setCurrentExam: (state, action: PayloadAction<ExamData>) => {
+      state.currentExam = action.payload;
+      state.currentExamId = action.payload.id;
+      state.currentExamName = action.payload.name;
+    },
+    
+    startExam: (state, action: PayloadAction<{
+      mode: 'study' | 'test',
+      startTime: string
+    }>) => {
+      state.currentStudyMode = action.payload.mode;
+      state.currentTestStartTime = action.payload.startTime;
+    },
+    
+    loadExamQuestions: (state, action: PayloadAction<Question[]>) => {
+      state.currentTestQuestions = action.payload;
+    }
   },
 });
 
@@ -179,6 +212,10 @@ export const {
   clearCurrentTest,
   setLoading,
   setError,
+  // Export the new action creators
+  setCurrentExam,
+  startExam,
+  loadExamQuestions,
 } = studySlice.actions;
 
 export default studySlice.reducer;
