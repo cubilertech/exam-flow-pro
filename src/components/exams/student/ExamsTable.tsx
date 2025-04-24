@@ -151,7 +151,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         return;
       }
 
-      // Format questions for the exam
+      // Format questions for the exam - Add tags field to match Question interface
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
         text: q.text,
@@ -160,6 +160,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         imageUrl: q.image_url,
         categoryId: q.category_id,
         difficulty: q.difficulty,
+        tags: [], // Add empty tags array to satisfy Question interface
         options: q.question_options.map((opt: any) => ({
           id: opt.id,
           text: opt.text,
