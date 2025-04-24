@@ -514,6 +514,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_exam_cascade: {
+        Args: { exam_id: string }
+        Returns: undefined
+      }
       generate_serial_number: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -188,19 +188,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleDeleteExam = async (examId: string) => {
     try {
-      const { error: resultsError } = await supabase
-        .from('exam_results')
-        .delete()
-        .eq('user_exam_id', examId);
+      const { data: result, error } = await supabase
+        .rpc('delete_exam_cascade', {
+          exam_id: examId
+        });
 
-      if (resultsError) throw resultsError;
-
-      const { error: examError } = await supabase
-        .from('user_exams')
-        .delete()
-        .eq('id', examId);
-
-      if (examError) throw examError;
+      if (error) throw error;
 
       setExams(exams.filter(exam => exam.id !== examId));
       toast.success('Exam deleted successfully');
