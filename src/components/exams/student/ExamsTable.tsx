@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -11,6 +10,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -20,7 +29,8 @@ import {
   Clock,
   BarChart2,
   Loader2,
-  BookOpen
+  BookOpen,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
@@ -72,7 +82,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
           return;
         }
         
-        // Format exams for display
         const formattedExams = data.map(exam => {
           const latestResult = exam.exam_results && exam.exam_results.length > 0
             ? exam.exam_results.sort((a: any, b: any) => 
@@ -99,7 +108,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
           };
         });
         
-        // Filter by status if needed
         let filteredExams = formattedExams;
         if (filterStatus === 'completed') {
           filteredExams = formattedExams.filter(exam => exam.completed);
@@ -121,7 +129,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
-      // Set current exam in the Redux store
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -133,7 +140,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         timeLimitType: exam.time_limit_type
       }));
 
-      // Fetch exam questions based on categories and difficulty
       const { data: questions, error } = await supabase
         .from('questions')
         .select(`
@@ -151,7 +157,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         return;
       }
 
-      // Format questions for the exam - Add tags field to match Question interface
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
         text: q.text,
@@ -160,7 +165,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         imageUrl: q.image_url,
         categoryId: q.category_id,
         difficulty: q.difficulty,
-        tags: [], // Add empty tags array to satisfy Question interface
+        tags: [],
         options: q.question_options.map((opt: any) => ({
           id: opt.id,
           text: opt.text,
@@ -168,18 +173,40 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         }))
       }));
 
-      // Load questions and start exam
       dispatch(loadExamQuestions(formattedQuestions));
       dispatch(startExam({
         mode: 'test',
         startTime: new Date().toISOString()
       }));
 
-      // Navigate to take exam page
       navigate('/exam/take');
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.error('Failed to continue exam');
+    }
+  };
+
+  const handleDeleteExam = async (examId: string) => {
+    try {
+      const { error: resultsError } = await supabase
+        .from('exam_results')
+        .delete()
+        .eq('user_exam_id', examId);
+
+      if (resultsError) throw resultsError;
+
+      const { error: examError } = await supabase
+        .from('user_exams')
+        .delete()
+        .eq('id', examId);
+
+      if (examError) throw examError;
+
+      setExams(exams.filter(exam => exam.id !== examId));
+      toast.success('Exam deleted successfully');
+    } catch (error) {
+      console.error('Error deleting exam:', error);
+      toast.error('Failed to delete exam');
     }
   };
 
@@ -214,19 +241,16 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     );
   }
 
-  // Format time as mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Format date to readable format
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'MMM d, yyyy');
   };
 
-  // Determine exam status
   const getExamStatus = (exam: any) => {
     if (exam.completed) {
       return {
@@ -301,6 +325,31 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     Continue
                   </Button>
                 )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Exam</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this exam? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => handleDeleteExam(exam.id)}
+                      >
+                        Delete
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </TableCell>
             </TableRow>
           );
