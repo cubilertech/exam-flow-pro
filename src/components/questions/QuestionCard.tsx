@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -33,7 +32,7 @@ export const QuestionCard = ({
   const [showExplanation, setShowExplanation] = useState(false);
   
   const isMultipleChoice = question.options.filter((opt) => opt.isCorrect).length > 1;
-  const shouldShowAnswers = examType === 'study' && isAnswered;
+  const shouldShowAnswers = examType === 'study' || (examType === 'test' && showAnswers);
   
   const handleOptionSelect = (optionId: string) => {
     if (!onAnswerSelect || (isAnswered && examType === 'test')) return;
@@ -90,7 +89,7 @@ export const QuestionCard = ({
           {question.options.map((option) => {
             const isSelected = selectedOptions.includes(option.id);
             const isCorrect = option.isCorrect;
-            const showCorrectness = shouldShowAnswers || (showAnswers && (isAnswered || !isTestMode));
+            const showCorrectness = shouldShowAnswers && isAnswered;
             
             return (
               <div
