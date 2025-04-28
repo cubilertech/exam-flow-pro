@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -17,7 +18,7 @@ interface QuestionCardProps {
   selectedOptions?: string[];
   isAnswered?: boolean;
   isTestMode?: boolean;
-  onFlagQuestion?: (questionId: string | React.MouseEvent<HTMLButtonElement>) => void;
+  onFlagQuestion?: (questionId: string) => void;
   isFlagged?: boolean;
 }
 
