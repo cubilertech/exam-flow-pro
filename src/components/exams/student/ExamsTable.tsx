@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   Table,
@@ -35,6 +35,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { 
   setCurrentExam, 
   startExam, 
@@ -128,8 +129,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
-      console.log('Starting exam continuation for exam:', exam.id);
-      
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -151,17 +150,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         .in('difficulty', exam.difficulty_levels)
         .limit(exam.questionCount);
 
-      if (error) {
-        console.error('Error fetching questions:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!questions || questions.length === 0) {
         toast.error('No questions found for this exam');
         return;
       }
-
-      console.log(`Found ${questions.length} questions for the exam`);
 
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
@@ -180,17 +174,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       }));
 
       dispatch(loadExamQuestions(formattedQuestions));
-      
       dispatch(startExam({
         mode: 'test',
         startTime: new Date().toISOString()
       }));
 
-      console.log('Navigation triggered to /exam/take');
-      
-      setTimeout(() => {
-        navigate('/exam/take');
-      }, 100);
+      navigate('/exam/take');
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.error('Failed to continue exam');
@@ -321,7 +310,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                   </Button>
                 ) : (
                   <Button 
-                    variant="default" 
+                    variant="outline" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
                   >
@@ -331,7 +320,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="ml-2">
+                    <Button variant="outline" size="sm">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
