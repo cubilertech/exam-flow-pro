@@ -236,8 +236,6 @@ const TakeExam = () => {
   };
 
   const handleSelectAnswer = (questionId: string, selectedOptionIds: string[]) => {
-    if (!onAnswerSelect) return;
-    
     setSelectedAnswers({
       ...selectedAnswers,
       [questionId]: selectedOptionIds
@@ -534,7 +532,7 @@ const TakeExam = () => {
 
       <QuestionCard
         question={currentQuestion}
-        showAnswers={currentExamType === 'test' ? isAnswered : true}
+        showAnswers={currentExamType === 'test' ? false : true}
         onAnswerSelect={handleSelectAnswer}
         selectedOptions={selectedAnswers[currentQuestion.id] || []}
         isAnswered={questionAnswered}
@@ -572,7 +570,6 @@ const TakeExam = () => {
         )}
       </div>
       
-      {/* Summary Dialog */}
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
         <DialogContent>
           <DialogHeader>
@@ -623,7 +620,6 @@ const TakeExam = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Notes Dialog */}
       <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
         <DialogContent>
           <DialogHeader>

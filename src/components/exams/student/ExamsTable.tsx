@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -139,7 +140,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         questionCount: exam.questionCount,
         isTimed: exam.is_timed,
         timeLimit: exam.time_limit,
-        timeLimitType: exam.time_limit_type
+        timeLimitType: exam.time_limit_type,
+        examType: 'test' // Add the missing examType property
       }));
 
       const { data: questions, error } = await supabase
