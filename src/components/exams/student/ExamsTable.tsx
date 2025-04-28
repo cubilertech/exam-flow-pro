@@ -129,6 +129,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
+      toast.loading("Loading exam...");
+      
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -153,6 +155,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       if (error) throw error;
 
       if (!questions || questions.length === 0) {
+        toast.dismiss();
         toast.error('No questions found for this exam');
         return;
       }
@@ -174,14 +177,18 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       }));
 
       dispatch(loadExamQuestions(formattedQuestions));
+      
       dispatch(startExam({
         mode: 'test',
         startTime: new Date().toISOString()
       }));
 
-      navigate('/exam/take');
+      toast.dismiss();
+      
+      navigate('/exam/take', { replace: true });
     } catch (error) {
       console.error('Error continuing exam:', error);
+      toast.dismiss();
       toast.error('Failed to continue exam');
     }
   };
