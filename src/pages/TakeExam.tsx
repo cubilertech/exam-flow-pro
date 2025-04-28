@@ -503,7 +503,7 @@ const TakeExam = () => {
           </h1>
           <Badge variant={isFlagged ? "secondary" : "outline"} 
             className="cursor-pointer hover:bg-secondary" 
-            onClick={handleFlagQuestion}>
+            onClick={() => handleFlagQuestion(currentQuestion.id)}>
             <Flag className={`h-3 w-3 mr-1 ${isFlagged ? "text-amber-500" : ""}`} />
             {isFlagged ? "Flagged" : "Flag"}
           </Badge>
