@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,9 +10,10 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Flag, 
-  BookOpen, 
-  Timer, 
-  AlertTriangle
+  BookOpen,
+  AlertTriangle,
+  Timer,
+  StickyNote
 } from 'lucide-react';
 import { 
   answerQuestion, 
@@ -44,12 +44,12 @@ const TakeExam = () => {
   
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
-  const [noteText, setNoteText] = useState("");
-  const [showExplanation, setShowExplanation] = useState(false);
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [noteIsSaving, setNoteIsSaving] = useState(false);
   const [examDuration, setExamDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [noteIsSaving, setNoteIsSaving] = useState(false);
   const [examDetails, setExamDetails] = useState<any>(null);
   const [isFlagging, setIsFlagging] = useState(false);
 
@@ -285,7 +285,6 @@ const TakeExam = () => {
     if (!isFirstQuestion) {
       saveCurrentAnswer();
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setShowExplanation(false);
     }
   };
 
@@ -293,7 +292,6 @@ const TakeExam = () => {
     if (!isLastQuestion) {
       saveCurrentAnswer();
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setShowExplanation(false);
     }
   };
 
@@ -327,6 +325,7 @@ const TakeExam = () => {
         if (error) throw error;
         
         toast.success("Note saved successfully");
+        setShowNotesDialog(false);
       } else {
         const { error } = await supabase
           .from('user_notes')
@@ -337,6 +336,7 @@ const TakeExam = () => {
         if (error) throw error;
         
         toast.success("Note cleared");
+        setShowNotesDialog(false);
       }
     } catch (error) {
       console.error('Error saving note:', error);
@@ -501,12 +501,27 @@ const TakeExam = () => {
           <h1 className="text-2xl font-bold">
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
-          <Badge variant={isFlagged ? "secondary" : "outline"} 
-            className="cursor-pointer hover:bg-secondary" 
-            onClick={() => handleFlagQuestion(currentQuestion.id)}>
-            <Flag className={`h-3 w-3 mr-1 ${isFlagged ? "text-amber-500" : ""}`} />
-            {isFlagged ? "Flagged" : "Flag"}
-          </Badge>
+          <div className="flex space-x-2">
+            <Badge 
+              variant={isFlagged ? "secondary" : "outline"} 
+              className="cursor-pointer hover:bg-secondary" 
+              onClick={() => handleFlagQuestion(currentQuestion.id)}
+            >
+              <Flag className={`h-3 w-3 mr-1 ${isFlagged ? "text-amber-500" : ""}`} />
+              {isFlagged ? "Flagged" : "Flag"}
+            </Badge>
+            <Badge 
+              variant="outline"
+              className="cursor-pointer hover:bg-secondary" 
+              onClick={() => {
+                setNoteText(notes.find(n => n.questionId === currentQuestion.id)?.note || '');
+                setShowNotesDialog(true);
+              }}
+            >
+              <StickyNote className="h-3 w-3 mr-1" />
+              Notes
+            </Badge>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <Badge variant="outline" className="px-2 py-1">
@@ -518,7 +533,7 @@ const TakeExam = () => {
           </Button>
         </div>
       </div>
-      
+
       <div className="mb-4">
         <Progress value={(getCompletedQuestionCount() / totalQuestions) * 100} className="h-2" />
         <div className="flex justify-between mt-1 text-xs text-muted-foreground">
@@ -542,59 +557,6 @@ const TakeExam = () => {
         onFlagQuestion={handleFlagQuestion}
         isFlagged={flaggedQuestions.some(q => q.questionId === currentQuestion.id)}
       />
-
-      <div className="mt-6">
-        <Tabs defaultValue="notes" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="notes">My Notes</TabsTrigger>
-            <TabsTrigger value="explanation" onClick={() => setShowExplanation(true)}>
-              Explanation
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="notes" className="space-y-2 mt-2">
-            <Textarea
-              placeholder="Add your notes for this question here..."
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <Button onClick={handleSaveNote} size="sm" disabled={noteIsSaving}>
-              {noteIsSaving ? "Saving..." : "Save Note"}
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="explanation" className="mt-2">
-            {showExplanation ? (
-              <div className="p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center mb-2">
-                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                  <h3 className="font-medium">Explanation</h3>
-                </div>
-                <p className="text-sm">{currentQuestion.explanation || "No explanation available."}</p>
-              </div>
-            ) : (
-              <div className="p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center justify-center">
-                  <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
-                  <p className="text-sm text-muted-foreground">
-                    Viewing the explanation will mark this as a study question rather than a test question.
-                  </p>
-                </div>
-                <div className="flex justify-center mt-3">
-                  <Button 
-                    variant="outline"
-                    className="text-sm"
-                    onClick={() => setShowExplanation(true)}
-                  >
-                    Show Explanation Anyway
-                  </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
 
       <div className="flex justify-between mt-6">
         <Button 
@@ -624,6 +586,7 @@ const TakeExam = () => {
         )}
       </div>
       
+      {/* Summary Dialog */}
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
         <DialogContent>
           <DialogHeader>
@@ -669,6 +632,36 @@ const TakeExam = () => {
             </Button>
             <Button onClick={confirmFinishExam} disabled={isSaving}>
               {isSaving ? "Submitting..." : "Submit Exam"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes Dialog */}
+      <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Question Notes</DialogTitle>
+            <DialogDescription>
+              Add or update your notes for this question.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Textarea
+              placeholder="Add your notes here..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-[200px]"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNote} disabled={noteIsSaving}>
+              {noteIsSaving ? "Saving..." : "Save Note"}
             </Button>
           </DialogFooter>
         </DialogContent>
