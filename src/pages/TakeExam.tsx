@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -92,6 +93,9 @@ const TakeExam = () => {
     if (currentTestQuestions?.length && currentQuestionIndex >= 0 && user?.id) {
       const currentQId = currentTestQuestions[currentQuestionIndex]?.id;
       
+      if (!currentQId) return;
+
+      // Fetch note for current question
       const existingLocalNote = notes.find(note => note.questionId === currentQId);
       if (existingLocalNote) {
         setNoteText(existingLocalNote.note || "");
@@ -124,37 +128,8 @@ const TakeExam = () => {
         
         fetchNote();
       }
-      
-      const checkFlaggedStatus = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('flagged_questions')
-            .select('id')
-            .eq('question_id', currentQId)
-            .eq('user_id', user.id)
-            .maybeSingle();
-            
-          if (error) throw error;
-          
-          const isLocallyFlagged = flaggedQuestions.some(q => q.questionId === currentQId);
-          if (data && !isLocallyFlagged) {
-            dispatch(toggleFlagQuestion(currentQId));
-          } else if (!data && isLocallyFlagged) {
-            await supabase
-              .from('flagged_questions')
-              .insert({
-                question_id: currentQId,
-                user_id: user.id
-              });
-          }
-        } catch (error) {
-          console.error('Error checking flagged status:', error);
-        }
-      };
-      
-      checkFlaggedStatus();
     }
-  }, [currentQuestionIndex, currentTestQuestions, notes, user, dispatch, flaggedQuestions]);
+  }, [currentQuestionIndex, currentTestQuestions, notes, user, dispatch]);
 
   useEffect(() => {
     if (currentTestStartTime) {
@@ -209,7 +184,7 @@ const TakeExam = () => {
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
   const isFirstQuestion = currentQuestionIndex === 0;
   const questionAnswered = selectedAnswers[currentQuestion.id]?.length > 0;
-  const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
+  const isCurrentQuestionFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
   
   const isMultipleChoice = currentQuestion.options.filter(o => o.isCorrect).length > 1;
 
@@ -242,25 +217,30 @@ const TakeExam = () => {
     });
 
     if (currentExamType === 'study') {
-      saveCurrentAnswer();
+      saveCurrentAnswer(questionId, selectedOptionIds);
     }
   };
 
-  const saveCurrentAnswer = () => {
-    if (currentQuestion && selectedAnswers[currentQuestion.id]?.length > 0) {
-      const selectedOptionIds = selectedAnswers[currentQuestion.id];
-      const correctOptionIds = currentQuestion.options
+  const saveCurrentAnswer = (questionId?: string, selectedOptionIds?: string[]) => {
+    const qId = questionId || currentQuestion.id;
+    const optionIds = selectedOptionIds || selectedAnswers[qId];
+    
+    if (qId && optionIds?.length > 0) {
+      const question = currentTestQuestions.find(q => q.id === qId);
+      if (!question) return;
+      
+      const correctOptionIds = question.options
         .filter(option => option.isCorrect)
         .map(option => option.id);
       
       const isCorrect = isMultipleChoice
-        ? selectedOptionIds.length === correctOptionIds.length && 
-          selectedOptionIds.every(id => correctOptionIds.includes(id))
-        : selectedOptionIds[0] === correctOptionIds[0];
+        ? optionIds.length === correctOptionIds.length && 
+          optionIds.every(id => correctOptionIds.includes(id))
+        : optionIds[0] === correctOptionIds[0];
       
       const answer: AnsweredQuestion = {
-        questionId: currentQuestion.id,
-        selectedOptions: selectedOptionIds,
+        questionId: qId,
+        selectedOptions: optionIds,
         isCorrect,
         answeredAt: new Date().toISOString()
       };
@@ -271,14 +251,18 @@ const TakeExam = () => {
 
   const handlePrevQuestion = () => {
     if (!isFirstQuestion) {
-      saveCurrentAnswer();
+      if (currentExamType === 'test') {
+        saveCurrentAnswer();
+      }
       setCurrentQuestionIndex(currentQuestionIndex - 1);
     }
   };
 
   const handleNextQuestion = () => {
     if (!isLastQuestion) {
-      saveCurrentAnswer();
+      if (currentExamType === 'test') {
+        saveCurrentAnswer();
+      }
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -382,7 +366,9 @@ const TakeExam = () => {
   };
 
   const handleFinishExam = () => {
-    saveCurrentAnswer();
+    if (currentExamType === 'test') {
+      saveCurrentAnswer();
+    }
     setShowSummaryDialog(true);
   };
 
@@ -491,12 +477,12 @@ const TakeExam = () => {
           </h1>
           <div className="flex space-x-2">
             <Badge 
-              variant={isFlagged ? "secondary" : "outline"} 
+              variant={isCurrentQuestionFlagged ? "secondary" : "outline"} 
               className="cursor-pointer hover:bg-secondary" 
               onClick={() => handleFlagQuestion(currentQuestion.id)}
             >
-              <Flag className={`h-3 w-3 mr-1 ${isFlagged ? "text-amber-500" : ""}`} />
-              {isFlagged ? "Flagged" : "Flag"}
+              <Flag className={`h-3 w-3 mr-1 ${isCurrentQuestionFlagged ? "text-amber-500" : ""}`} />
+              {isCurrentQuestionFlagged ? "Flagged" : "Flag"}
             </Badge>
             <Badge 
               variant="outline"
@@ -539,7 +525,7 @@ const TakeExam = () => {
         isTestMode={currentExamType === 'test'}
         examType={currentExamType || 'test'}
         onFlagQuestion={handleFlagQuestion}
-        isFlagged={flaggedQuestions.some(q => q.questionId === currentQuestion.id)}
+        isFlagged={isCurrentQuestionFlagged}
       />
 
       <div className="flex justify-between mt-6">
