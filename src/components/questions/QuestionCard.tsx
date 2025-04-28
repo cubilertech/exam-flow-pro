@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -18,6 +17,8 @@ interface QuestionCardProps {
   selectedOptions?: string[];
   isAnswered?: boolean;
   isTestMode?: boolean;
+  onFlagQuestion?: (questionId: string) => void;
+  isFlagged?: boolean;
 }
 
 export const QuestionCard = ({
@@ -27,6 +28,8 @@ export const QuestionCard = ({
   selectedOptions = [],
   isAnswered = false,
   isTestMode = false,
+  onFlagQuestion,
+  isFlagged = false,
 }: QuestionCardProps) => {
   const dispatch = useAppDispatch();
   const [noteText, setNoteText] = useState("");
@@ -35,7 +38,6 @@ export const QuestionCard = ({
   const { notes, flaggedQuestions } = useAppSelector((state) => state.study);
   
   const existingNote = notes.find((note) => note.questionId === question.id);
-  const isFlagged = flaggedQuestions.some((q) => q.questionId === question.id);
   
   const isMultipleChoice = question.options.filter((opt) => opt.isCorrect).length > 1;
   
@@ -45,12 +47,10 @@ export const QuestionCard = ({
     let newSelectedOptions: string[];
     
     if (isMultipleChoice) {
-      // For multiple choice, toggle the selection
       newSelectedOptions = selectedOptions.includes(optionId)
         ? selectedOptions.filter((id) => id !== optionId)
         : [...selectedOptions, optionId];
     } else {
-      // For single choice, replace the selection
       newSelectedOptions = [optionId];
     }
     
@@ -72,7 +72,11 @@ export const QuestionCard = ({
   };
   
   const handleFlagQuestion = () => {
-    dispatch(toggleFlagQuestion(question.id));
+    if (onFlagQuestion) {
+      onFlagQuestion(question.id);
+    } else {
+      dispatch(toggleFlagQuestion(question.id));
+    }
   };
   
   const getDifficultyClass = (difficulty: string) => {

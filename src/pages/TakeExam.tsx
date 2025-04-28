@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -52,8 +51,8 @@ const TakeExam = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [noteIsSaving, setNoteIsSaving] = useState(false);
   const [examDetails, setExamDetails] = useState<any>(null);
+  const [isFlagging, setIsFlagging] = useState(false);
 
-  // Initialize selected answers from previously saved answers
   useEffect(() => {
     if (answeredQuestions.length > 0 && currentTestQuestions?.length > 0) {
       const savedAnswers: Record<string, string[]> = {};
@@ -66,7 +65,6 @@ const TakeExam = () => {
     }
   }, [answeredQuestions, currentTestQuestions]);
 
-  // Fetch exam details for time limit information
   useEffect(() => {
     if (currentExamId) {
       const fetchExamDetails = async () => {
@@ -89,17 +87,14 @@ const TakeExam = () => {
     }
   }, [currentExamId]);
 
-  // Load existing note for current question
   useEffect(() => {
     if (currentTestQuestions?.length && currentQuestionIndex >= 0 && user?.id) {
       const currentQId = currentTestQuestions[currentQuestionIndex]?.id;
       
-      // Check in local state first
       const existingLocalNote = notes.find(note => note.questionId === currentQId);
       if (existingLocalNote) {
         setNoteText(existingLocalNote.note || "");
       } else {
-        // Check in database
         const fetchNote = async () => {
           try {
             const { data, error } = await supabase
@@ -113,7 +108,6 @@ const TakeExam = () => {
             
             if (data) {
               setNoteText(data.note);
-              // Also update local state
               dispatch(addNote({
                 questionId: currentQId,
                 note: data.note,
@@ -130,7 +124,6 @@ const TakeExam = () => {
         fetchNote();
       }
       
-      // Check flagged status from database
       const checkFlaggedStatus = async () => {
         try {
           const { data, error } = await supabase
@@ -142,12 +135,10 @@ const TakeExam = () => {
             
           if (error) throw error;
           
-          // If flagged in database but not in local state, update local state
           const isLocallyFlagged = flaggedQuestions.some(q => q.questionId === currentQId);
           if (data && !isLocallyFlagged) {
             dispatch(toggleFlagQuestion(currentQId));
           } else if (!data && isLocallyFlagged) {
-            // If flagged in local state but not in database, update database
             await supabase
               .from('flagged_questions')
               .insert({
@@ -164,7 +155,6 @@ const TakeExam = () => {
     }
   }, [currentQuestionIndex, currentTestQuestions, notes, user, dispatch, flaggedQuestions]);
 
-  // Update timer
   useEffect(() => {
     if (currentTestStartTime) {
       const interval = setInterval(() => {
@@ -178,14 +168,12 @@ const TakeExam = () => {
     }
   }, [currentTestStartTime]);
 
-  // Redirect if not in test mode or no questions
   useEffect(() => {
     if (!currentTestQuestions || currentTestQuestions.length === 0 || !currentStudyMode) {
       navigate('/my-exams');
     }
   }, [currentTestQuestions, currentStudyMode, navigate]);
 
-  // Check time limit
   useEffect(() => {
     if (examDetails && examDetails.is_timed && examDetails.time_limit && currentTestStartTime) {
       const checkTimeLimit = () => {
@@ -197,7 +185,6 @@ const TakeExam = () => {
         if (examDetails.time_limit_type === 'total_time') {
           timeLimit = examDetails.time_limit;
         } else {
-          // For seconds_per_question, multiply by question count
           timeLimit = examDetails.time_limit * currentTestQuestions.length;
         }
         
@@ -207,7 +194,7 @@ const TakeExam = () => {
         }
       };
       
-      const timer = setInterval(checkTimeLimit, 5000); // Check every 5 seconds
+      const timer = setInterval(checkTimeLimit, 5000);
       return () => clearInterval(timer);
     }
   }, [examDetails, currentTestStartTime, currentTestQuestions]);
@@ -223,17 +210,14 @@ const TakeExam = () => {
   const questionAnswered = selectedAnswers[currentQuestion.id]?.length > 0;
   const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
   
-  // Check if question has multiple correct answers
   const isMultipleChoice = currentQuestion.options.filter(o => o.isCorrect).length > 1;
 
-  // Format time as mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate and display remaining time if timed
   const getRemainingTime = () => {
     if (!examDetails || !examDetails.is_timed || !examDetails.time_limit) {
       return null;
@@ -243,7 +227,6 @@ const TakeExam = () => {
     if (examDetails.time_limit_type === 'total_time') {
       totalTimeLimit = examDetails.time_limit;
     } else {
-      // For seconds_per_question, multiply by question count
       totalTimeLimit = examDetails.time_limit * currentTestQuestions.length;
     }
     
@@ -253,7 +236,6 @@ const TakeExam = () => {
 
   const handleSelectAnswer = (optionId: string) => {
     if (isMultipleChoice) {
-      // For multiple choice questions
       const currentSelectedOptions = selectedAnswers[currentQuestion.id] || [];
       const isSelected = currentSelectedOptions.includes(optionId);
       
@@ -269,7 +251,6 @@ const TakeExam = () => {
         });
       }
     } else {
-      // For single choice questions
       setSelectedAnswers({
         ...selectedAnswers,
         [currentQuestion.id]: [optionId]
@@ -284,8 +265,6 @@ const TakeExam = () => {
         .filter(option => option.isCorrect)
         .map(option => option.id);
       
-      // For single choice, exact match required
-      // For multiple choice, all correct answers must be selected and no incorrect ones
       const isCorrect = isMultipleChoice
         ? selectedOptionIds.length === correctOptionIds.length && 
           selectedOptionIds.every(id => correctOptionIds.includes(id))
@@ -327,7 +306,6 @@ const TakeExam = () => {
     try {
       setNoteIsSaving(true);
       
-      // Update local state
       dispatch(
         addNote({
           questionId: currentQuestion.id,
@@ -336,7 +314,6 @@ const TakeExam = () => {
         })
       );
       
-      // Save to database
       if (noteText.trim()) {
         const { error } = await supabase
           .from('user_notes')
@@ -351,7 +328,6 @@ const TakeExam = () => {
         
         toast.success("Note saved successfully");
       } else {
-        // If note is empty, delete it
         const { error } = await supabase
           .from('user_notes')
           .delete()
@@ -370,44 +346,46 @@ const TakeExam = () => {
     }
   };
 
-  const handleFlagQuestion = async () => {
+  const handleFlagQuestion = async (questionId: string) => {
     if (!user?.id) {
       toast.error('You must be logged in to flag questions');
       return;
     }
     
     try {
-      // Toggle flag in local state
-      dispatch(toggleFlagQuestion(currentQuestion.id));
+      setIsFlagging(true);
       
-      // Check if already flagged to determine whether to insert or delete
-      const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
+      const isCurrentlyFlagged = flaggedQuestions.some(q => q.questionId === questionId);
       
-      if (!isFlagged) {
-        // Add to database
+      if (!isCurrentlyFlagged) {
         const { error } = await supabase
           .from('flagged_questions')
           .insert({
             user_id: user.id,
-            question_id: currentQuestion.id
+            question_id: questionId
           });
           
         if (error) throw error;
+        
+        dispatch(toggleFlagQuestion(questionId));
+        toast.success('Question flagged for review');
       } else {
-        // Remove from database
         const { error } = await supabase
           .from('flagged_questions')
           .delete()
           .eq('user_id', user.id)
-          .eq('question_id', currentQuestion.id);
+          .eq('question_id', questionId);
           
         if (error) throw error;
+        
+        dispatch(toggleFlagQuestion(questionId));
+        toast.success('Question unflagged');
       }
     } catch (error) {
       console.error('Error toggling flag:', error);
       toast.error('Failed to update flag status');
-      // Revert the local state change if database operation failed
-      dispatch(toggleFlagQuestion(currentQuestion.id));
+    } finally {
+      setIsFlagging(false);
     }
   };
 
@@ -429,7 +407,6 @@ const TakeExam = () => {
     try {
       setIsSaving(true);
       
-      // Calculate results
       const allAnswers = Object.keys(selectedAnswers).map(questionId => {
         const question = currentTestQuestions.find(q => q.id === questionId);
         const selectedOptionIds = selectedAnswers[questionId] || [];
@@ -437,7 +414,6 @@ const TakeExam = () => {
           .filter(option => option.isCorrect)
           .map(option => option.id) || [];
         
-        // Calculate if answer is correct
         const isCorrect = question?.options.filter(o => o.isCorrect).length > 1
           ? selectedOptionIds.length === correctOptionIds.length && 
             selectedOptionIds.every(id => correctOptionIds.includes(id))
@@ -454,10 +430,8 @@ const TakeExam = () => {
       const correctCount = allAnswers.filter(answer => answer.isCorrect).length;
       const scorePercentage = (correctCount / currentTestQuestions.length) * 100;
       
-      // Get unique category IDs from questions
       const categoryIds = Array.from(new Set(currentTestQuestions.map(q => q.categoryId)));
       
-      // Update the exam status to completed in the database
       const { error: examUpdateError } = await supabase
         .from('user_exams')
         .update({ completed: true })
@@ -465,7 +439,6 @@ const TakeExam = () => {
         
       if (examUpdateError) throw examUpdateError;
       
-      // Save the exam result to the database
       const { data: resultData, error: resultError } = await supabase
         .from('exam_results')
         .insert({
@@ -483,7 +456,6 @@ const TakeExam = () => {
         
       if (resultError) throw resultError;
       
-      // Submit test results to the state
       const result = {
         id: resultData.id,
         testDate: new Date().toISOString(),
@@ -503,7 +475,6 @@ const TakeExam = () => {
       dispatch(submitTestResult(result));
       setShowSummaryDialog(false);
       
-      // Update the user_answers table to help with difficulty calculation
       for (const answer of allAnswers) {
         await supabase
           .from('user_answers')
@@ -514,7 +485,6 @@ const TakeExam = () => {
           });
       }
       
-      // Navigate to results page
       navigate(`/exam-results/${result.id}`);
     } catch (error) {
       console.error('Error submitting exam:', error);
@@ -569,6 +539,8 @@ const TakeExam = () => {
         selectedOptions={selectedAnswers[currentQuestion.id] || []}
         isAnswered={questionAnswered}
         isTestMode={true}
+        onFlagQuestion={handleFlagQuestion}
+        isFlagged={flaggedQuestions.some(q => q.questionId === currentQuestion.id)}
       />
 
       <div className="mt-6">
@@ -652,7 +624,6 @@ const TakeExam = () => {
         )}
       </div>
       
-      {/* Exam Summary Dialog */}
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
         <DialogContent>
           <DialogHeader>
