@@ -1,221 +1,224 @@
+
 import React, { useState, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Flag, 
-  BookOpen, 
-  Timer, 
-  AlertTriangle
-} from 'lucide-react';
-import { 
-  answerQuestion, 
-  submitTestResult, 
-  toggleFlagQuestion, 
-  addNote,
-  AnsweredQuestion
-} from '@/features/study/studySlice';
-import { toast } from 'sonner';
 import { QuestionCard } from '@/components/questions/QuestionCard';
+import { useAppSelector, useAppDispatch } from '@/lib/hooks';
+import { answerQuestion, submitTestResult } from '@/features/study/studySlice';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
+import { ArrowLeft, ArrowRight, Save, CheckCircle } from 'lucide-react';
 
 const TakeExam = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { 
-    currentTestQuestions, 
-    currentStudyMode, 
-    answeredQuestions,
-    notes,
-    flaggedQuestions,
-    currentTestStartTime,
-    currentExamId,
-    currentExamName
-  } = useAppSelector((state) => state.study);
-  
-  const { user } = useAppSelector((state) => state.auth);
-  
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
-  const [noteText, setNoteText] = useState("");
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
-  const [examDuration, setExamDuration] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [noteIsSaving, setNoteIsSaving] = useState(false);
-  const [examDetails, setExamDetails] = useState<any>(null);
 
+  const { currentTestQuestions, currentExam, currentTestStartTime, answeredQuestions } = 
+    useAppSelector((state) => state.study);
+  const { user } = useAppSelector((state) => state.auth);
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect if no test questions or no current exam are loaded
   useEffect(() => {
-    console.log('TakeExam component mounted');
-    console.log('Current test questions:', currentTestQuestions?.length);
-    console.log('Current study mode:', currentStudyMode);
-    console.log('Current exam ID:', currentExamId);
+    console.log("TakeExam page loaded with:", { 
+      questionsCount: currentTestQuestions.length,
+      currentExam,
+      startTime: currentTestStartTime 
+    });
     
-    if (!currentTestQuestions || currentTestQuestions.length === 0 || !currentStudyMode) {
-      console.log('No exam data found, redirecting to /my-exams');
+    if (!currentTestQuestions || currentTestQuestions.length === 0 || !currentExam) {
+      console.log("No questions or exam data found, redirecting to /my-exams");
+      toast.error("No exam in progress. Please start or continue an exam first.");
       navigate('/my-exams');
     }
-  }, [currentTestQuestions, currentStudyMode, navigate, currentExamId]);
+  }, [currentTestQuestions, currentExam, navigate, currentTestStartTime]);
 
+  // Calculate remaining time if test is timed
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  
   useEffect(() => {
-    if (answeredQuestions.length > 0 && currentTestQuestions?.length > 0) {
-      const savedAnswers: Record<string, string[]> = {};
-      answeredQuestions.forEach(answer => {
-        if (currentTestQuestions.some(q => q.id === answer.questionId)) {
-          savedAnswers[answer.questionId] = answer.selectedOptions;
-        }
-      });
-      setSelectedAnswers(savedAnswers);
-    }
-  }, [answeredQuestions, currentTestQuestions]);
-
-  useEffect(() => {
-    if (currentExamId) {
-      const fetchExamDetails = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('user_exams')
-            .select('*')
-            .eq('id', currentExamId)
-            .single();
-            
-          if (error) throw error;
-          
-          setExamDetails(data);
-        } catch (error) {
-          console.error('Error fetching exam details:', error);
-        }
-      };
-      
-      fetchExamDetails();
-    }
-  }, [currentExamId]);
-
-  useEffect(() => {
-    if (currentTestQuestions?.length && currentQuestionIndex >= 0 && user?.id) {
-      const currentQId = currentTestQuestions[currentQuestionIndex]?.id;
-      
-      const existingLocalNote = notes.find(note => note.questionId === currentQId);
-      if (existingLocalNote) {
-        setNoteText(existingLocalNote.note || "");
+    let timer: number | undefined;
+    
+    if (currentExam?.isTimed && currentExam?.timeLimit && currentTestStartTime) {
+      // Calculate time based on time limit type
+      let totalSeconds;
+      if (currentExam.timeLimitType === 'total_seconds') {
+        totalSeconds = currentExam.timeLimit;
       } else {
-        const fetchNote = async () => {
-          try {
-            const { data, error } = await supabase
-              .from('user_notes')
-              .select('note')
-              .eq('question_id', currentQId)
-              .eq('user_id', user.id)
-              .maybeSingle();
-              
-            if (error) throw error;
-            
-            if (data) {
-              setNoteText(data.note);
-              dispatch(addNote({
-                questionId: currentQId,
-                note: data.note,
-                updatedAt: new Date().toISOString(),
-              }));
-            } else {
-              setNoteText("");
-            }
-          } catch (error) {
-            console.error('Error fetching note:', error);
-          }
-        };
-        
-        fetchNote();
+        // Default to seconds_per_question
+        totalSeconds = currentExam.timeLimit * currentTestQuestions.length;
       }
       
-      const checkFlaggedStatus = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('flagged_questions')
-            .select('id')
-            .eq('question_id', currentQId)
-            .eq('user_id', user.id)
-            .maybeSingle();
-            
-          if (error) throw error;
-          
-          const isLocallyFlagged = flaggedQuestions.some(q => q.questionId === currentQId);
-          if (data && !isLocallyFlagged) {
-            dispatch(toggleFlagQuestion(currentQId));
-          } else if (!data && isLocallyFlagged) {
-            await supabase
-              .from('flagged_questions')
-              .insert({
-                question_id: currentQId,
-                user_id: user.id
-              });
-          }
-        } catch (error) {
-          console.error('Error checking flagged status:', error);
+      const updateTime = () => {
+        const startTime = new Date(currentTestStartTime).getTime();
+        const now = new Date().getTime();
+        const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+        
+        setRemainingTime(remaining);
+        
+        if (remaining <= 0) {
+          clearInterval(timer);
+          handleSubmitExam();
         }
       };
       
-      checkFlaggedStatus();
+      updateTime();
+      timer = window.setInterval(updateTime, 1000);
     }
-  }, [currentQuestionIndex, currentTestQuestions, notes, user, dispatch, flaggedQuestions]);
+    
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [currentExam, currentTestStartTime, currentTestQuestions]);
 
+  // Load any previously saved answers
   useEffect(() => {
-    if (currentTestStartTime) {
-      const interval = setInterval(() => {
-        const startTime = new Date(currentTestStartTime).getTime();
-        const currentTime = new Date().getTime();
-        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-        setExamDuration(elapsedSeconds);
-      }, 1000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [currentTestStartTime]);
-
-  useEffect(() => {
-    if (examDetails && examDetails.is_timed && examDetails.time_limit && currentTestStartTime) {
-      const checkTimeLimit = () => {
-        const startTime = new Date(currentTestStartTime).getTime();
-        const currentTime = new Date().getTime();
-        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-        
-        let timeLimit;
-        if (examDetails.time_limit_type === 'total_time') {
-          timeLimit = examDetails.time_limit;
-        } else {
-          timeLimit = examDetails.time_limit * currentTestQuestions.length;
-        }
-        
-        if (elapsedSeconds >= timeLimit) {
-          toast.error("Time's up! Submitting your exam.");
-          confirmFinishExam();
-        }
-      };
-      
-      const timer = setInterval(checkTimeLimit, 5000);
-      return () => clearInterval(timer);
-    }
-  }, [examDetails, currentTestStartTime, currentTestQuestions]);
-
-  if (!currentTestQuestions || currentTestQuestions.length === 0) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
+    const savedAnswers: Record<string, string[]> = {};
+    
+    answeredQuestions.forEach((answer) => {
+      if (currentTestQuestions.some(q => q.id === answer.questionId)) {
+        savedAnswers[answer.questionId] = answer.selectedOptions;
+      }
+    });
+    
+    setSelectedOptions(savedAnswers);
+  }, [answeredQuestions, currentTestQuestions]);
 
   const currentQuestion = currentTestQuestions[currentQuestionIndex];
-  const totalQuestions = currentTestQuestions.length;
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
-  const isFirstQuestion = currentQuestionIndex === 0;
-  const questionAnswered = selectedAnswers[currentQuestion.id]?.length > 0;
-  const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
-  
-  const isMultipleChoice = currentQuestion.options.filter(o => o.isCorrect).length > 1;
+
+  const handleOptionSelect = (questionId: string, options: string[]) => {
+    console.log("Option selected:", { questionId, options });
+    setSelectedOptions({
+      ...selectedOptions,
+      [questionId]: options,
+    });
+
+    // Determine if the answer is correct
+    const question = currentTestQuestions.find(q => q.id === questionId);
+    if (!question) return;
+
+    const correctOptionIds = question.options
+      .filter(opt => opt.isCorrect)
+      .map(opt => opt.id);
+
+    const isCorrect = 
+      options.length === correctOptionIds.length &&
+      options.every(optId => correctOptionIds.includes(optId));
+
+    // Save the answer to redux
+    dispatch(answerQuestion({
+      questionId,
+      selectedOptions: options,
+      isCorrect,
+      answeredAt: new Date().toISOString(),
+    }));
+  };
+
+  const handleSubmitExam = async () => {
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      if (!user?.id || !currentExam) {
+        toast.error("User or exam data missing");
+        return;
+      }
+
+      const startTime = currentTestStartTime ? new Date(currentTestStartTime) : new Date();
+      const endTime = new Date();
+      const timeTakenSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      // Create a results summary
+      const answers = currentTestQuestions.map(question => {
+        const selected = selectedOptions[question.id] || [];
+        const correctOptionIds = question.options
+          .filter(opt => opt.isCorrect)
+          .map(opt => opt.id);
+          
+        const isCorrect = 
+          selected.length === correctOptionIds.length &&
+          selected.every(optId => correctOptionIds.includes(optId));
+          
+        return {
+          questionId: question.id,
+          selectedOptions: selected,
+          isCorrect,
+        };
+      });
+      
+      const correctCount = answers.filter(a => a.isCorrect).length;
+      const incorrectCount = answers.length - correctCount;
+      const score = Math.round((correctCount / answers.length) * 100);
+
+      const resultId = uuidv4();
+      
+      // Store result in database
+      const { error: resultError } = await supabase
+        .from('exam_results')
+        .insert({
+          id: resultId,
+          user_exam_id: currentExam.id,
+          user_id: user.id,
+          completed_at: endTime.toISOString(),
+          correct_count: correctCount,
+          incorrect_count: incorrectCount,
+          score: score,
+          time_taken: timeTakenSeconds,
+          answers: answers,
+        });
+        
+      if (resultError) {
+        console.error('Error saving exam results:', resultError);
+        throw new Error(resultError.message);
+      }
+      
+      // Update exam to completed
+      const { error: updateError } = await supabase
+        .from('user_exams')
+        .update({ completed: true })
+        .eq('id', currentExam.id);
+        
+      if (updateError) {
+        console.error('Error updating exam status:', updateError);
+        throw new Error(updateError.message);
+      }
+
+      // Update Redux
+      dispatch(submitTestResult({
+        id: resultId,
+        examId: currentExam.id,
+        examName: currentExam.name,
+        testDate: startTime.toISOString(),
+        categoryIds: currentExam.categoryIds,
+        questionCount: currentTestQuestions.length,
+        correctCount,
+        incorrectCount,
+        score,
+        timeTaken: timeTakenSeconds,
+        answers: answers.map(a => ({
+          ...a,
+          answeredAt: endTime.toISOString(),
+        })),
+        timeStarted: startTime.toISOString(),
+        timeCompleted: endTime.toISOString(),
+      }));
+
+      toast.success("Exam completed!");
+      navigate(`/exam-results/${resultId}`);
+      
+    } catch (error: any) {
+      console.error('Error submitting exam:', error);
+      toast.error(`Error submitting exam: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -223,452 +226,73 @@ const TakeExam = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getRemainingTime = () => {
-    if (!examDetails || !examDetails.is_timed || !examDetails.time_limit) {
-      return null;
-    }
-    
-    let totalTimeLimit;
-    if (examDetails.time_limit_type === 'total_time') {
-      totalTimeLimit = examDetails.time_limit;
-    } else {
-      totalTimeLimit = examDetails.time_limit * currentTestQuestions.length;
-    }
-    
-    const remainingSeconds = Math.max(0, totalTimeLimit - examDuration);
-    return formatTime(remainingSeconds);
-  };
+  if (!currentQuestion) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <p>Loading exam...</p>
+      </div>
+    );
+  }
 
-  const handleSelectAnswer = (optionId: string) => {
-    if (isMultipleChoice) {
-      const currentSelectedOptions = selectedAnswers[currentQuestion.id] || [];
-      const isSelected = currentSelectedOptions.includes(optionId);
-      
-      if (isSelected) {
-        setSelectedAnswers({
-          ...selectedAnswers,
-          [currentQuestion.id]: currentSelectedOptions.filter(id => id !== optionId)
-        });
-      } else {
-        setSelectedAnswers({
-          ...selectedAnswers,
-          [currentQuestion.id]: [...currentSelectedOptions, optionId]
-        });
-      }
-    } else {
-      setSelectedAnswers({
-        ...selectedAnswers,
-        [currentQuestion.id]: [optionId]
-      });
-    }
-  };
-
-  const saveCurrentAnswer = () => {
-    if (currentQuestion && selectedAnswers[currentQuestion.id]?.length > 0) {
-      const selectedOptionIds = selectedAnswers[currentQuestion.id];
-      const correctOptionIds = currentQuestion.options
-        .filter(option => option.isCorrect)
-        .map(option => option.id);
-      
-      const isCorrect = isMultipleChoice
-        ? selectedOptionIds.length === correctOptionIds.length && 
-          selectedOptionIds.every(id => correctOptionIds.includes(id))
-        : selectedOptionIds[0] === correctOptionIds[0];
-      
-      const answer: AnsweredQuestion = {
-        questionId: currentQuestion.id,
-        selectedOptions: selectedOptionIds,
-        isCorrect,
-        answeredAt: new Date().toISOString()
-      };
-      
-      dispatch(answerQuestion(answer));
-    }
-  };
-
-  const handlePrevQuestion = () => {
-    if (!isFirstQuestion) {
-      saveCurrentAnswer();
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setShowExplanation(false);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    if (!isLastQuestion) {
-      saveCurrentAnswer();
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setShowExplanation(false);
-    }
-  };
-
-  const handleSaveNote = async () => {
-    if (!user?.id) {
-      toast.error('You must be logged in to save notes');
-      return;
-    }
-    
-    try {
-      setNoteIsSaving(true);
-      
-      dispatch(
-        addNote({
-          questionId: currentQuestion.id,
-          note: noteText,
-          updatedAt: new Date().toISOString(),
-        })
-      );
-      
-      if (noteText.trim()) {
-        const { error } = await supabase
-          .from('user_notes')
-          .upsert({
-            user_id: user.id,
-            question_id: currentQuestion.id,
-            note: noteText,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id,question_id' });
-          
-        if (error) throw error;
-        
-        toast.success("Note saved successfully");
-      } else {
-        const { error } = await supabase
-          .from('user_notes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('question_id', currentQuestion.id);
-          
-        if (error) throw error;
-        
-        toast.success("Note cleared");
-      }
-    } catch (error) {
-      console.error('Error saving note:', error);
-      toast.error('Failed to save note');
-    } finally {
-      setNoteIsSaving(false);
-    }
-  };
-
-  const handleFlagQuestion = async () => {
-    if (!user?.id) {
-      toast.error('You must be logged in to flag questions');
-      return;
-    }
-    
-    try {
-      dispatch(toggleFlagQuestion(currentQuestion.id));
-      
-      const isFlagged = flaggedQuestions.some(q => q.questionId === currentQuestion.id);
-      
-      if (!isFlagged) {
-        const { error } = await supabase
-          .from('flagged_questions')
-          .insert({
-            user_id: user.id,
-            question_id: currentQuestion.id
-          });
-          
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('flagged_questions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('question_id', currentQuestion.id);
-          
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error('Error toggling flag:', error);
-      toast.error('Failed to update flag status');
-      dispatch(toggleFlagQuestion(currentQuestion.id));
-    }
-  };
-
-  const getCompletedQuestionCount = () => {
-    return Object.keys(selectedAnswers).length;
-  };
-
-  const handleFinishExam = () => {
-    saveCurrentAnswer();
-    setShowSummaryDialog(true);
-  };
-
-  const confirmFinishExam = async () => {
-    if (!user?.id || !currentExamId) {
-      toast.error('You must be logged in to submit an exam');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      
-      const allAnswers = Object.keys(selectedAnswers).map(questionId => {
-        const question = currentTestQuestions.find(q => q.id === questionId);
-        const selectedOptionIds = selectedAnswers[questionId] || [];
-        const correctOptionIds = question?.options
-          .filter(option => option.isCorrect)
-          .map(option => option.id) || [];
-        
-        const isCorrect = question?.options.filter(o => o.isCorrect).length > 1
-          ? selectedOptionIds.length === correctOptionIds.length && 
-            selectedOptionIds.every(id => correctOptionIds.includes(id))
-          : selectedOptionIds[0] === correctOptionIds[0];
-        
-        return {
-          questionId,
-          selectedOptions: selectedOptionIds,
-          isCorrect,
-          answeredAt: new Date().toISOString()
-        };
-      });
-      
-      const correctCount = allAnswers.filter(answer => answer.isCorrect).length;
-      const scorePercentage = (correctCount / currentTestQuestions.length) * 100;
-      
-      const categoryIds = Array.from(new Set(currentTestQuestions.map(q => q.categoryId)));
-      
-      const { error: examUpdateError } = await supabase
-        .from('user_exams')
-        .update({ completed: true })
-        .eq('id', currentExamId);
-        
-      if (examUpdateError) throw examUpdateError;
-      
-      const { data: resultData, error: resultError } = await supabase
-        .from('exam_results')
-        .insert({
-          user_exam_id: currentExamId,
-          user_id: user.id,
-          correct_count: correctCount,
-          incorrect_count: currentTestQuestions.length - correctCount,
-          score: Math.round(scorePercentage),
-          time_taken: examDuration,
-          answers: allAnswers,
-          completed_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-        
-      if (resultError) throw resultError;
-      
-      const result = {
-        id: resultData.id,
-        testDate: new Date().toISOString(),
-        categoryIds,
-        questionCount: currentTestQuestions.length,
-        correctCount,
-        incorrectCount: currentTestQuestions.length - correctCount,
-        score: Math.round(scorePercentage),
-        timeTaken: examDuration,
-        answers: allAnswers,
-        timeStarted: currentTestStartTime || new Date().toISOString(),
-        timeCompleted: new Date().toISOString(),
-        examId: currentExamId,
-        examName: currentExamName || 'Exam'
-      };
-      
-      dispatch(submitTestResult(result));
-      setShowSummaryDialog(false);
-      
-      for (const answer of allAnswers) {
-        await supabase
-          .from('user_answers')
-          .insert({
-            question_id: answer.questionId,
-            user_id: user.id,
-            is_correct: answer.isCorrect
-          });
-      }
-      
-      navigate(`/exam-results/${result.id}`);
-    } catch (error) {
-      console.error('Error submitting exam:', error);
-      toast.error('Failed to submit exam. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const isAnswered = selectedOptions[currentQuestion.id]?.length > 0;
+  const isLastQuestion = currentQuestionIndex === currentTestQuestions.length - 1;
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-2xl font-bold">
-            Question {currentQuestionIndex + 1} of {totalQuestions}
-          </h1>
-          <Badge variant={isFlagged ? "secondary" : "outline"} 
-            className="cursor-pointer hover:bg-secondary" 
-            onClick={handleFlagQuestion}>
-            <Flag className={`h-3 w-3 mr-1 ${isFlagged ? "text-amber-500" : ""}`} />
-            {isFlagged ? "Flagged" : "Flag"}
-          </Badge>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="px-2 py-1">
-            <Timer className="h-4 w-4 mr-1.5" />
-            {examDetails?.is_timed ? getRemainingTime() : formatTime(examDuration)}
-          </Badge>
-          <Button onClick={handleFinishExam} variant="default">
-            Finish Exam
-          </Button>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{currentExam?.name || 'Exam'}</h1>
+        
+        <div className="flex items-center space-x-4">
+          {remainingTime !== null && (
+            <div className="text-lg font-semibold">
+              Time: {formatTime(remainingTime)}
+            </div>
+          )}
+          
+          <div className="text-sm font-medium">
+            Question {currentQuestionIndex + 1} of {currentTestQuestions.length}
+          </div>
         </div>
       </div>
       
-      <div className="mb-4">
-        <Progress value={(getCompletedQuestionCount() / totalQuestions) * 100} className="h-2" />
-        <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-          <span>Completed: {getCompletedQuestionCount()}/{totalQuestions}</span>
-          <span>{Math.round((getCompletedQuestionCount() / totalQuestions) * 100)}%</span>
-        </div>
-      </div>
-
       <QuestionCard
         question={currentQuestion}
         showAnswers={false}
-        onAnswerSelect={(_, selectedOpts) => {
-          setSelectedAnswers({
-            ...selectedAnswers,
-            [currentQuestion.id]: selectedOpts
-          });
-        }}
-        selectedOptions={selectedAnswers[currentQuestion.id] || []}
-        isAnswered={questionAnswered}
+        onAnswerSelect={handleOptionSelect}
+        selectedOptions={selectedOptions[currentQuestion.id] || []}
+        isAnswered={false}
         isTestMode={true}
       />
-
-      <div className="mt-6">
-        <Tabs defaultValue="notes" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="notes">My Notes</TabsTrigger>
-            <TabsTrigger value="explanation" onClick={() => setShowExplanation(true)}>
-              Explanation
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="notes" className="space-y-2 mt-2">
-            <Textarea
-              placeholder="Add your notes for this question here..."
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              className="min-h-[100px]"
-            />
-            <Button onClick={handleSaveNote} size="sm" disabled={noteIsSaving}>
-              {noteIsSaving ? "Saving..." : "Save Note"}
-            </Button>
-          </TabsContent>
-          
-          <TabsContent value="explanation" className="mt-2">
-            {showExplanation ? (
-              <div className="p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center mb-2">
-                  <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                  <h3 className="font-medium">Explanation</h3>
-                </div>
-                <p className="text-sm">{currentQuestion.explanation || "No explanation available."}</p>
-              </div>
-            ) : (
-              <div className="p-4 border rounded-md bg-muted/30">
-                <div className="flex items-center justify-center">
-                  <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
-                  <p className="text-sm text-muted-foreground">
-                    Viewing the explanation will mark this as a study question rather than a test question.
-                  </p>
-                </div>
-                <div className="flex justify-center mt-3">
-                  <Button 
-                    variant="outline"
-                    className="text-sm"
-                    onClick={() => setShowExplanation(true)}
-                  >
-                    Show Explanation Anyway
-                  </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
-
+      
       <div className="flex justify-between mt-6">
-        <Button 
-          onClick={handlePrevQuestion} 
-          disabled={isFirstQuestion}
+        <Button
           variant="outline"
+          onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+          disabled={currentQuestionIndex === 0}
         >
-          <ArrowLeft className="h-4 w-4 mr-1" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
         
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {currentQuestionIndex + 1} of {totalQuestions}
-          </span>
+        <div className="space-x-2">
+          {isLastQuestion ? (
+            <Button 
+              onClick={handleSubmitExam}
+              disabled={isSubmitting}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Submit Exam
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setCurrentQuestionIndex(prev => Math.min(currentTestQuestions.length - 1, prev + 1))}
+            >
+              Next
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </div>
-        
-        {isLastQuestion ? (
-          <Button onClick={handleFinishExam} variant="default">
-            Finish Exam
-          </Button>
-        ) : (
-          <Button onClick={handleNextQuestion}>
-            Next
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
-        )}
       </div>
-      
-      <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Finish Exam</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to finish and submit this exam?
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span>Total Questions:</span>
-                <span className="font-medium">{totalQuestions}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Answered:</span>
-                <span className="font-medium">{getCompletedQuestionCount()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Unanswered:</span>
-                <span className="font-medium">{totalQuestions - getCompletedQuestionCount()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Time taken:</span>
-                <span className="font-medium">{formatTime(examDuration)}</span>
-              </div>
-              
-              {totalQuestions - getCompletedQuestionCount() > 0 && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
-                    You have {totalQuestions - getCompletedQuestionCount()} unanswered questions. Unanswered questions will be marked as incorrect.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter className="flex space-x-2 sm:space-x-0">
-            <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>
-              Continue Exam
-            </Button>
-            <Button onClick={confirmFinishExam} disabled={isSaving}>
-              {isSaving ? "Submitting..." : "Submit Exam"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

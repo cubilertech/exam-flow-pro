@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   Table,
@@ -35,11 +35,11 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { 
   setCurrentExam, 
   startExam, 
-  loadExamQuestions,
-  clearCurrentTest
+  loadExamQuestions 
 } from '@/features/study/studySlice';
 
 interface ExamsTableProps {
@@ -53,7 +53,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
   const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [isContinuing, setIsContinuing] = useState(false);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -130,13 +129,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
-      setIsContinuing(true);
-      console.log('Continue exam clicked:', exam.id);
+      console.log('Starting exam continuation for exam:', exam.id);
       
-      // First clear any existing exam state
-      dispatch(clearCurrentTest());
-      
-      // Set the current exam details
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -147,8 +141,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         timeLimit: exam.time_limit,
         timeLimitType: exam.time_limit_type
       }));
-      
-      console.log('Fetching questions for exam...');
+
       const { data: questions, error } = await supabase
         .from('questions')
         .select(`
@@ -159,16 +152,18 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         .in('difficulty', exam.difficulty_levels)
         .limit(exam.questionCount);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching questions:', error);
+        throw error;
+      }
 
       if (!questions || questions.length === 0) {
         toast.error('No questions found for this exam');
-        setIsContinuing(false);
         return;
       }
 
       console.log(`Found ${questions.length} questions for the exam`);
-      
+
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
         text: q.text,
@@ -186,21 +181,18 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       }));
 
       dispatch(loadExamQuestions(formattedQuestions));
+      
       dispatch(startExam({
         mode: 'test',
         startTime: new Date().toISOString()
       }));
 
       console.log('Navigating to /exam/take');
-      // Force navigation with a small timeout to ensure Redux state is updated
-      setTimeout(() => {
-        navigate('/exam/take');
-        setIsContinuing(false);
-      }, 100);
+      
+      navigate('/exam/take');
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.error('Failed to continue exam');
-      setIsContinuing(false);
     }
   };
 
@@ -331,19 +323,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
-                    disabled={isContinuing}
                   >
-                    {isContinuing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Continue
-                      </>
-                    )}
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Continue
                   </Button>
                 )}
                 <AlertDialog>

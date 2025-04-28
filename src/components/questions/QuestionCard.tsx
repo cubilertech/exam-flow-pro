@@ -1,15 +1,16 @@
 
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { addNote, toggleFlagQuestion } from "@/features/study/studySlice";
 import { Question } from "@/features/questions/questionsSlice";
-import { BookOpen, Flag, Check, AlertCircle } from "lucide-react";
+import { BookOpen, Flag, Check, AlertCircle, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 interface QuestionCardProps {
   question: Question;
@@ -31,6 +32,7 @@ export const QuestionCard = ({
   const dispatch = useAppDispatch();
   const [noteText, setNoteText] = useState("");
   const [showExplanation, setShowExplanation] = useState(false);
+  const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
   
   const { notes, flaggedQuestions } = useAppSelector((state) => state.study);
   
@@ -45,12 +47,10 @@ export const QuestionCard = ({
     let newSelectedOptions: string[];
     
     if (isMultipleChoice) {
-      // For multiple choice, toggle the selection
       newSelectedOptions = selectedOptions.includes(optionId)
         ? selectedOptions.filter((id) => id !== optionId)
         : [...selectedOptions, optionId];
     } else {
-      // For single choice, replace the selection
       newSelectedOptions = [optionId];
     }
     
@@ -69,6 +69,8 @@ export const QuestionCard = ({
     );
     
     setNoteText("");
+    setIsNotesDialogOpen(false);
+    toast.success("Note saved successfully");
   };
   
   const handleFlagQuestion = () => {
@@ -103,6 +105,18 @@ export const QuestionCard = ({
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setIsNotesDialogOpen(true)}
+            className={cn(
+              existingNote && "text-amber-500 hover:text-amber-600",
+              "transition-colors"
+            )}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="sr-only">Add note</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleFlagQuestion}
             className={cn(isFlagged && "text-amber-500")}
           >
@@ -111,6 +125,7 @@ export const QuestionCard = ({
           </Button>
         </div>
       </CardHeader>
+      
       <CardContent>
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">{question.text}</h3>
@@ -183,32 +198,34 @@ export const QuestionCard = ({
           </div>
         )}
       </CardContent>
-      
-      {!isTestMode && (
-        <CardFooter className="flex flex-col items-start">
-          <Tabs defaultValue="notes" className="w-full mt-2">
-            <TabsList className="grid w-full grid-cols-1">
-              <TabsTrigger value="notes">My Notes</TabsTrigger>
-            </TabsList>
-            <TabsContent value="notes" className="space-y-2">
-              {existingNote && (
-                <div className="p-3 bg-secondary rounded-md mb-2">
-                  <p className="text-sm">{existingNote.note}</p>
-                </div>
-              )}
-              <Textarea
-                placeholder="Add your notes here..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                className="min-h-[100px]"
-              />
-              <Button size="sm" onClick={handleSaveNote}>
-                Save Note
-              </Button>
-            </TabsContent>
-          </Tabs>
-        </CardFooter>
-      )}
+
+      {/* Notes Dialog */}
+      <Dialog open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notes for Question #{question.serialNumber}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {existingNote && (
+              <div className="p-3 bg-secondary rounded-md">
+                <p className="text-sm">{existingNote.note}</p>
+              </div>
+            )}
+            
+            <Textarea
+              placeholder="Add your notes for this question here..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button onClick={handleSaveNote}>Save Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
