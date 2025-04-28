@@ -35,7 +35,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { 
   setCurrentExam, 
   startExam, 
