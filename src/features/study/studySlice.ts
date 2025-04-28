@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Question } from '../questions/questionsSlice';
 
@@ -98,8 +97,8 @@ const studySlice = createSlice({
       state.notes = state.notes.filter(note => note.questionId !== action.payload);
     },
     
-    toggleFlagQuestion: (state, action: PayloadAction<string>) => {
-      const questionId = action.payload;
+    toggleFlagQuestion: (state, action: PayloadAction<FlaggedQuestion>) => {
+      const questionId = action.payload.questionId;
       const existingIndex = state.flaggedQuestions.findIndex(
         item => item.questionId === questionId
       );
@@ -109,10 +108,7 @@ const studySlice = createSlice({
           item => item.questionId !== questionId
         );
       } else {
-        state.flaggedQuestions.push({
-          questionId,
-          flaggedAt: new Date().toISOString(),
-        });
+        state.flaggedQuestions.push(action.payload);
       }
     },
     

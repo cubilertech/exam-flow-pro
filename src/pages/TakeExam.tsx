@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -95,7 +94,6 @@ const TakeExam = () => {
       
       if (!currentQId) return;
 
-      // Fetch note for current question
       const existingLocalNote = notes.find(note => note.questionId === currentQId);
       if (existingLocalNote) {
         setNoteText(existingLocalNote.note || "");
@@ -174,6 +172,50 @@ const TakeExam = () => {
       return () => clearInterval(timer);
     }
   }, [examDetails, currentTestStartTime, currentTestQuestions]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id || !currentTestQuestions?.length) return;
+      
+      try {
+        const { data: flaggedData, error: flaggedError } = await supabase
+          .from('flagged_questions')
+          .select('question_id, created_at')
+          .eq('user_id', user.id)
+          .in('question_id', currentTestQuestions.map(q => q.id));
+          
+        if (flaggedError) throw flaggedError;
+        
+        flaggedData?.forEach(flag => {
+          dispatch(toggleFlagQuestion({
+            questionId: flag.question_id,
+            flaggedAt: flag.created_at
+          }));
+        });
+        
+        const { data: notesData, error: notesError } = await supabase
+          .from('user_notes')
+          .select('question_id, note, updated_at')
+          .eq('user_id', user.id)
+          .in('question_id', currentTestQuestions.map(q => q.id));
+          
+        if (notesError) throw notesError;
+        
+        notesData?.forEach(note => {
+          dispatch(addNote({
+            questionId: note.question_id,
+            note: note.note,
+            updatedAt: note.updated_at
+          }));
+        });
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Failed to load your notes and flags');
+      }
+    };
+    
+    fetchUserData();
+  }, [user?.id, currentTestQuestions, dispatch]);
 
   if (!currentTestQuestions || currentTestQuestions.length === 0) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -339,7 +381,10 @@ const TakeExam = () => {
           
         if (error) throw error;
         
-        dispatch(toggleFlagQuestion(questionId));
+        dispatch(toggleFlagQuestion({
+          questionId,
+          flaggedAt: new Date().toISOString()
+        }));
         toast.success('Question flagged for review');
       } else {
         const { error } = await supabase
@@ -350,7 +395,10 @@ const TakeExam = () => {
           
         if (error) throw error;
         
-        dispatch(toggleFlagQuestion(questionId));
+        dispatch(toggleFlagQuestion({
+          questionId,
+          flaggedAt: new Date().toISOString()
+        }));
         toast.success('Question unflagged');
       }
     } catch (error) {
