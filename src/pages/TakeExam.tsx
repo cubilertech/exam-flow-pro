@@ -37,7 +37,8 @@ const TakeExam = () => {
     flaggedQuestions,
     currentTestStartTime,
     currentExamId,
-    currentExamName
+    currentExamName,
+    currentExamType,
   } = useAppSelector((state) => state.study);
   
   const { user } = useAppSelector((state) => state.auth);
@@ -234,27 +235,16 @@ const TakeExam = () => {
     return formatTime(remainingSeconds);
   };
 
-  const handleSelectAnswer = (optionId: string) => {
-    if (isMultipleChoice) {
-      const currentSelectedOptions = selectedAnswers[currentQuestion.id] || [];
-      const isSelected = currentSelectedOptions.includes(optionId);
-      
-      if (isSelected) {
-        setSelectedAnswers({
-          ...selectedAnswers,
-          [currentQuestion.id]: currentSelectedOptions.filter(id => id !== optionId)
-        });
-      } else {
-        setSelectedAnswers({
-          ...selectedAnswers,
-          [currentQuestion.id]: [...currentSelectedOptions, optionId]
-        });
-      }
-    } else {
-      setSelectedAnswers({
-        ...selectedAnswers,
-        [currentQuestion.id]: [optionId]
-      });
+  const handleSelectAnswer = (questionId: string, selectedOptionIds: string[]) => {
+    if (!onAnswerSelect) return;
+    
+    setSelectedAnswers({
+      ...selectedAnswers,
+      [questionId]: selectedOptionIds
+    });
+
+    if (currentExamType === 'study') {
+      saveCurrentAnswer();
     }
   };
 
@@ -544,16 +534,12 @@ const TakeExam = () => {
 
       <QuestionCard
         question={currentQuestion}
-        showAnswers={false}
-        onAnswerSelect={(_, selectedOpts) => {
-          setSelectedAnswers({
-            ...selectedAnswers,
-            [currentQuestion.id]: selectedOpts
-          });
-        }}
+        showAnswers={currentExamType === 'test' ? isAnswered : true}
+        onAnswerSelect={handleSelectAnswer}
         selectedOptions={selectedAnswers[currentQuestion.id] || []}
         isAnswered={questionAnswered}
-        isTestMode={true}
+        isTestMode={currentExamType === 'test'}
+        examType={currentExamType || 'test'}
         onFlagQuestion={handleFlagQuestion}
         isFlagged={flaggedQuestions.some(q => q.questionId === currentQuestion.id)}
       />

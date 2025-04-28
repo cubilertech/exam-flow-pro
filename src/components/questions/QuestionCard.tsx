@@ -14,6 +14,7 @@ interface QuestionCardProps {
   selectedOptions?: string[];
   isAnswered?: boolean;
   isTestMode?: boolean;
+  examType?: 'study' | 'test';
   onFlagQuestion?: (questionId: string) => void;
   isFlagged?: boolean;
 }
@@ -25,15 +26,17 @@ export const QuestionCard = ({
   selectedOptions = [],
   isAnswered = false,
   isTestMode = false,
+  examType = 'test',
   onFlagQuestion,
   isFlagged = false,
 }: QuestionCardProps) => {
   const [showExplanation, setShowExplanation] = useState(false);
   
   const isMultipleChoice = question.options.filter((opt) => opt.isCorrect).length > 1;
+  const shouldShowAnswers = examType === 'study' && isAnswered;
   
   const handleOptionSelect = (optionId: string) => {
-    if (!onAnswerSelect || isAnswered) return;
+    if (!onAnswerSelect || (isAnswered && examType === 'test')) return;
     
     let newSelectedOptions: string[];
     
@@ -87,7 +90,7 @@ export const QuestionCard = ({
           {question.options.map((option) => {
             const isSelected = selectedOptions.includes(option.id);
             const isCorrect = option.isCorrect;
-            const showCorrectness = showAnswers && (isAnswered || !isTestMode);
+            const showCorrectness = shouldShowAnswers || (showAnswers && (isAnswered || !isTestMode));
             
             return (
               <div
@@ -113,7 +116,7 @@ export const QuestionCard = ({
           })}
         </div>
 
-        {question.explanation && (
+        {((examType === 'study' && isAnswered) || (examType === 'test' && showAnswers)) && question.explanation && (
           <div className="mt-4">
             <Button 
               variant="outline" 

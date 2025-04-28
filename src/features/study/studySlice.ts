@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Question } from '../questions/questionsSlice';
 
@@ -36,7 +35,6 @@ export interface TestResult {
   examName?: string;
 }
 
-// Add interface for exam data
 export interface ExamData {
   id: string;
   name: string;
@@ -46,6 +44,7 @@ export interface ExamData {
   isTimed: boolean;
   timeLimit: number | null;
   timeLimitType: string | null;
+  examType: 'study' | 'test';
 }
 
 interface StudyState {
@@ -58,7 +57,8 @@ interface StudyState {
   currentTestStartTime: string | null;
   currentExamId: string | null;
   currentExamName: string | null;
-  currentExam: ExamData | null; // Add current exam field
+  currentExam: ExamData | null;
+  currentExamType: 'study' | 'test' | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -73,7 +73,8 @@ const initialState: StudyState = {
   currentTestStartTime: null,
   currentExamId: null,
   currentExamName: null,
-  currentExam: null, // Initialize current exam as null
+  currentExam: null,
+  currentExamType: null,
   isLoading: false,
   error: null,
 };
@@ -82,7 +83,6 @@ const studySlice = createSlice({
   name: 'study',
   initialState,
   reducers: {
-    // Notes management
     addNote: (state, action: PayloadAction<UserNote>) => {
       const existingNoteIndex = state.notes.findIndex(
         note => note.questionId === action.payload.questionId
@@ -97,7 +97,6 @@ const studySlice = createSlice({
       state.notes = state.notes.filter(note => note.questionId !== action.payload);
     },
     
-    // Flagged questions management
     toggleFlagQuestion: (state, action: PayloadAction<string>) => {
       const questionId = action.payload;
       const existingIndex = state.flaggedQuestions.findIndex(
@@ -105,12 +104,10 @@ const studySlice = createSlice({
       );
       
       if (existingIndex !== -1) {
-        // If already flagged, remove it
         state.flaggedQuestions = state.flaggedQuestions.filter(
           item => item.questionId !== questionId
         );
       } else {
-        // If not flagged, add it
         state.flaggedQuestions.push({
           questionId,
           flaggedAt: new Date().toISOString(),
@@ -118,12 +115,10 @@ const studySlice = createSlice({
       }
     },
     
-    // Study mode management
     setStudyMode: (state, action: PayloadAction<'study' | 'test' | null>) => {
       state.currentStudyMode = action.payload;
     },
     
-    // Test management
     startTest: (state, action: PayloadAction<{
       questions: Question[], 
       examId?: string,
@@ -135,7 +130,6 @@ const studySlice = createSlice({
       state.currentExamId = action.payload.examId || null;
       state.currentExamName = action.payload.examName || null;
       
-      // Clear any previous answers for these questions
       const questionIds = action.payload.questions.map(q => q.id);
       state.answeredQuestions = state.answeredQuestions.filter(
         a => !questionIds.includes(a.questionId)
@@ -171,7 +165,6 @@ const studySlice = createSlice({
       state.currentExamName = null;
     },
     
-    // Loading states
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
@@ -179,12 +172,12 @@ const studySlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-
-    // Add new action creators for exam functionality
+    
     setCurrentExam: (state, action: PayloadAction<ExamData>) => {
       state.currentExam = action.payload;
       state.currentExamId = action.payload.id;
       state.currentExamName = action.payload.name;
+      state.currentExamType = action.payload.examType as 'study' | 'test';
     },
     
     startExam: (state, action: PayloadAction<{
@@ -212,7 +205,6 @@ export const {
   clearCurrentTest,
   setLoading,
   setError,
-  // Export the new action creators
   setCurrentExam,
   startExam,
   loadExamQuestions,
