@@ -346,7 +346,7 @@ const TakeExam = () => {
     }
   };
 
-  const handleFlagQuestion = async (questionId: string) => {
+  const handleFlagQuestion = async (questionIdOrEvent: string | React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (!user?.id) {
       toast.error('You must be logged in to flag questions');
       return;
@@ -354,6 +354,10 @@ const TakeExam = () => {
     
     try {
       setIsFlagging(true);
+      
+      const questionId = typeof questionIdOrEvent === 'string' 
+        ? questionIdOrEvent 
+        : currentQuestion.id;
       
       const isCurrentlyFlagged = flaggedQuestions.some(q => q.questionId === questionId);
       

@@ -17,7 +17,7 @@ interface QuestionCardProps {
   selectedOptions?: string[];
   isAnswered?: boolean;
   isTestMode?: boolean;
-  onFlagQuestion?: (questionId: string) => void;
+  onFlagQuestion?: (questionId: string | React.MouseEvent<HTMLButtonElement>) => void;
   isFlagged?: boolean;
 }
 
