@@ -129,8 +129,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
-      console.log('Starting exam continuation for exam:', exam.id);
-      
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -152,17 +150,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         .in('difficulty', exam.difficulty_levels)
         .limit(exam.questionCount);
 
-      if (error) {
-        console.error('Error fetching questions:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!questions || questions.length === 0) {
         toast.error('No questions found for this exam');
         return;
       }
-
-      console.log(`Found ${questions.length} questions for the exam`);
 
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
@@ -181,14 +174,11 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       }));
 
       dispatch(loadExamQuestions(formattedQuestions));
-      
       dispatch(startExam({
         mode: 'test',
         startTime: new Date().toISOString()
       }));
 
-      console.log('Navigating to /exam/take');
-      
       navigate('/exam/take');
     } catch (error) {
       console.error('Error continuing exam:', error);
@@ -330,7 +320,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="ml-2">
+                    <Button variant="outline" size="sm">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
