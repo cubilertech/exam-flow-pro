@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   Table,
@@ -39,7 +39,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   setCurrentExam, 
   startExam, 
-  loadExamQuestions 
+  loadExamQuestions,
+  clearCurrentTest
 } from '@/features/study/studySlice';
 
 interface ExamsTableProps {
@@ -53,6 +54,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
   const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [isContinuing, setIsContinuing] = useState(false);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -129,6 +131,13 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
   const handleContinueExam = async (exam: any) => {
     try {
+      setIsContinuing(true);
+      console.log('Continue exam clicked:', exam.id);
+      
+      // First clear any existing exam state
+      dispatch(clearCurrentTest());
+      
+      // Set the current exam details
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
@@ -139,7 +148,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         timeLimit: exam.time_limit,
         timeLimitType: exam.time_limit_type
       }));
-
+      
+      console.log('Fetching questions for exam...');
       const { data: questions, error } = await supabase
         .from('questions')
         .select(`
@@ -154,9 +164,12 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
       if (!questions || questions.length === 0) {
         toast.error('No questions found for this exam');
+        setIsContinuing(false);
         return;
       }
 
+      console.log(`Found ${questions.length} questions for the exam`);
+      
       const formattedQuestions = questions.map((q: any) => ({
         id: q.id,
         text: q.text,
@@ -179,10 +192,16 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         startTime: new Date().toISOString()
       }));
 
-      navigate('/exam/take');
+      console.log('Navigating to /exam/take');
+      // Force navigation with a small timeout to ensure Redux state is updated
+      setTimeout(() => {
+        navigate('/exam/take');
+        setIsContinuing(false);
+      }, 100);
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.error('Failed to continue exam');
+      setIsContinuing(false);
     }
   };
 
@@ -313,14 +332,24 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
+                    disabled={isContinuing}
                   >
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Continue
+                    {isContinuing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Continue
+                      </>
+                    )}
                   </Button>
                 )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="ml-2">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
