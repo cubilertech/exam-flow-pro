@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ const TakeExam = () => {
   // Redirect if no test questions or no current exam are loaded
   useEffect(() => {
     console.log("TakeExam page loaded with:", { 
-      questionsCount: currentTestQuestions.length,
+      questionsCount: currentTestQuestions?.length || 0,
       currentExam,
       startTime: currentTestStartTime 
     });
@@ -34,6 +33,7 @@ const TakeExam = () => {
       console.log("No questions or exam data found, redirecting to /my-exams");
       toast.error("No exam in progress. Please start or continue an exam first.");
       navigate('/my-exams');
+      return;
     }
   }, [currentTestQuestions, currentExam, navigate, currentTestStartTime]);
 
@@ -226,10 +226,11 @@ const TakeExam = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!currentQuestion) {
+  // Guard condition to prevent rendering until data is available
+  if (!currentTestQuestions || currentTestQuestions.length === 0 || !currentExam) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <p>Loading exam...</p>
+      <div className="flex justify-center items-center h-full p-8">
+        <p className="text-lg">Loading exam data...</p>
       </div>
     );
   }

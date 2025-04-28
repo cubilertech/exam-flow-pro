@@ -1,13 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ExamsTable from '@/components/exams/student/ExamsTable';
 import NewExamModal from '@/components/exams/student/NewExamModal';
+import { useAppDispatch } from '@/lib/hooks';
+import { clearCurrentTest } from '@/features/study/studySlice';
 
 const MyExams = () => {
   const [isNewExamModalOpen, setIsNewExamModalOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  
+  // Clear any ongoing test when entering this page
+  useEffect(() => {
+    dispatch(clearCurrentTest());
+  }, [dispatch]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   Table,
@@ -35,7 +35,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { 
   setCurrentExam, 
   startExam, 
@@ -187,9 +186,11 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         startTime: new Date().toISOString()
       }));
 
-      console.log('Navigating to /exam/take');
+      console.log('Navigation triggered to /exam/take');
       
-      navigate('/exam/take');
+      setTimeout(() => {
+        navigate('/exam/take');
+      }, 100);
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.error('Failed to continue exam');
@@ -320,7 +321,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                   </Button>
                 ) : (
                   <Button 
-                    variant="outline" 
+                    variant="default" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
                   >
