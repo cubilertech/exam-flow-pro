@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useState,
@@ -43,7 +44,7 @@ import {
   registerSuccess,
 } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/lib/hooks';
-import { signUp } from '@/services/authService';
+import { checkUsernameExists, signUp } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const registerSchema = z.object({
@@ -52,7 +53,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   country: z.string().min(1, "Please select your country"),
-  city: z.string().min(1, "Please select your city"),
+  city: z.string().min(1, "Please enter your city"),
   gender: z.string().min(1, "Please select your gender"),
   phone: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -80,6 +81,7 @@ export const RegisterForm = () => {
   const [cities, setCities] = useState<City[]>([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -139,18 +141,41 @@ export const RegisterForm = () => {
         const data = await response.json();
         if(data?.data?.length > 0){
           setCities(data?.data?.map((city: any) => ({ name: city })));
-        }else{
-          setCities([])
+        } else {
+          setCities([]);
+          // If no cities are found, allow user to enter a city manually
+          form.setValue("city", "");
         }
       } catch (error) {
         console.error("Failed to fetch cities:", error);
+        setCities([]);
       } finally {
         setLoadingCities(false);
       }
     };
 
     fetchCities();
-  }, [selectedCountry]);
+  }, [selectedCountry, form]);
+
+  // Check if username exists when username field is blurred
+  const validateUsername = async (username: string) => {
+    if (username.length < 3) return;
+    
+    setCheckingUsername(true);
+    try {
+      const exists = await checkUsernameExists(username);
+      if (exists) {
+        form.setError("username", { 
+          type: "manual", 
+          message: "Username already exists. Please choose a different one."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
@@ -211,7 +236,22 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="johndoe" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="johndoe" 
+                        {...field} 
+                        onBlur={(e) => {
+                          field.onBlur();
+                          validateUsername(e.target.value);
+                        }} 
+                        disabled={checkingUsername}
+                      />
+                      {checkingUsername && (
+                        <div className="absolute top-0 right-2 flex items-center h-full">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -303,33 +343,43 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>City</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      disabled={!selectedCountry || loadingCities}
-                    >
+                    {cities.length > 0 ? (
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        disabled={!selectedCountry || loadingCities}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            {loadingCities ? (
+                              <div className="flex items-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Loading cities...
+                              </div>
+                            ) : !selectedCountry ? (
+                              "Select country first"
+                            ) : (
+                              <SelectValue placeholder="Select city" />
+                            )}
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {cities.map((city) => (
+                            <SelectItem key={city.name} value={city.name}>
+                              {city.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
                       <FormControl>
-                        <SelectTrigger>
-                          {loadingCities ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading cities...
-                            </div>
-                          ) : !selectedCountry ? (
-                            "Select country first"
-                          ) : (
-                            <SelectValue placeholder="Select city" />
-                          )}
-                        </SelectTrigger>
+                        <Input 
+                          placeholder="Enter city name" 
+                          {...field} 
+                          disabled={!selectedCountry || loadingCities}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {cities.map((city) => (
-                          <SelectItem key={city.name} value={city.name}>
-                            {city.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -373,7 +423,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
