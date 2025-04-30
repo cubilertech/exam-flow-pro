@@ -73,49 +73,30 @@ export const checkUsernameExists = async (username: string): Promise<boolean> =>
 // Check if email already exists
 export const checkEmailExists = async (email: string): Promise<boolean> => {
   try {
-    // The previous approach using admin.listUsers with filter property is not supported
-    // Let's use a different approach by checking if signing in with this email returns a specific error
-    
-    // Try to get user by email using auth.signInWithOtp without actually sending an OTP
-    // This will tell us if the email is registered without attempting to authenticate
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false, // Don't create a new user
-      }
-    });
-    
-    // If there's no error or the error isn't about a non-existent user, the email exists
-    if (!error) {
-      return true;
-    }
-    
-    // Check error message to determine if the user doesn't exist
-    if (error.message.includes("Email not confirmed") || 
-        error.message.includes("User already registered")) {
-      return true; // Email exists
-    }
-    
-    if (error.message.includes("User not found") || 
-        error.message.includes("Invalid login credentials")) {
-      return false; // Email doesn't exist
-    }
-    
-    console.error('Error checking email:', error);
-    
-    // Alternative approach: try to sign in with a fake password to see if the account exists
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Use a simple sign-in attempt with wrong credentials to check if the email exists
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password: 'checkingIfEmailExists123!',  // Fake password
     });
     
-    // If the error message indicates invalid login credentials, the email exists
-    // but password is wrong (which means email exists)
-    if (signInError && signInError.message.includes('Invalid login credentials')) {
-      return true;
+    // If the error indicates invalid credentials, the email exists
+    // If the error indicates user not found, the email doesn't exist
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        return true; // Email exists but password is wrong
+      }
+      if (error.message.includes('Email not confirmed') || 
+          error.message.includes('User already registered')) {
+        return true; // Email exists
+      }
+      if (error.message.includes('User not found')) {
+        return false; // Email doesn't exist
+      }
     }
     
-    return false;
+    // If somehow there was no error (which shouldn't happen with a fake password), 
+    // we'll assume the email exists for safety
+    return true;
   } catch (error) {
     console.error('Error checking email:', error);
     return false;
