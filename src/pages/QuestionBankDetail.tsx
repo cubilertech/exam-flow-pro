@@ -366,7 +366,7 @@ const QuestionBankDetail = () => {
       fetchQuestionBank();
       fetchCategories();
     } catch (error: any) {
-      toast({
+      toast({ 
         title: "Error",
         description: error.message || "Failed to update question bank",
         variant: "destructive",
