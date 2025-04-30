@@ -73,22 +73,34 @@ export const checkUsernameExists = async (username: string): Promise<boolean> =>
 // Check if email already exists
 export const checkEmailExists = async (email: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      filter: {
-        email: email
+    // The previous approach using admin.listUsers with filter property is not supported
+    // Let's use a different approach by checking if signing in with this email returns a specific error
+    
+    // Try to get user by email using auth.signInWithOtp without actually sending an OTP
+    // This will tell us if the email is registered without attempting to authenticate
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false, // Don't create a new user
       }
     });
     
-    if (error) {
-      console.error('Error checking email:', error);
-      // For privacy reasons, we'll return false on errors rather than exposing error information
-      return false;
+    // If there's no error or the error isn't about a non-existent user, the email exists
+    if (!error) {
+      return true;
     }
     
-    // Since we can't directly query the auth.users table, we'll use this approach
-    // If data exists and has users with this email, return true
-    return data && data.users && data.users.length > 0;
-  } catch (error) {
+    // Check error message to determine if the user doesn't exist
+    if (error.message.includes("Email not confirmed") || 
+        error.message.includes("User already registered")) {
+      return true; // Email exists
+    }
+    
+    if (error.message.includes("User not found") || 
+        error.message.includes("Invalid login credentials")) {
+      return false; // Email doesn't exist
+    }
+    
     console.error('Error checking email:', error);
     
     // Alternative approach: try to sign in with a fake password to see if the account exists
@@ -103,6 +115,9 @@ export const checkEmailExists = async (email: string): Promise<boolean> => {
       return true;
     }
     
+    return false;
+  } catch (error) {
+    console.error('Error checking email:', error);
     return false;
   }
 };
