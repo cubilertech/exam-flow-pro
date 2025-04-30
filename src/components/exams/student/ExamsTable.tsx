@@ -1,16 +1,24 @@
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  BarChart2,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Loader2,
+  PlayCircle,
+  Trash2,
+} from 'lucide-react';
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom';
+import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -20,28 +28,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ExternalLink, 
-  PlayCircle,
-  CheckCircle,
-  Clock,
-  BarChart2,
-  Loader2,
-  BookOpen,
-  Trash2
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAppSelector, useAppDispatch } from '@/lib/hooks';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { 
-  setCurrentExam, 
-  startExam, 
-  loadExamQuestions 
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  loadExamQuestions,
+  setCurrentExam,
+  startExam,
 } from '@/features/study/studySlice';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/hooks';
 
 interface ExamsTableProps {
   filterStatus?: 'all' | 'completed' | 'inprogress';
@@ -143,16 +151,22 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         timeLimitType: exam.time_limit_type,
         examType: 'test' // Add the missing examType property
       }));
+      console.log(exam,'qqwqwqwqwqwqwqw')
+      let query = supabase
+      .from('questions')
+      .select(`*,question_options (*)`)
+      .in('category_id', exam.categoryIds || []); // Provide empty array as fallback
+       if (exam.difficulty_levels?.length) {
+      query = query.in('difficulty', exam.difficulty_levels);
+      }
+      const { data: questions, error } = await query.limit(1);
 
-      const { data: questions, error } = await supabase
-        .from('questions')
-        .select(`
-          *,
-          question_options (*)
-        `)
-        .in('category_id', exam.categoryIds)
-        .in('difficulty', exam.difficulty_levels)
-        .limit(exam.questionCount);
+      // const { data: questions, error } = await supabase
+      //   .from('questions')
+      //   .select(`*,question_options (*)`)
+      //   .in('category_id', exam.categoryIds)
+      //   .in('difficulty', exam.difficulty_levels)
+      //   .limit(1);
 
       if (error) throw error;
 
@@ -187,7 +201,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
 
       toast.dismiss();
       
-      navigate('/exam/take', { replace: true });
+      navigate('/exam/take');
     } catch (error) {
       console.error('Error continuing exam:', error);
       toast.dismiss();

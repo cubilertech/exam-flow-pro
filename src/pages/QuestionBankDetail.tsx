@@ -1,37 +1,40 @@
+import {
+  useEffect,
+  useState,
+} from 'react';
 
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { QuestionsList } from "@/components/admin/QuestionsList";
-import { QuestionForm } from "@/components/admin/QuestionForm";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
-} from "@/components/ui/sheet";
+import {
+  ArrowLeft,
+  PenSquare,
+  Plus,
+  Search,
+  X,
+} from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
+import * as z from 'zod';
+
+import { QuestionForm } from '@/components/admin/QuestionForm';
+import { QuestionsList } from '@/components/admin/QuestionsList';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent 
-} from "@/components/ui/card";
-import { Plus, Search, ArrowLeft, PenSquare, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -39,8 +42,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Question {
   id: string;
@@ -233,7 +246,7 @@ const QuestionBankDetail = () => {
             text: opt.text,
             isCorrect: opt.is_correct
           })),
-          difficulty: q.difficulty || 'medium',
+          difficulty: q.difficulty || 'easy',
           tags: []
         }));
         

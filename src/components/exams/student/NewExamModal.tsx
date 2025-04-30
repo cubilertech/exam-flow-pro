@@ -1,13 +1,25 @@
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
-import React, { useState, useEffect } from 'react';
+import { Info } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import * as z from 'zod';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,24 +28,31 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Info } from "lucide-react";
-import { startTest } from '@/features/study/studySlice';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Question } from '@/features/questions/questionsSlice';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
-import { toast } from "sonner";
+import { startTest } from '@/features/study/studySlice';
+import {
+  useQuestionBankSubscriptions,
+} from '@/hooks/useQuestionBankSubscriptions';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const formSchema = z.object({
   examType: z.enum(["test", "study"]),
@@ -73,7 +92,7 @@ interface CategoryCount {
 const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { subscriptions } = useQuestionBankSubscriptions();
+  const { subscriptions,activeQuestionBankId } = useQuestionBankSubscriptions();
   const { user } = useAppSelector((state) => state.auth);
   const [categories, setCategories] = useState<CategoryCount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,7 +105,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       examType: "test",
       categories: [],
       difficultyLevels: ["all"],
-      numberOfQuestions: 10,
+      numberOfQuestions: 1,
       timedMode: "untimed",
       timeLimitType: "seconds_per_question",
       timeLimit: 60,
@@ -99,13 +118,20 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const timedMode = form.watch("timedMode");
   const timeLimitType = form.watch("timeLimitType");
   
+  const initialSelectedBank = useMemo(() => {
+    if (subscriptions.length === 0) return null;
+    
+    return activeQuestionBankId 
+      ? subscriptions.find(qb => qb.id === activeQuestionBankId)?.id || subscriptions[0].id
+      : subscriptions[0].id;
+  }, [subscriptions, activeQuestionBankId]);
+  
   useEffect(() => {
-    if (open && subscriptions.length > 0) {
-      const firstQuestionBank = subscriptions[0].id;
-      setSelectedQuestionBank(firstQuestionBank);
-      fetchCategoriesByQuestionBank(firstQuestionBank);
+    if (open && !selectedQuestionBank && initialSelectedBank) {
+      setSelectedQuestionBank(initialSelectedBank);
+      fetchCategoriesByQuestionBank(initialSelectedBank);
     }
-  }, [open, subscriptions]);
+  }, [open, initialSelectedBank, selectedQuestionBank]);
 
   const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
     try {
@@ -265,6 +291,11 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       setIsSaving(false);
     }
   };
+  // Calculate Total Questions
+  const selectedCategories = form.watch('categories') || [];
+  const totalQuestions =  categories
+  .filter(cat => selectedCategories.includes(cat.id))
+  .reduce((total, cat) => total + cat.questionCount, 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -275,7 +306,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
             Customize your exam settings below.
           </DialogDescription>
         </DialogHeader>
-
         <ScrollArea className="flex-1 px-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleStartExam)} className="space-y-6">
@@ -402,89 +432,100 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 )}
               />
 
+<FormField
+  control={form.control}
+  name="difficultyLevels"
+  render={() => {
+    const selectedCategories = form.watch('categories') || []; // Track selected categories
+
+    return (
+      <FormItem>
+        <div className="mb-4">
+          <FormLabel className="text-base">Difficulty Level</FormLabel>
+          <FormDescription>
+            Select the difficulty levels to include in your exam.
+          </FormDescription>
+        </div>
+        <div className="flex gap-4">
+          {[
+            { id: "all", label: "All" },
+            { id: "easy", label: "Easy" },
+            { id: "medium", label: "Medium" },
+            { id: "hard", label: "Hard" },
+          ].map((item) => {
+            // Calculate questionCount based on SELECTED categories only
+            const questionCount = item.id === "all"
+              ? categories
+                  .filter(cat => selectedCategories.includes(cat.id))
+                  .reduce((total, cat) => total + cat.questionCount, 0)
+              : categories
+                  .filter(cat => selectedCategories.includes(cat.id))
+                  .reduce(
+                    (total, cat) => 
+                      total + (cat.difficultyCount[item.id as keyof typeof cat.difficultyCount] || 0), 
+                    0
+                  );
+
+            const isDisabled = item.id !== "all" && questionCount === 0;
+
+            return (
               <FormField
+                key={item.id}
                 control={form.control}
                 name="difficultyLevels"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4">
-                      <FormLabel className="text-base">Difficulty Level</FormLabel>
-                      <FormDescription>
-                        Select the difficulty levels to include in your exam.
-                      </FormDescription>
-                    </div>
-                    <div className="flex gap-4">
-                      {[
-                        { id: "all", label: "All" },
-                        { id: "easy", label: "Easy" },
-                        { id: "medium", label: "Medium" },
-                        { id: "hard", label: "Hard" },
-                      ].map((item) => {
-                        const questionCount = item.id === "all"
-                          ? categories.reduce((total, cat) => 
-                              total + cat.questionCount, 0)
-                          : categories.reduce((total, cat) => 
-                              total + (cat.difficultyCount[item.id as keyof typeof cat.difficultyCount] || 0), 0);
-                        
-                        const isDisabled = item.id !== "all" && questionCount === 0;
-                        
-                        return (
-                          <FormField
-                            key={item.id}
-                            control={form.control}
-                            name="difficultyLevels"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={item.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(item.id as any)}
-                                      onCheckedChange={(checked) => {
-                                        if (item.id === "all" && checked) {
-                                          return field.onChange(["all"]);
-                                        } else if (checked && !isDisabled) {
-                                          const newValue = field.value.filter(v => v !== "all");
-                                          return field.onChange([...newValue, item.id as any]);
-                                        } else {
-                                          return field.onChange(
-                                            field.value?.filter((value) => value !== item.id)
-                                          );
-                                        }
-                                      }}
-                                      disabled={isDisabled}
-                                      className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className={`font-normal ${isDisabled ? "opacity-50" : ""}`}>
-                                    {item.label} ({questionCount})
-                                  </FormLabel>
-                                </FormItem>
+                render={({ field }) => {
+                  return (
+                    <FormItem
+                      key={item.id}
+                      className="flex flex-row items-start space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value?.includes(item.id as any)}
+                          onCheckedChange={(checked) => {
+                            if (item.id === "all" && checked) {
+                              return field.onChange(["all"]);
+                            } else if (checked && !isDisabled) {
+                              const newValue = field.value.filter(v => v !== "all");
+                              return field.onChange([...newValue, item.id as any]);
+                            } else {
+                              return field.onChange(
+                                field.value?.filter((value) => value !== item.id)
                               );
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                        />
+                      </FormControl>
+                      <FormLabel className={`font-normal ${isDisabled ? "opacity-50" : ""}`}>
+                        {item.label} ({questionCount})
+                      </FormLabel>
+                    </FormItem>
+                  );
+                }}
               />
+            );
+          })}
+        </div>
+        <FormMessage />
+      </FormItem>
+    );
+  }}
+/>
 
               <FormField
                 control={form.control}
                 name="numberOfQuestions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Number of Questions (max 30)</FormLabel>
+                    <FormLabel>Number of Questions (max {totalQuestions})</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         {...field} 
                         min={1} 
-                        max={30} 
+                        max={totalQuestions} 
                         onChange={(e) => field.onChange(parseInt(e.target.value))}
                       />
                     </FormControl>

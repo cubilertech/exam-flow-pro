@@ -1,15 +1,26 @@
+import {
+  useEffect,
+  useState,
+} from 'react';
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAppDispatch } from "@/lib/hooks";
-import { registerStart, registerSuccess, registerFailure } from "@/features/auth/authSlice";
-import { toast } from "sonner";
-import { signUp } from "@/services/authService";
+import { Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -17,17 +28,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/select';
+import {
+  registerFailure,
+  registerStart,
+  registerSuccess,
+} from '@/features/auth/authSlice';
+import { useAppDispatch } from '@/lib/hooks';
+import { signUp } from '@/services/authService';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -35,9 +52,9 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   country: z.string().min(1, "Please select your country"),
+  city: z.string().min(1, "Please select your city"),
   gender: z.string().min(1, "Please select your gender"),
   phone: z.string().optional(),
-  city: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -45,10 +62,24 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
+type Country = {
+  code: string;
+  name: string;
+};
+
+type City = {
+  name: string;
+};
+
 export const RegisterForm = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -58,26 +89,87 @@ export const RegisterForm = () => {
       password: "",
       confirmPassword: "",
       country: "",
+      city: "",
       gender: "",
       phone: "",
-      city: "",
     },
   });
+
+  // Fetch countries on component mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setLoadingCountries(true);
+      try {
+        // Using REST Countries API
+        const response = await fetch("https://restcountries.com/v3.1/all");
+        const data = await response.json();
+        
+        const formattedCountries = data.map((country: any) => ({
+          code: country.cca2,
+          name: country.name.common
+        })).sort((a: Country, b: Country) => 
+          a.name.localeCompare(b.name)
+        );
+        setCountries(formattedCountries);
+      } catch (error) {
+        console.error("Failed to fetch countries:", error);
+        toast.error("Failed to load countries. Please try again later.");
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+
+    fetchCountries();
+  }, []);
+
+  // Fetch cities when country changes
+  useEffect(() => {
+    const fetchCities = async () => {
+      if (!selectedCountry) return;
+      
+      setLoadingCities(true);
+      try {
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ country: selectedCountry }),
+        });
+        const data = await response.json();
+        if(data?.data?.length > 0){
+          setCities(data?.data?.map((city: any) => ({ name: city })));
+        }else{
+          setCities([])
+        }
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+
+    fetchCities();
+  }, [selectedCountry]);
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setLoading(true);
       dispatch(registerStart());
       
+      // Find the selected country name
+      const selectedCountryObj = countries.find(c => c.code === data.country);
+      const countryName = selectedCountryObj ? selectedCountryObj.name : data.country;
+      
       const userData = await signUp(
         data.email,
         data.password,
         {
           username: data.username,
-          country: data.country,
+          country: countryName,
+          city: data.city,
           gender: data.gender,
           phone: data.phone,
-          city: data.city,
         }
       );
       
@@ -94,19 +186,12 @@ export const RegisterForm = () => {
     }
   };
 
-  // Sample country list
-  const countries = [
-    { value: "us", label: "United States" },
-    { value: "ca", label: "Canada" },
-    { value: "uk", label: "United Kingdom" },
-    { value: "au", label: "Australia" },
-    { value: "in", label: "India" },
-    { value: "jp", label: "Japan" },
-    { value: "de", label: "Germany" },
-    { value: "fr", label: "France" },
-    { value: "it", label: "Italy" },
-    { value: "es", label: "Spain" },
-  ];
+  // Handle country change
+  const handleCountryChange = (value: string) => {
+    setSelectedCountry(value);
+    form.setValue("city", ""); // Reset city when country changes
+    setCities([]); // Clear cities when country changes
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -180,16 +265,30 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Country</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleCountryChange(value);
+                      }} 
+                      defaultValue={field.value}
+                      disabled={loadingCountries}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select country" />
+                          {loadingCountries ? (
+                            <div className="flex items-center">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Loading countries...
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select country" />
+                          )}
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {countries.map((country) => (
-                          <SelectItem key={country.value} value={country.value}>
-                            {country.label}
+                          <SelectItem key={country.code} value={country.name}>
+                            {country.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -198,6 +297,45 @@ export const RegisterForm = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={!selectedCountry || loadingCities}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          {loadingCities ? (
+                            <div className="flex items-center">
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Loading cities...
+                            </div>
+                          ) : !selectedCountry ? (
+                            "Select country first"
+                          ) : (
+                            <SelectValue placeholder="Select city" />
+                          )}
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {cities.map((city) => (
+                          <SelectItem key={city.name} value={city.name}>
+                            {city.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="gender"
@@ -213,16 +351,14 @@ export const RegisterForm = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                        {/* <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="phone"
@@ -231,19 +367,6 @@ export const RegisterForm = () => {
                     <FormLabel>Phone (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="+1 234 567 8900" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City/Area (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="New York" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

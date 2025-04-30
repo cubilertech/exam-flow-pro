@@ -1,11 +1,19 @@
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
-import React, { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Question } from "@/features/questions/questionsSlice";
-import { BookOpen } from "lucide-react";
+import { BookOpen } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from '@/components/ui/card';
+import { Question } from '@/features/questions/questionsSlice';
+import { cn } from '@/lib/utils';
 
 interface QuestionCardProps {
   question: Question;
@@ -50,6 +58,11 @@ export const QuestionCard = ({
     
     onAnswerSelect(question.id, newSelectedOptions);
   };
+  useEffect(()=>{
+    if(question){
+      setShowExplanation(false)
+    }
+  },[question])
 
   return (
     <Card className={cn("w-full mb-4 transition-all", isFlagged && "border-amber-400 border-2")}>

@@ -1,29 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAppSelector } from '@/lib/hooks';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
 import { format } from 'date-fns';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  BarChart3, 
+import {
   AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  CheckCircle2,
   ChevronLeft,
   Tag,
-  BookOpen,
-  ArrowLeft,
-  ArrowRight
+  XCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QuestionCard } from '@/components/questions/QuestionCard';
-import { Question } from '@/features/questions/questionsSlice';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
 import { toast } from 'sonner';
+
+import { QuestionCard } from '@/components/questions/QuestionCard';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { useAppSelector } from '@/lib/hooks';
 
 const ExamResults = () => {
   const { resultId } = useParams<{ resultId: string }>();
@@ -233,7 +257,7 @@ const ExamResults = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="summary" className="w-full" onValueChange={(value) => setActiveTab(value as any)}>
+      <Tabs value={activeTab}  className="w-full" onValueChange={(value) => setActiveTab(value as any)}>
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>

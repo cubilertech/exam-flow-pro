@@ -1,17 +1,40 @@
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Plus, X, Upload, Image, Loader2, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  AlertTriangle,
+  Image,
+  Loader2,
+  Plus,
+  X,
+} from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+
+import {
+  Alert,
+  AlertDescription,
+} from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from "@/lib/utils";
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface Option {
   id: string;
@@ -70,7 +93,7 @@ export const QuestionForm = ({
     imageUrl: initialData?.imageUrl || '',
     categoryId: initialData?.categoryId || categoryId,
     tags: initialData?.tags || [],
-    difficulty: initialData?.difficulty || 'medium',
+    difficulty: initialData?.difficulty || 'easy',
   });
   const [questionType, setQuestionType] = useState<'single' | 'multiple'>(
     initialData?.options.filter(o => o.isCorrect).length > 1 ? 'multiple' : 'single'
