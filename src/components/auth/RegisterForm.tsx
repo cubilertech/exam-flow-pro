@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useState,
@@ -46,6 +45,7 @@ import {
 import { useAppDispatch } from '@/lib/hooks';
 import { checkUsernameExists, signUp } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -82,6 +82,7 @@ export const RegisterForm = () => {
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -177,14 +178,52 @@ export const RegisterForm = () => {
     }
   };
 
+  // Check if email exists when email field is blurred
+  const validateEmail = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setCheckingEmail(true);
+    try {
+      // We'll use the signUp function's error handling to check
+      // This is a simple approach that doesn't require extra API calls
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
+      
+      // If there's no error or the error is NOT about the user not existing, 
+      // then the email likely exists
+      if (signInError && signInError.message.includes("User already registered")) {
+        form.setError("email", { 
+          type: "manual", 
+          message: "Email address is already registered. Please use a different email or try logging in."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setLoading(true);
       dispatch(registerStart());
       
-      // Find the selected country name
-      const selectedCountryObj = countries.find(c => c.code === data.country);
-      const countryName = selectedCountryObj ? selectedCountryObj.name : data.country;
+      // Make sure we're using the actual country name, not the code
+      const countryName = data.country;
+      
+      console.log("Submitting registration with data:", {
+        email: data.email,
+        username: data.username,
+        country: countryName,
+        city: data.city,
+        gender: data.gender,
+        phone: data.phone,
+      });
       
       const userData = await signUp(
         data.email,
@@ -204,8 +243,23 @@ export const RegisterForm = () => {
     } catch (error: any) {
       setLoading(false);
       const errorMessage = error.message || "Registration failed. Please try again.";
-      dispatch(registerFailure(errorMessage));
-      toast.error(errorMessage);
+      
+      // Check for email-specific errors
+      if (errorMessage.includes("email")) {
+        form.setError("email", { 
+          type: "manual", 
+          message: errorMessage 
+        });
+      } else if (errorMessage.includes("username")) {
+        form.setError("username", { 
+          type: "manual", 
+          message: errorMessage 
+        });
+      } else {
+        // Generic error
+        dispatch(registerFailure(errorMessage));
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -214,6 +268,7 @@ export const RegisterForm = () => {
   // Handle country change
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
+    form.setValue("country", value); // Ensure country value is set in the form
     form.setValue("city", ""); // Reset city when country changes
     setCities([]); // Clear cities when country changes
   };
@@ -264,7 +319,22 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@example.com" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="email@example.com" 
+                        {...field} 
+                        onBlur={(e) => {
+                          field.onBlur();
+                          validateEmail(e.target.value);
+                        }}
+                        disabled={checkingEmail}
+                      />
+                      {checkingEmail && (
+                        <div className="absolute top-0 right-2 flex items-center h-full">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -307,10 +377,9 @@ export const RegisterForm = () => {
                     <FormLabel>Country</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        field.onChange(value);
                         handleCountryChange(value);
                       }} 
-                      defaultValue={field.value}
+                      value={field.value}
                       disabled={loadingCountries}
                     >
                       <FormControl>
@@ -346,7 +415,7 @@ export const RegisterForm = () => {
                     {cities.length > 0 ? (
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                         disabled={!selectedCountry || loadingCities}
                       >
                         <FormControl>
@@ -392,7 +461,7 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
@@ -401,8 +470,6 @@ export const RegisterForm = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        {/* <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -423,7 +490,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername || checkingEmail}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

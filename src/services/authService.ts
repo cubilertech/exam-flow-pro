@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/features/auth/authSlice';
 
@@ -71,6 +70,39 @@ export const checkUsernameExists = async (username: string): Promise<boolean> =>
   }
 };
 
+// Check if email already exists
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    // Use a simple sign-in attempt with wrong credentials to check if the email exists
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'checkingIfEmailExists123!',  // Fake password
+    });
+    
+    // If the error indicates invalid credentials, the email exists
+    // If the error indicates user not found, the email doesn't exist
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        return true; // Email exists but password is wrong
+      }
+      if (error.message.includes('Email not confirmed') || 
+          error.message.includes('User already registered')) {
+        return true; // Email exists
+      }
+      if (error.message.includes('User not found')) {
+        return false; // Email doesn't exist
+      }
+    }
+    
+    // If somehow there was no error (which shouldn't happen with a fake password), 
+    // we'll assume the email exists for safety
+    return true;
+  } catch (error) {
+    console.error('Error checking email:', error);
+    return false;
+  }
+};
+
 // Sign up a new user
 export const signUp = async (
   email: string,
@@ -90,7 +122,13 @@ export const signUp = async (
       throw new Error('Username already exists. Please choose a different username.');
     }
     
-    // 2. Create the auth user
+    // 2. Check if email already exists
+    const emailExists = await checkEmailExists(email);
+    if (emailExists) {
+      throw new Error('Email address is already registered. Please use a different email or try logging in.');
+    }
+    
+    // 3. Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -114,7 +152,16 @@ export const signUp = async (
     
     console.log('User created successfully:', authData.user.id);
     
-    // 3. Insert the user profile data
+    // 4. Insert the user profile data - Log the data we're trying to insert
+    console.log('Inserting profile data:', {
+      id: authData.user.id,
+      username: userData.username,
+      country: userData.country,
+      gender: userData.gender,
+      phone_number: userData.phone,
+      city: userData.city,
+    });
+    
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -124,6 +171,8 @@ export const signUp = async (
         gender: userData.gender,
         phone_number: userData.phone,
         city: userData.city,
+      }, {
+        onConflict: 'id'
       });
     
     if (profileError) {
@@ -133,7 +182,7 @@ export const signUp = async (
     
     console.log('Profile created successfully');
     
-    // 4. Check if the user is an admin
+    // 5. Check if the user is an admin
     const isAdmin = await checkIsAdmin(authData.user.id);
     
     // Return user data
