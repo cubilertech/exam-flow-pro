@@ -70,6 +70,43 @@ export const checkUsernameExists = async (username: string): Promise<boolean> =>
   }
 };
 
+// Check if email already exists
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      filter: {
+        email: email
+      }
+    });
+    
+    if (error) {
+      console.error('Error checking email:', error);
+      // For privacy reasons, we'll return false on errors rather than exposing error information
+      return false;
+    }
+    
+    // Since we can't directly query the auth.users table, we'll use this approach
+    // If data exists and has users with this email, return true
+    return data && data.users && data.users.length > 0;
+  } catch (error) {
+    console.error('Error checking email:', error);
+    
+    // Alternative approach: try to sign in with a fake password to see if the account exists
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'checkingIfEmailExists123!',  // Fake password
+    });
+    
+    // If the error message indicates invalid login credentials, the email exists
+    // but password is wrong (which means email exists)
+    if (signInError && signInError.message.includes('Invalid login credentials')) {
+      return true;
+    }
+    
+    return false;
+  }
+};
+
 // Sign up a new user
 export const signUp = async (
   email: string,
@@ -89,7 +126,13 @@ export const signUp = async (
       throw new Error('Username already exists. Please choose a different username.');
     }
     
-    // 2. Create the auth user
+    // 2. Check if email already exists
+    const emailExists = await checkEmailExists(email);
+    if (emailExists) {
+      throw new Error('Email address is already registered. Please use a different email or try logging in.');
+    }
+    
+    // 3. Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -113,7 +156,7 @@ export const signUp = async (
     
     console.log('User created successfully:', authData.user.id);
     
-    // 3. Insert the user profile data - Log the data we're trying to insert
+    // 4. Insert the user profile data - Log the data we're trying to insert
     console.log('Inserting profile data:', {
       id: authData.user.id,
       username: userData.username,
@@ -143,7 +186,7 @@ export const signUp = async (
     
     console.log('Profile created successfully');
     
-    // 4. Check if the user is an admin
+    // 5. Check if the user is an admin
     const isAdmin = await checkIsAdmin(authData.user.id);
     
     // Return user data

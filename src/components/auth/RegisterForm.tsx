@@ -45,6 +45,7 @@ import {
 import { useAppDispatch } from '@/lib/hooks';
 import { checkUsernameExists, signUp } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { supabase } from '@/integrations/supabase/client';
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -81,6 +82,7 @@ export const RegisterForm = () => {
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -176,6 +178,36 @@ export const RegisterForm = () => {
     }
   };
 
+  // Check if email exists when email field is blurred
+  const validateEmail = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setCheckingEmail(true);
+    try {
+      // We'll use the signUp function's error handling to check
+      // This is a simple approach that doesn't require extra API calls
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+        },
+      });
+      
+      // If there's no error or the error is NOT about the user not existing, 
+      // then the email likely exists
+      if (signInError && signInError.message.includes("User already registered")) {
+        form.setError("email", { 
+          type: "manual", 
+          message: "Email address is already registered. Please use a different email or try logging in."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setLoading(true);
@@ -211,8 +243,23 @@ export const RegisterForm = () => {
     } catch (error: any) {
       setLoading(false);
       const errorMessage = error.message || "Registration failed. Please try again.";
-      dispatch(registerFailure(errorMessage));
-      toast.error(errorMessage);
+      
+      // Check for email-specific errors
+      if (errorMessage.includes("email")) {
+        form.setError("email", { 
+          type: "manual", 
+          message: errorMessage 
+        });
+      } else if (errorMessage.includes("username")) {
+        form.setError("username", { 
+          type: "manual", 
+          message: errorMessage 
+        });
+      } else {
+        // Generic error
+        dispatch(registerFailure(errorMessage));
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -272,7 +319,22 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@example.com" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="email@example.com" 
+                        {...field} 
+                        onBlur={(e) => {
+                          field.onBlur();
+                          validateEmail(e.target.value);
+                        }}
+                        disabled={checkingEmail}
+                      />
+                      {checkingEmail && (
+                        <div className="absolute top-0 right-2 flex items-center h-full">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -428,7 +490,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername || checkingEmail}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
