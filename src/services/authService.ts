@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/features/auth/authSlice';
 
@@ -114,7 +113,16 @@ export const signUp = async (
     
     console.log('User created successfully:', authData.user.id);
     
-    // 3. Insert the user profile data
+    // 3. Insert the user profile data - Log the data we're trying to insert
+    console.log('Inserting profile data:', {
+      id: authData.user.id,
+      username: userData.username,
+      country: userData.country,
+      gender: userData.gender,
+      phone_number: userData.phone,
+      city: userData.city,
+    });
+    
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -124,6 +132,8 @@ export const signUp = async (
         gender: userData.gender,
         phone_number: userData.phone,
         city: userData.city,
+      }, {
+        onConflict: 'id'
       });
     
     if (profileError) {

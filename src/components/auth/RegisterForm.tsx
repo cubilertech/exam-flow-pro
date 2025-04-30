@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useState,
@@ -182,9 +181,17 @@ export const RegisterForm = () => {
       setLoading(true);
       dispatch(registerStart());
       
-      // Find the selected country name
-      const selectedCountryObj = countries.find(c => c.code === data.country);
-      const countryName = selectedCountryObj ? selectedCountryObj.name : data.country;
+      // Make sure we're using the actual country name, not the code
+      const countryName = data.country;
+      
+      console.log("Submitting registration with data:", {
+        email: data.email,
+        username: data.username,
+        country: countryName,
+        city: data.city,
+        gender: data.gender,
+        phone: data.phone,
+      });
       
       const userData = await signUp(
         data.email,
@@ -214,6 +221,7 @@ export const RegisterForm = () => {
   // Handle country change
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
+    form.setValue("country", value); // Ensure country value is set in the form
     form.setValue("city", ""); // Reset city when country changes
     setCities([]); // Clear cities when country changes
   };
@@ -307,10 +315,9 @@ export const RegisterForm = () => {
                     <FormLabel>Country</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        field.onChange(value);
                         handleCountryChange(value);
                       }} 
-                      defaultValue={field.value}
+                      value={field.value}
                       disabled={loadingCountries}
                     >
                       <FormControl>
@@ -346,7 +353,7 @@ export const RegisterForm = () => {
                     {cities.length > 0 ? (
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                         disabled={!selectedCountry || loadingCities}
                       >
                         <FormControl>
@@ -392,7 +399,7 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
@@ -401,8 +408,6 @@ export const RegisterForm = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        {/* <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
