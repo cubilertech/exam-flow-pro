@@ -50,27 +50,6 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
   }
 };
 
-// Check if username already exists
-export const checkUsernameExists = async (username: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error checking username:', error);
-      throw error;
-    }
-    
-    return !!data;
-  } catch (error) {
-    console.error('Error checking username:', error);
-    throw error;
-  }
-};
-
 // Sign up a new user
 export const signUp = async (
   email: string,
@@ -84,13 +63,7 @@ export const signUp = async (
   }
 ) => {
   try {
-    // 1. Check if username already exists
-    const usernameExists = await checkUsernameExists(userData.username);
-    if (usernameExists) {
-      throw new Error('Username already exists. Please choose a different username.');
-    }
-    
-    // 2. Create the auth user
+    // 1. Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -98,11 +71,6 @@ export const signUp = async (
         data: {
           username: userData.username,
           full_name: userData.username,
-          city: userData.city,
-          country: userData.country,
-          gender: userData.gender,
-          phone_number: userData.phone
-
         },
       },
     });
@@ -119,7 +87,7 @@ export const signUp = async (
     
     console.log('User created successfully:', authData.user.id);
     
-    // 3. Insert the user profile data
+    // 2. Insert the user profile data
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -138,7 +106,7 @@ export const signUp = async (
     
     console.log('Profile created successfully');
     
-    // 4. Check if the user is an admin
+    // 3. Check if the user is an admin
     const isAdmin = await checkIsAdmin(authData.user.id);
     
     // Return user data
