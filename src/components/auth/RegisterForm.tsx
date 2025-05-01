@@ -175,44 +175,21 @@ export const RegisterForm = () => {
     fetchCities();
   }, [selectedCountry, form]);
 
-  // Check if username exists when username field is blurred
-  const validateUsername = async (username: string) => {
-    if (username.length < 3) return;
-    
-    setCheckingUsername(true);
-    try {
-      const exists = await checkUsernameExists(username);
-      if (exists) {
-        form.setError("username", { 
-          type: "manual", 
-          message: "Username already exists. Please choose a different one."
-        });
-      } else {
-        // Clear the error if username doesn't exist
-        form.clearErrors("username");
-      }
-    } catch (error) {
-      console.error("Error checking username:", error);
-    } finally {
-      setCheckingUsername(false);
-    }
-  };
-
   // Check if email exists when email field is blurred
   const validateEmail = async (email: string) => {
     if (!email || !email.includes('@')) return;
     
     setCheckingEmail(true);
     try {
+      // Clear any previous manual errors first
+      form.clearErrors("email");
+      
       const exists = await checkEmailExists(email);
       if (exists) {
         form.setError("email", { 
           type: "manual", 
           message: "Email already exists. Please use a different one or log in."
         });
-      } else {
-        // Clear the error if email doesn't exist
-        form.clearErrors("email");
       }
     } catch (error) {
       console.error("Error checking email:", error);
@@ -221,9 +198,33 @@ export const RegisterForm = () => {
     }
   };
 
-  // Add watch on email field to clear error when typing
+  // Check if username exists when username field is blurred
+  const validateUsername = async (username: string) => {
+    if (username.length < 3) return;
+    
+    setCheckingUsername(true);
+    try {
+      // Clear any previous manual errors first
+      form.clearErrors("username");
+      
+      const exists = await checkUsernameExists(username);
+      if (exists) {
+        form.setError("username", { 
+          type: "manual", 
+          message: "Username already exists. Please choose a different one."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+
+  // Add watch on form fields to clear errors when typing
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
+      // Only clear manual errors, not validation errors from zod schema
       if (name === 'email' && form.formState.errors.email?.type === 'manual') {
         form.clearErrors('email');
       }
@@ -245,6 +246,18 @@ export const RegisterForm = () => {
         form.setError("email", { 
           type: "manual", 
           message: "Email already exists. Please use a different one or log in."
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Then check if username exists
+      const usernameExists = await checkUsernameExists(data.username);
+      
+      if (usernameExists) {
+        form.setError("username", { 
+          type: "manual", 
+          message: "Username already exists. Please choose a different one."
         });
         setLoading(false);
         return;
