@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useState,
@@ -188,6 +187,9 @@ export const RegisterForm = () => {
           type: "manual", 
           message: "Username already exists. Please choose a different one."
         });
+      } else {
+        // Clear the error if username doesn't exist
+        form.clearErrors("username");
       }
     } catch (error) {
       console.error("Error checking username:", error);
@@ -208,6 +210,9 @@ export const RegisterForm = () => {
           type: "manual", 
           message: "Email already exists. Please use a different one or log in."
         });
+      } else {
+        // Clear the error if email doesn't exist
+        form.clearErrors("email");
       }
     } catch (error) {
       console.error("Error checking email:", error);
@@ -215,6 +220,20 @@ export const RegisterForm = () => {
       setCheckingEmail(false);
     }
   };
+
+  // Add watch on email field to clear error when typing
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'email' && form.formState.errors.email?.type === 'manual') {
+        form.clearErrors('email');
+      }
+      if (name === 'username' && form.formState.errors.username?.type === 'manual') {
+        form.clearErrors('username');
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
@@ -300,6 +319,13 @@ export const RegisterForm = () => {
                           field.onBlur();
                           validateUsername(e.target.value);
                         }} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Clear any manual errors when user types
+                          if (form.formState.errors.username?.type === 'manual') {
+                            form.clearErrors("username");
+                          }
+                        }}
                         disabled={checkingUsername}
                       />
                       {checkingUsername && (
@@ -328,6 +354,13 @@ export const RegisterForm = () => {
                           field.onBlur();
                           validateEmail(e.target.value);
                         }} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Clear any manual errors when user types
+                          if (form.formState.errors.email?.type === 'manual') {
+                            form.clearErrors("email");
+                          }
+                        }}
                         disabled={checkingEmail}
                       />
                       {checkingEmail && (
