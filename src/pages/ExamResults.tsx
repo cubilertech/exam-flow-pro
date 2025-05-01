@@ -152,7 +152,7 @@ const ExamResults = () => {
             
       if (answersArray.length === 0) return;
       
-      const questionIds = answersArray.map((a: any) => a.questionId);
+      const questionIds = answersArray.map((a: any) => a.questionId); 
       
       const { data, error } = await supabase
         .from('questions')

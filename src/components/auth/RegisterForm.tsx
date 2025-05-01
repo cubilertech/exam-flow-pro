@@ -1,9 +1,11 @@
+
 import {
   useEffect,
   useState,
+  useRef,
 } from 'react';
 
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, ChevronsUpDown, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import {
   Link,
@@ -22,6 +24,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
   Form,
   FormControl,
   FormField,
@@ -30,6 +40,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -43,7 +58,8 @@ import {
   registerSuccess,
 } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/lib/hooks';
-import { signUp } from '@/services/authService';
+import { checkUsernameExists, signUp } from '@/services/authService';
+import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const registerSchema = z.object({
@@ -52,7 +68,7 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   country: z.string().min(1, "Please select your country"),
-  city: z.string().min(1, "Please select your city"),
+  city: z.string().min(1, "Please enter your city"),
   gender: z.string().min(1, "Please select your gender"),
   phone: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -80,7 +96,11 @@ export const RegisterForm = () => {
   const [cities, setCities] = useState<City[]>([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
-
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [countrySearchValue, setCountrySearchValue] = useState("");
+  
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -139,34 +159,53 @@ export const RegisterForm = () => {
         const data = await response.json();
         if(data?.data?.length > 0){
           setCities(data?.data?.map((city: any) => ({ name: city })));
-        }else{
-          setCities([])
+        } else {
+          setCities([]);
+          // If no cities are found, allow user to enter a city manually
+          form.setValue("city", "");
         }
       } catch (error) {
         console.error("Failed to fetch cities:", error);
+        setCities([]);
       } finally {
         setLoadingCities(false);
       }
     };
 
     fetchCities();
-  }, [selectedCountry]);
+  }, [selectedCountry, form]);
+
+  // Check if username exists when username field is blurred
+  const validateUsername = async (username: string) => {
+    if (username.length < 3) return;
+    
+    setCheckingUsername(true);
+    try {
+      const exists = await checkUsernameExists(username);
+      if (exists) {
+        form.setError("username", { 
+          type: "manual", 
+          message: "Username already exists. Please choose a different one."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setLoading(true);
       dispatch(registerStart());
       
-      // Find the selected country name
-      const selectedCountryObj = countries.find(c => c.code === data.country);
-      const countryName = selectedCountryObj ? selectedCountryObj.name : data.country;
-      
       const userData = await signUp(
         data.email,
         data.password,
         {
           username: data.username,
-          country: countryName,
+          country: data.country,
           city: data.city,
           gender: data.gender,
           phone: data.phone,
@@ -186,11 +225,19 @@ export const RegisterForm = () => {
     }
   };
 
-  // Handle country change
+  // Handle country selection
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
+    form.setValue("country", value);
     form.setValue("city", ""); // Reset city when country changes
     setCities([]); // Clear cities when country changes
+    setCountryOpen(false);
+  };
+
+  // Handle city selection
+  const handleCityChange = (value: string) => {
+    form.setValue("city", value);
+    setCityOpen(false);
   };
 
   return (
@@ -211,7 +258,22 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="johndoe" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="johndoe" 
+                        {...field} 
+                        onBlur={(e) => {
+                          field.onBlur();
+                          validateUsername(e.target.value);
+                        }} 
+                        disabled={checkingUsername}
+                      />
+                      {checkingUsername && (
+                        <div className="absolute top-0 right-2 flex items-center h-full">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -263,36 +325,66 @@ export const RegisterForm = () => {
                 control={form.control}
                 name="country"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Country</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handleCountryChange(value);
-                      }} 
-                      defaultValue={field.value}
-                      disabled={loadingCountries}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          {loadingCountries ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading countries...
-                            </div>
-                          ) : (
-                            <SelectValue placeholder="Select country" />
-                          )}
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country.code} value={country.name}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {loadingCountries ? (
+                              <div className="flex items-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Loading countries...
+                              </div>
+                            ) : field.value ? (
+                              field.value
+                            ) : (
+                              "Select country"
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search country..." 
+                            className="h-9"
+                            value={countrySearchValue}
+                            onValueChange={setCountrySearchValue}
+                          />
+                          <CommandEmpty>No country found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup className="max-h-60 overflow-auto">
+                              {countries.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={country.name}
+                                  onSelect={() => handleCountryChange(country.name)}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === country.name
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {country.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -301,35 +393,74 @@ export const RegisterForm = () => {
                 control={form.control}
                 name="city"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>City</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      disabled={!selectedCountry || loadingCities}
-                    >
+                    {cities.length > 0 ? (
+                      <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              disabled={!selectedCountry || loadingCities}
+                              className={cn(
+                                "justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {loadingCities ? (
+                                <div className="flex items-center">
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Loading cities...
+                                </div>
+                              ) : !selectedCountry ? (
+                                "Select country first"
+                              ) : field.value ? (
+                                field.value
+                              ) : (
+                                "Select city"
+                              )}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search city..." className="h-9" />
+                            <CommandEmpty>No city found.</CommandEmpty>
+                            <CommandList>
+                              <CommandGroup className="max-h-60 overflow-auto">
+                                {cities.map((city) => (
+                                  <CommandItem
+                                    key={city.name}
+                                    value={city.name}
+                                    onSelect={() => handleCityChange(city.name)}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === city.name
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {city.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
                       <FormControl>
-                        <SelectTrigger>
-                          {loadingCities ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading cities...
-                            </div>
-                          ) : !selectedCountry ? (
-                            "Select country first"
-                          ) : (
-                            <SelectValue placeholder="Select city" />
-                          )}
-                        </SelectTrigger>
+                        <Input 
+                          placeholder="Enter city name" 
+                          {...field} 
+                          disabled={!selectedCountry || loadingCities}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {cities.map((city) => (
-                          <SelectItem key={city.name} value={city.name}>
-                            {city.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -373,7 +504,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -400,3 +531,4 @@ export const RegisterForm = () => {
     </Card>
   );
 };
+
