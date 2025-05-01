@@ -71,6 +71,11 @@ export const signUp = async (
         data: {
           username: userData.username,
           full_name: userData.username,
+          city: userData.city,
+          country: userData.country,
+          gender: userData.gender,
+          phone_number: userData.phone
+
         },
       },
     });
