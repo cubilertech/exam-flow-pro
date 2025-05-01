@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/features/auth/authSlice';
 
@@ -18,28 +19,6 @@ export const checkIsAdmin = async (userId: string): Promise<boolean> => {
     return !!data;
   } catch (error) {
     console.error('Error checking admin status:', error);
-    return false;
-  }
-};
-
-// Check if email already exists
-export const checkEmailExists = async (email: string): Promise<boolean> => {
-  try {
-    // Check if the email exists in the auth.users table
-    const { data, error, count } = await supabase
-      .from('profiles')
-      .select('email', { count: 'exact' })
-      .eq('email', email);
-    
-    if (error) {
-      console.error('Error checking email:', error);
-      return false;
-    }
-    
-    // If count is greater than 0, the email exists
-    return (count || 0) > 0;
-  } catch (error) {
-    console.error('Error checking email:', error);
     return false;
   }
 };
@@ -140,7 +119,6 @@ export const signUp = async (
       .from('profiles')
       .upsert({
         id: authData.user.id,
-        email: email,
         username: userData.username,
         country: userData.country,
         gender: userData.gender,

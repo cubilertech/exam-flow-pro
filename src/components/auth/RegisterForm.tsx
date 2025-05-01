@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useState,
@@ -57,7 +58,7 @@ import {
   registerSuccess,
 } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/lib/hooks';
-import { checkEmailExists, checkUsernameExists, signUp } from '@/services/authService';
+import { checkUsernameExists, signUp } from '@/services/authService';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -96,7 +97,6 @@ export const RegisterForm = () => {
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const [checkingEmail, setCheckingEmail] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
   const [countrySearchValue, setCountrySearchValue] = useState("");
@@ -175,38 +175,12 @@ export const RegisterForm = () => {
     fetchCities();
   }, [selectedCountry, form]);
 
-  // Check if email exists when email field is blurred
-  const validateEmail = async (email: string) => {
-    if (!email || !email.includes('@')) return;
-    
-    setCheckingEmail(true);
-    try {
-      // Clear any previous manual errors first
-      form.clearErrors("email");
-      
-      const exists = await checkEmailExists(email);
-      if (exists) {
-        form.setError("email", { 
-          type: "manual", 
-          message: "Email already exists. Please use a different one or log in."
-        });
-      }
-    } catch (error) {
-      console.error("Error checking email:", error);
-    } finally {
-      setCheckingEmail(false);
-    }
-  };
-
   // Check if username exists when username field is blurred
   const validateUsername = async (username: string) => {
     if (username.length < 3) return;
     
     setCheckingUsername(true);
     try {
-      // Clear any previous manual errors first
-      form.clearErrors("username");
-      
       const exists = await checkUsernameExists(username);
       if (exists) {
         form.setError("username", { 
@@ -221,49 +195,9 @@ export const RegisterForm = () => {
     }
   };
 
-  // Add watch on form fields to clear errors when typing
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      // Only clear manual errors, not validation errors from zod schema
-      if (name === 'email' && form.formState.errors.email?.type === 'manual') {
-        form.clearErrors('email');
-      }
-      if (name === 'username' && form.formState.errors.username?.type === 'manual') {
-        form.clearErrors('username');
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form]);
-
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      // First check if email exists
       setLoading(true);
-      const emailExists = await checkEmailExists(data.email);
-      
-      if (emailExists) {
-        form.setError("email", { 
-          type: "manual", 
-          message: "Email already exists. Please use a different one or log in."
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Then check if username exists
-      const usernameExists = await checkUsernameExists(data.username);
-      
-      if (usernameExists) {
-        form.setError("username", { 
-          type: "manual", 
-          message: "Username already exists. Please choose a different one."
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Then proceed with registration
       dispatch(registerStart());
       
       const userData = await signUp(
@@ -332,13 +266,6 @@ export const RegisterForm = () => {
                           field.onBlur();
                           validateUsername(e.target.value);
                         }} 
-                        onChange={(e) => {
-                          field.onChange(e);
-                          // Clear any manual errors when user types
-                          if (form.formState.errors.username?.type === 'manual') {
-                            form.clearErrors("username");
-                          }
-                        }}
                         disabled={checkingUsername}
                       />
                       {checkingUsername && (
@@ -359,29 +286,7 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Input 
-                        placeholder="email@example.com" 
-                        {...field} 
-                        onBlur={(e) => {
-                          field.onBlur();
-                          validateEmail(e.target.value);
-                        }} 
-                        onChange={(e) => {
-                          field.onChange(e);
-                          // Clear any manual errors when user types
-                          if (form.formState.errors.email?.type === 'manual') {
-                            form.clearErrors("email");
-                          }
-                        }}
-                        disabled={checkingEmail}
-                      />
-                      {checkingEmail && (
-                        <div className="absolute top-0 right-2 flex items-center h-full">
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
+                    <Input placeholder="email@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -577,6 +482,8 @@ export const RegisterForm = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
+                        {/* <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -597,7 +504,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading || checkingUsername || checkingEmail}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -624,3 +531,4 @@ export const RegisterForm = () => {
     </Card>
   );
 };
+
