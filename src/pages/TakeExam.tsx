@@ -259,7 +259,8 @@ const TakeExam = () => {
     });
 
     if (currentExamType === 'study') {
-      saveCurrentAnswer(questionId, selectedOptionIds);
+      // In study mode, we don't automatically save the answer until they check it
+      // saveCurrentAnswer will be called when they hit "Check Answer"
     }
   };
 
@@ -307,6 +308,12 @@ const TakeExam = () => {
       }
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
+  };
+
+  const handleCheckAnswer = () => {
+    saveCurrentAnswer();
+    // Answer is now saved to the study state
+    // The UI update will be handled by the QuestionCard component
   };
 
   const handleSaveNote = async () => {
@@ -574,6 +581,7 @@ const TakeExam = () => {
         examType={currentExamType || 'test'}
         onFlagQuestion={handleFlagQuestion}
         isFlagged={isCurrentQuestionFlagged}
+        onCheckAnswer={handleCheckAnswer}
       />
 
       <div className="flex justify-between mt-6">

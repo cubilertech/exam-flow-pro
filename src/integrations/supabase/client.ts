@@ -23,7 +23,7 @@ const createStorageBucket = async () => {
       return;
     }
     
-    const bucketExists = buckets.some(b => b.name === 'question-images');
+    const bucketExists = buckets?.some(b => b.name === 'question-images') || false;
     
     if (!bucketExists) {
       const { data, error } = await supabase.storage.createBucket('question-images', {

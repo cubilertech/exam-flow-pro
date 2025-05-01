@@ -1,9 +1,10 @@
+
 import React, {
   useEffect,
   useState,
 } from 'react';
 
-import { BookOpen } from 'lucide-react';
+import { BookOpen, CheckCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ interface QuestionCardProps {
   examType?: 'study' | 'test';
   onFlagQuestion?: (questionId: string) => void;
   isFlagged?: boolean;
+  onCheckAnswer?: () => void;
 }
 
 export const QuestionCard = ({
@@ -37,11 +39,13 @@ export const QuestionCard = ({
   examType = 'test',
   onFlagQuestion,
   isFlagged = false,
+  onCheckAnswer,
 }: QuestionCardProps) => {
   const [showExplanation, setShowExplanation] = useState(false);
+  const [answerChecked, setAnswerChecked] = useState(false);
   
   const isMultipleChoice = question.options.filter((opt) => opt.isCorrect).length > 1;
-  const shouldShowAnswers = examType === 'study' || (examType === 'test' && showAnswers);
+  const shouldShowAnswers = examType === 'study' ? answerChecked : (examType === 'test' && showAnswers);
   
   const handleOptionSelect = (optionId: string) => {
     if (!onAnswerSelect || (isAnswered && examType === 'test')) return;
@@ -58,11 +62,28 @@ export const QuestionCard = ({
     
     onAnswerSelect(question.id, newSelectedOptions);
   };
+  
   useEffect(()=>{
     if(question){
-      setShowExplanation(false)
+      setShowExplanation(false);
+      setAnswerChecked(false);
     }
-  },[question])
+  },[question]);
+
+  const handleCheckAnswer = () => {
+    setAnswerChecked(true);
+    if (onCheckAnswer) {
+      onCheckAnswer();
+    }
+  };
+
+  const isOptionCorrect = (optionId: string) => {
+    return question.options.find(opt => opt.id === optionId)?.isCorrect || false;
+  };
+
+  const isOptionIncorrect = (optionId: string) => {
+    return selectedOptions.includes(optionId) && !isOptionCorrect(optionId);
+  };
 
   return (
     <Card className={cn("w-full mb-4 transition-all", isFlagged && "border-amber-400 border-2")}>
@@ -103,17 +124,18 @@ export const QuestionCard = ({
           {question.options.map((option) => {
             const isSelected = selectedOptions.includes(option.id);
             const isCorrect = option.isCorrect;
-            const showCorrectness = shouldShowAnswers && isAnswered;
+            const showCorrectness = shouldShowAnswers && (isAnswered || answerChecked);
             
             return (
               <div
                 key={option.id}
                 className={cn(
                   "flex items-start p-3 rounded-md border cursor-pointer",
-                  !isAnswered && "hover:border-primary",
+                  !isAnswered && !answerChecked && "hover:border-primary",
                   isSelected && !showCorrectness && "border-primary bg-primary/10",
                   showCorrectness && isCorrect && "border-green-500 bg-green-50",
-                  showCorrectness && isSelected && !isCorrect && "border-red-500 bg-red-50"
+                  showCorrectness && isSelected && !isCorrect && "border-red-500 bg-red-50",
+                  showCorrectness && !isSelected && !isCorrect && ""
                 )}
                 onClick={() => handleOptionSelect(option.id)}
               >
@@ -129,8 +151,20 @@ export const QuestionCard = ({
           })}
         </div>
 
-        {((examType === 'study' && isAnswered) || (examType === 'test' && showAnswers)) && question.explanation && (
-          <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
+          {examType === 'study' && selectedOptions.length > 0 && !answerChecked && (
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={handleCheckAnswer}
+              className="flex items-center"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Check Answer
+            </Button>
+          )}
+
+          {examType === 'study' && (answerChecked || isAnswered) && question.explanation && (
             <Button 
               variant="outline" 
               size="sm"
@@ -140,12 +174,12 @@ export const QuestionCard = ({
               <BookOpen className="h-4 w-4 mr-2" />
               {showExplanation ? "Hide Explanation" : "Show Explanation"}
             </Button>
-            
-            {showExplanation && (
-              <div className="mt-2 p-3 bg-secondary rounded-md">
-                <p className="text-sm">{question.explanation}</p>
-              </div>
-            )}
+          )}
+        </div>
+        
+        {showExplanation && question.explanation && (
+          <div className="mt-2 p-3 bg-secondary rounded-md">
+            <p className="text-sm">{question.explanation}</p>
           </div>
         )}
       </CardContent>
