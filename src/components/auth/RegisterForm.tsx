@@ -58,7 +58,7 @@ import {
   registerSuccess,
 } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/lib/hooks';
-import { checkUsernameExists, signUp } from '@/services/authService';
+import { checkEmailExists, checkUsernameExists, signUp } from '@/services/authService';
 import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -97,6 +97,7 @@ export const RegisterForm = () => {
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
   const [countrySearchValue, setCountrySearchValue] = useState("");
@@ -195,9 +196,42 @@ export const RegisterForm = () => {
     }
   };
 
+  // Check if email exists when email field is blurred
+  const validateEmail = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setCheckingEmail(true);
+    try {
+      const exists = await checkEmailExists(email);
+      if (exists) {
+        form.setError("email", { 
+          type: "manual", 
+          message: "Email already exists. Please use a different one or log in."
+        });
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+
   const onSubmit = async (data: RegisterFormValues) => {
     try {
+      // First check if email exists
       setLoading(true);
+      const emailExists = await checkEmailExists(data.email);
+      
+      if (emailExists) {
+        form.setError("email", { 
+          type: "manual", 
+          message: "Email already exists. Please use a different one or log in."
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Then proceed with registration
       dispatch(registerStart());
       
       const userData = await signUp(
@@ -286,7 +320,22 @@ export const RegisterForm = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="email@example.com" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="email@example.com" 
+                        {...field} 
+                        onBlur={(e) => {
+                          field.onBlur();
+                          validateEmail(e.target.value);
+                        }} 
+                        disabled={checkingEmail}
+                      />
+                      {checkingEmail && (
+                        <div className="absolute top-0 right-2 flex items-center h-full">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -482,8 +531,6 @@ export const RegisterForm = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        {/* <SelectItem value="other">Other</SelectItem>
-                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem> */}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -504,7 +551,7 @@ export const RegisterForm = () => {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading || checkingUsername}>
+            <Button type="submit" className="w-full" disabled={loading || checkingUsername || checkingEmail}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -531,4 +578,3 @@ export const RegisterForm = () => {
     </Card>
   );
 };
-

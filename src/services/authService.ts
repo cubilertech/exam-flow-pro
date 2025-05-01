@@ -23,6 +23,31 @@ export const checkIsAdmin = async (userId: string): Promise<boolean> => {
   }
 };
 
+// Check if email already exists
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    // Try to sign in with the email and an incorrect password
+    // If we get a specific error about incorrect password, the email exists
+    // If we get an error about the user not found, the email doesn't exist
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'dummy_password_for_checking_email_existence',
+    });
+    
+    // Error code for invalid credentials (wrong password) means email exists
+    if (error && (error.message.includes('Invalid login credentials') || 
+                  error.message.includes('Invalid email or password'))) {
+      return true;
+    }
+    
+    // If there's no error or other type of error, assume email doesn't exist
+    return false;
+  } catch (error) {
+    console.error('Error checking email:', error);
+    return false;
+  }
+};
+
 // Get user profile data
 export const fetchUserProfile = async (userId: string): Promise<Partial<User> | null> => {
   try {
