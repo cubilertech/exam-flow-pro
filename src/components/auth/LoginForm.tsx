@@ -1,15 +1,24 @@
+import { useState } from 'react';
 
-import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAppDispatch } from "@/lib/hooks";
-import { loginStart, loginSuccess, loginFailure } from "@/features/auth/authSlice";
-import { toast } from "sonner";
-import { signIn } from "@/services/authService";
+import { Loader2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+import { toast } from 'sonner';
+import { z } from 'zod';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -17,10 +26,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  loginFailure,
+  loginStart,
+  loginSuccess,
+} from '@/features/auth/authSlice';
+import { useAppDispatch } from '@/lib/hooks';
+import { signIn } from '@/services/authService';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -36,7 +51,7 @@ export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const from = (location.state as any)?.from?.pathname || "/";
+  // const from = (location.state as any)?.from?.pathname || "/";
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -54,15 +69,18 @@ export const LoginForm = () => {
       
       console.log("Attempting login with:", data.email);
       const userData = await signIn(data.email, data.password);
-      console.log("Login successful, user data received:", !!userData);
       
       if (userData) {
         dispatch(loginSuccess(userData));
         toast.success("Login successful!");
         // Use a small timeout to ensure state updates have propagated
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 100);
+        if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
+          const redirectPath = userData?.isAdmin ? '/questions' : '/my-exams';
+          navigate(redirectPath, { replace: true });
+        }
+        // setTimeout(() => {
+        //   navigate(from, { replace: true });
+        // }, 100);
       } else {
         throw new Error("No user data returned from login");
       }

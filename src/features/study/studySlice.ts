@@ -1,4 +1,8 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit';
+
 import { Question } from '../questions/questionsSlice';
 
 export interface UserNote {

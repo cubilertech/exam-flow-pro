@@ -42,8 +42,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Question } from '@/features/questions/questionsSlice';
-import { startTest } from '@/features/study/studySlice';
+import {
+  setCurrentExam,
+  startTest,
+} from '@/features/study/studySlice';
 import {
   useQuestionBankSubscriptions,
 } from '@/hooks/useQuestionBankSubscriptions';
@@ -274,13 +283,23 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         correctAnswerRate: q.answered_correctly_count && q.answered_count ? 
           (q.answered_correctly_count / q.answered_count) * 100 : undefined
       }));
-      
       dispatch(startTest({
         questions,
         examId: examData.id,
-        examName: values.examName
+        examName: values.examName,
       }));
-      
+      const isTimed = values.timedMode === "untimed" ? false : true
+       dispatch(setCurrentExam({
+              id: examData.id,
+              name: values.examName,
+              categoryIds: values.categories,
+              difficultyLevels: values.difficultyLevels,
+              questionCount: values.numberOfQuestions,
+              isTimed: isTimed,
+              timeLimit: values.timeLimit,
+              timeLimitType: values.timeLimitType,
+              examType: values.examType // Add the missing examType property
+            }));
       onOpenChange(false);
       navigate('/exam/take');
       
@@ -299,7 +318,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[501px] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create a New Exam</DialogTitle>
           <DialogDescription>
@@ -330,18 +349,25 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                           </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value="study" id="study" />
-                          </FormControl>
-                          <FormLabel htmlFor="study" className="font-normal flex items-center">
-                            Study
-                            <Info className="h-4 w-4 ml-2 text-muted-foreground" />
-                            <span className="sr-only">Final response to a question used to determine score</span>
-                          </FormLabel>
-                          <FormDescription className="text-xs mt-0">
-                            Final response to a question used to determine score
-                          </FormDescription>
-                        </FormItem>
+                        <FormControl>
+                          <RadioGroupItem value="study" id="study" />
+                        </FormControl>
+                        <FormLabel htmlFor="study" className="font-normal flex items-center">
+                          Study
+                          <TooltipProvider >
+                            <Tooltip delayDuration={0}>
+                              <TooltipTrigger asChild>
+                                <button type="button" className="focus:outline-none">
+                                  <Info className="h-4 w-4 ml-2 text-muted-foreground" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" align="center" className="max-w-[200px]">
+                                <p>Final response to a question used to determine score</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </FormLabel>
+                      </FormItem>
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />

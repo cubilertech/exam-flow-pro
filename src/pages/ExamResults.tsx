@@ -5,10 +5,8 @@ import React, {
 
 import { format } from 'date-fns';
 import {
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
-  BarChart3,
   BookOpen,
   CheckCircle2,
   ChevronLeft,
@@ -68,10 +66,20 @@ const ExamResults = () => {
     const fetchExamResult = async () => {
       try {
         setLoading(true);
-        
+
         if (storeResult) {
           setExamResult(storeResult);
           await fetchQuestions(storeResult.answers);
+          if (storeResult?.categoryIds) {
+            const { data: catData } = await supabase
+              .from('categories')
+              .select('id, name')
+              .in('id', storeResult.categoryIds);
+              
+            if (catData) {
+              setCategories(catData);
+            }
+          }
           return;
         }
         
@@ -361,7 +369,7 @@ const ExamResults = () => {
             </Card>
           </div>
           
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle className="text-lg">Performance Analysis</CardTitle>
               <CardDescription>
@@ -397,7 +405,7 @@ const ExamResults = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </TabsContent>
         
         <TabsContent value="questions" className="mt-6">

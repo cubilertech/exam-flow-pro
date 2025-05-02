@@ -240,7 +240,7 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
                   <SelectValue placeholder="Select city" />
                 )}
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent  className="max-h-[300px]">
                 {cities.map((city) => (
                   <SelectItem key={city.name} value={city.name}>
                     {city.name}

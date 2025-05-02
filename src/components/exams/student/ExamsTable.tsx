@@ -90,7 +90,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
           setExams([]);
           return;
         }
-        
         const formattedExams = data.map(exam => {
           const latestResult = exam.exam_results && exam.exam_results.length > 0
             ? exam.exam_results.sort((a: any, b: any) => 
@@ -113,7 +112,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
             difficulty_levels: exam.difficulty_levels,
             is_timed: exam.is_timed,
             time_limit: exam.time_limit,
-            time_limit_type: exam.time_limit_type
+            time_limit_type: exam.time_limit_type,
+            exam_type: exam.exam_type
           };
         });
         
@@ -149,18 +149,18 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         isTimed: exam.is_timed,
         timeLimit: exam.time_limit,
         timeLimitType: exam.time_limit_type,
-        examType: 'test' // Add the missing examType property
+        examType: exam.exam_type // Add the missing examType property
       }));
-      console.log(exam,'qqwqwqwqwqwqwqw')
       let query = supabase
       .from('questions')
       .select(`*,question_options (*)`)
       .in('category_id', exam.categoryIds || []); // Provide empty array as fallback
+    
+
        if (exam.difficulty_levels?.length) {
       query = query.in('difficulty', exam.difficulty_levels);
       }
-      const { data: questions, error } = await query.limit(1);
-
+      const { data: questions, error } = await query.limit(exam.questionCount);
       // const { data: questions, error } = await supabase
       //   .from('questions')
       //   .select(`*,question_options (*)`)

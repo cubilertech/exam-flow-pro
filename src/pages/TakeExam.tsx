@@ -1,30 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '@/lib/hooks';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Flag, 
-  BookOpen,
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
+import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Flag,
+  StickyNote,
   Timer,
-  StickyNote
 } from 'lucide-react';
-import { 
-  answerQuestion, 
-  submitTestResult, 
-  toggleFlagQuestion, 
-  addNote,
-  AnsweredQuestion
-} from '@/features/study/studySlice';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { QuestionCard } from '@/components/questions/QuestionCard';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  addNote,
+  AnsweredQuestion,
+  answerQuestion,
+  submitTestResult,
+  toggleFlagQuestion,
+} from '@/features/study/studySlice';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/hooks';
 
 const TakeExam = () => {
   const navigate = useNavigate();
@@ -552,11 +566,14 @@ const TakeExam = () => {
             </Badge>
           </div>
         </div>
+        
         <div className="flex items-center space-x-2">
+        {examDetails?.is_timed &&   
           <Badge variant="outline" className="px-2 py-1">
             <Timer className="h-4 w-4 mr-1.5" />
-            {examDetails?.is_timed ? getRemainingTime() : formatTime(examDuration)}
-          </Badge>
+            {/* {examDetails?.is_timed ? getRemainingTime() : formatTime(examDuration)} */}
+            {getRemainingTime()}
+          </Badge>}
           <Button onClick={handleFinishExam} variant="default">
             Finish Exam
           </Button>

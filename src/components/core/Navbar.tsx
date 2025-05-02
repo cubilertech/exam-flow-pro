@@ -1,10 +1,17 @@
+import * as React from 'react';
 
-import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { logout } from "@/features/auth/authSlice";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import {
+  Book,
+  LogOut,
+  User,
+} from 'lucide-react';
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +19,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, User, LogOut, Book } from "lucide-react";
-import { toast } from "sonner";
-import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
+import { logout } from '@/features/auth/authSlice';
+import {
+  useQuestionBankSubscriptions,
+} from '@/hooks/useQuestionBankSubscriptions';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/hooks';
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
@@ -64,6 +77,8 @@ export const Navbar = () => {
 
         <div className="flex-1 flex items-center justify-center">
           {isAuthenticated && subscriptions.length > 0 && (
+            <>
+            <p className="text-lg text-muted-foreground pr-3">Questions Bank</p>
             <div className="max-w-xs w-full">
               <Select
                 value={activeQuestionBankId || undefined}
@@ -88,6 +103,8 @@ export const Navbar = () => {
                 </SelectContent>
               </Select>
             </div>
+            </>
+            
           )}
         </div>
 

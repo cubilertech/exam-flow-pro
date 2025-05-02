@@ -1,10 +1,12 @@
-
 import React, {
   useEffect,
   useState,
 } from 'react';
 
-import { BookOpen, CheckCircle } from 'lucide-react';
+import {
+  BookOpen,
+  CheckCircle,
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,7 +86,6 @@ export const QuestionCard = ({
   const isOptionIncorrect = (optionId: string) => {
     return selectedOptions.includes(optionId) && !isOptionCorrect(optionId);
   };
-
   return (
     <Card className={cn("w-full mb-4 transition-all", isFlagged && "border-amber-400 border-2")}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -151,9 +152,11 @@ export const QuestionCard = ({
           })}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {examType === 'study' && selectedOptions.length > 0 && !answerChecked && (
+        <div className="mt-4 flex flex-wrap gap-2 justify-between">
+          {/* {examType === 'study' && selectedOptions.length > 0 && !answerChecked && ( */}
+          {examType === 'study' && (
             <Button 
+            disabled={selectedOptions.length > 0 ? false : true}
               variant="default" 
               size="sm"
               onClick={handleCheckAnswer}
@@ -163,8 +166,7 @@ export const QuestionCard = ({
               Check Answer
             </Button>
           )}
-
-          {examType === 'study' && (answerChecked || isAnswered) && question.explanation && (
+          {examType === 'study' &&  question.explanation && (
             <Button 
               variant="outline" 
               size="sm"
