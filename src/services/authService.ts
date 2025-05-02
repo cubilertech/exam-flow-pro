@@ -1,6 +1,5 @@
-
-import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/features/auth/authSlice';
+import { supabase } from '@/integrations/supabase/client';
 
 // Check if a user is an admin
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
@@ -93,6 +92,7 @@ export const signUp = async (
       .upsert({
         id: authData.user.id,
         username: userData.username,
+        full_name: userData.username,
         country: userData.country,
         gender: userData.gender,
         phone_number: userData.phone,

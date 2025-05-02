@@ -9,7 +9,6 @@ import {
   Link,
   useNavigate,
 } from 'react-router-dom';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ import {
   registerStart,
   registerSuccess,
 } from '@/features/auth/authSlice';
+import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch } from '@/lib/hooks';
 import { signUp } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,6 +74,7 @@ type City = {
 export const RegisterForm = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [countries, setCountries] = useState<Country[]>([]);
@@ -113,7 +114,6 @@ export const RegisterForm = () => {
         setCountries(formattedCountries);
       } catch (error) {
         console.error("Failed to fetch countries:", error);
-        toast.error("Failed to load countries. Please try again later.");
       } finally {
         setLoadingCountries(false);
       }
@@ -156,17 +156,13 @@ export const RegisterForm = () => {
     try {
       setLoading(true);
       dispatch(registerStart());
-      
-      // Find the selected country name
-      const selectedCountryObj = countries.find(c => c.code === data.country);
-      const countryName = selectedCountryObj ? selectedCountryObj.name : data.country;
-      
+            
       const userData = await signUp(
         data.email,
         data.password,
         {
           username: data.username,
-          country: countryName,
+          country: data.country,
           city: data.city,
           gender: data.gender,
           phone: data.phone,
@@ -174,13 +170,28 @@ export const RegisterForm = () => {
       );
       
       dispatch(registerSuccess(userData));
-      toast.success("Registration successful!");
       navigate("/");
     } catch (error: any) {
       setLoading(false);
-      const errorMessage = error.message || "Registration failed. Please try again.";
+    
+      // Improved error handling for Supabase errors
+      let errorMessage = "Registration failed. Please try again.";
+      
+      if (error?.message?.includes('User already registered')) {
+        errorMessage = "This email is already registered. Please use a different email.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      console.error('Registration error:', error);
       dispatch(registerFailure(errorMessage));
-      toast.error(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { useAppSelector } from "@/lib/hooks";
-import { supabase } from "@/integrations/supabase/client";
-import { QuestionBank } from "@/features/questions/questionsSlice";
-import { useQuestionBankSubscriptions } from "@/hooks/useQuestionBankSubscriptions";
-import { MainLayout } from "@/layouts/MainLayout";
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  Book,
+  CheckCircle,
+  Globe,
+  Lock,
+  User,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+import { EditProfileModal } from '@/components/profile/EditProfileModal';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -11,10 +22,17 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -22,21 +40,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { User, Globe, Book, CheckCircle, Lock } from "lucide-react";
-import { EditProfileModal } from "@/components/profile/EditProfileModal";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { QuestionBank } from '@/features/questions/questionsSlice';
+import {
+  useQuestionBankSubscriptions,
+} from '@/hooks/useQuestionBankSubscriptions';
+import { supabase } from '@/integrations/supabase/client';
+import { useAppSelector } from '@/lib/hooks';
 
 const Profile = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -141,7 +157,7 @@ const Profile = () => {
                       <span className="w-24 text-muted-foreground">
                         Gender:
                       </span>
-                      <span>{user.gender || "Not specified"}</span>
+                      <span className="capitalize">{user.gender || "Not specified"}</span>
                     </div>
                     {user.phone && (
                       <div className="flex items-center">
@@ -170,7 +186,7 @@ const Profile = () => {
                         {isAdmin ? "Admin" : "Student"}
                       </Badge>
                     </div>
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <span className="w-24 text-muted-foreground">
                         Subscriptions:
                       </span>

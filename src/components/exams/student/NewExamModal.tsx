@@ -127,11 +127,11 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   }, [subscriptions, activeQuestionBankId]);
   
   useEffect(() => {
-    if (open && !selectedQuestionBank && initialSelectedBank) {
+    if (open && initialSelectedBank) {
       setSelectedQuestionBank(initialSelectedBank);
       fetchCategoriesByQuestionBank(initialSelectedBank);
     }
-  }, [open, initialSelectedBank, selectedQuestionBank]);
+  }, [open, initialSelectedBank]);
 
   const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
     try {

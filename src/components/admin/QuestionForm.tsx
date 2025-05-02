@@ -237,29 +237,28 @@ export const QuestionForm = ({
       setIsUploading(true);
       
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
       if (bucketsError) {
         throw bucketsError;
       }
       
-      const bucketExists = buckets.some(b => b.name === 'question-images');
+      const bucketExists = buckets.some(b => b.name === 'question_images');
       
-      if (!bucketExists) {
-        const { data, error: createError } = await supabase.storage.createBucket('question-images', {
-          public: true,
-          fileSizeLimit: 2097152, // 2MB
-        });
+      // if (!bucketExists) {
+      //   const { data, error: createError } = await supabase.storage.createBucket('question_images', {
+      //     public: true,
+      //     fileSizeLimit: 2097152, // 2MB
+      //   });
         
-        if (createError) throw createError;
-        console.log("Created new bucket:", data);
-      }
+      //   if (createError) throw createError;
+      //   console.log("Created new bucket:", data);
+      // }
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = fileName;
-      
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+      console.log(bucketExists,filePath,file);
       const { error: uploadError } = await supabase.storage
-        .from('question-images')
+        .from('question_images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -268,7 +267,7 @@ export const QuestionForm = ({
       if (uploadError) throw uploadError;
       
       const { data: { publicUrl } } = supabase.storage
-        .from('question-images')
+        .from('question_images')
         .getPublicUrl(filePath);
       
       console.log("Uploaded image URL:", publicUrl);
