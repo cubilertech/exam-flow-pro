@@ -50,7 +50,7 @@ export const QuestionCard = ({
   const shouldShowAnswers = examType === 'study' ? answerChecked : (examType === 'test' && showAnswers);
   
   const handleOptionSelect = (optionId: string) => {
-    if (!onAnswerSelect || (isAnswered && examType === 'test')) return;
+    // if (!onAnswerSelect || (isAnswered && examType === 'test')) return;
     
     let newSelectedOptions: string[];
     
@@ -115,7 +115,7 @@ export const QuestionCard = ({
               <img
                 src={question.imageUrl}
                 alt="Question illustration"
-                className="max-w-full h-auto rounded-md"
+                 className="max-w-full h-[200px] rounded-md object-cover"
               />
             </div>
           )}

@@ -545,21 +545,25 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 name="numberOfQuestions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Number of Questions (max {totalQuestions})</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        {...field} 
-                        min={1} 
-                        max={totalQuestions} 
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                  <FormLabel>Number of Questions (max {totalQuestions})</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      min={1} 
+                      max={totalQuestions} 
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        // if (!isNaN(value) && value <= totalQuestions) {
+                          field.onChange(value);
+                        // }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="timedMode"

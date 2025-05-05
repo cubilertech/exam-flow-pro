@@ -170,7 +170,7 @@ export const RegisterForm = () => {
       );
       
       dispatch(registerSuccess(userData));
-      navigate("/");
+      navigate("/my-exams");
     } catch (error: any) {
       setLoading(false);
     

@@ -1,15 +1,11 @@
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from 'react';
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+  Edit,
+  Image,
+  Trash2,
+} from 'lucide-react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,10 +15,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Search, Image } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Option {
   id: string;
@@ -118,7 +123,7 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">ID</TableHead>
+                <TableHead className="w-36">ID</TableHead>
                 <TableHead>Question</TableHead>
                 <TableHead className="w-24">Type</TableHead>
                 <TableHead className="w-24">Difficulty</TableHead>

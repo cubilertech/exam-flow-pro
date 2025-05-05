@@ -251,7 +251,6 @@ const ExamResults = () => {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
-
   return (
     <div className="container mx-auto py-8 max-w-5xl">
       <div className="mb-8">
@@ -324,10 +323,10 @@ const ExamResults = () => {
                     <span className="text-sm font-medium text-muted-foreground">Questions</span>
                     <span className="font-medium">{examResult.questionCount}</span>
                   </div>
-                  <div className="flex flex-col space-y-1">
+                  {examResult?.is_timed &&   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Time Taken</span>
                     <span className="font-medium">{formatTime(examResult.timeTaken)}</span>
-                  </div>
+                  </div> }
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Correct</span>
                     <div className="flex items-center">

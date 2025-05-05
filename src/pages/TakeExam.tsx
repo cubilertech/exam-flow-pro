@@ -512,7 +512,8 @@ const TakeExam = () => {
         timeStarted: currentTestStartTime || new Date().toISOString(),
         timeCompleted: new Date().toISOString(),
         examId: currentExamId,
-        examName: currentExamName || 'Exam'
+        examName: currentExamName || 'Exam',
+        is_timed: examDetails?.is_timed
       };
       
       dispatch(submitTestResult(result));
@@ -652,11 +653,11 @@ const TakeExam = () => {
                 <span>Unanswered:</span>
                 <span className="font-medium">{totalQuestions - getCompletedQuestionCount()}</span>
               </div>
-              <div className="flex justify-between items-center">
+              {examDetails?.is_timed &&  <div className="flex justify-between items-center">
                 <span>Time taken:</span>
                 <span className="font-medium">{formatTime(examDuration)}</span>
               </div>
-              
+              }           
               {totalQuestions - getCompletedQuestionCount() > 0 && (
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
                   <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />

@@ -76,13 +76,19 @@ export const Navbar = () => {
         </div>
 
         <div className="flex-1 flex items-center justify-center">
-          {isAuthenticated && subscriptions.length > 0 && (
-            <>
+        {isAuthenticated && (
+          <>
             <p className="text-lg text-muted-foreground pr-3">Questions Bank</p>
             <div className="max-w-xs w-full">
               <Select
                 value={activeQuestionBankId || undefined}
-                onValueChange={handleQuestionBankChange}
+                onValueChange={(value) => {
+                  if (value === "manage") {
+                    navigate('/profile');
+                  } else {
+                    handleQuestionBankChange(value);
+                  }
+                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Question Bank">
@@ -100,11 +106,16 @@ export const Navbar = () => {
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem value="manage">
+                    <div className="flex items-center">
+                      <Book className="mr-2 h-4 w-4" />
+                      <span>Manage subscriptions</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            </>
-            
+          </>
           )}
         </div>
 
