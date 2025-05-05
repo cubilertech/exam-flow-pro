@@ -251,6 +251,7 @@ const ExamResults = () => {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
+
   return (
     <div className="container mx-auto py-8 max-w-5xl">
       <div className="mb-8">

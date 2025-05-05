@@ -657,7 +657,7 @@ const TakeExam = () => {
                 <span>Time taken:</span>
                 <span className="font-medium">{formatTime(examDuration)}</span>
               </div>
-              }           
+              }
               {totalQuestions - getCompletedQuestionCount() > 0 && (
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
                   <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
