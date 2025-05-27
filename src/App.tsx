@@ -20,6 +20,7 @@ import Profile from "./pages/Profile";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { StudentRoute } from "./components/auth/StudentRoute";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
+import Payment from "./pages/Payment";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
+              <Route path="/payment" element={<Payment/>}/>
               <Route path="/login" element={<Login/>}/>
               <Route path="/register" element={<Register/>}/>
               <Route path="/profile" element={<PrivateRoute><MainLayout><Profile/></MainLayout></PrivateRoute>}/>
