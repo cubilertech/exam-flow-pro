@@ -183,7 +183,7 @@ export const QuestionCard = ({
         {showExplanation && question.explanation && (
           <div className="mt-2 p-3 bg-secondary rounded-md">
             <div 
-              className="text-sm prose prose-sm max-w-none"
+              className="text-sm prose prose-sm max-w-none [&_table]:border-collapse [&_table]:border [&_table]:border-border [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-muted"
               dangerouslySetInnerHTML={{ __html: question.explanation }}
             />
           </div>

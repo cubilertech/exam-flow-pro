@@ -10,8 +10,10 @@ import {
   Plus,
   X,
 } from 'lucide-react';
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { TableEmbed } from 'quill-better-table';
+import 'quill-better-table/dist/quill-better-table.css';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -109,7 +111,10 @@ export const QuestionForm = ({
     optionTexts?: string;
   }>({});
 
-  // Rich text editor modules configuration
+  // Register the table module
+  Quill.register('modules/better-table', TableEmbed);
+
+  // Rich text editor modules configuration with table support
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -117,13 +122,23 @@ export const QuestionForm = ({
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'color': [] }, { 'background': [] }],
       ['link'],
+      ['table'],
       ['clean']
     ],
+    'better-table': {
+      operationMenu: {
+        items: {
+          unmergeCells: {
+            text: 'Another unmerge cells name'
+          }
+        }
+      }
+    },
   };
 
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'color', 'background', 'link'
+    'list', 'bullet', 'color', 'background', 'link', 'table'
   ];
 
   useEffect(() => {
@@ -602,10 +617,13 @@ export const QuestionForm = ({
               onChange={handleExplanationChange}
               modules={quillModules}
               formats={quillFormats}
-              placeholder="Provide an explanation for the correct answer"
+              placeholder="Provide an explanation for the correct answer. You can insert tables using the table button in the toolbar."
               className="bg-background"
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tip: Use the table button in the toolbar to insert and manage tables in your explanation.
+          </p>
         </div>
 
         <div>
