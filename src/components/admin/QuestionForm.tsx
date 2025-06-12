@@ -109,7 +109,7 @@ export const QuestionForm = ({
     optionTexts?: string;
   }>({});
 
-  // Rich text editor modules configuration
+  // Rich text editor modules configuration with table support
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -117,14 +117,55 @@ export const QuestionForm = ({
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'color': [] }, { 'background': [] }],
       ['link'],
+      ['insertTable'],
       ['clean']
     ],
+    table: true,
   };
 
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'color', 'background', 'link'
+    'list', 'bullet', 'color', 'background', 'link', 'table'
   ];
+
+  // Custom toolbar handler for table insertion
+  const insertTable = () => {
+    const tableHtml = `
+      <table style="border-collapse: collapse; width: 100%;">
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px;">Cell 1</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">Cell 2</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ccc; padding: 8px;">Cell 3</td>
+          <td style="border: 1px solid #ccc; padding: 8px;">Cell 4</td>
+        </tr>
+      </table>
+      <p><br></p>
+    `;
+    
+    const currentContent = formData.explanation;
+    setFormData({
+      ...formData,
+      explanation: currentContent + tableHtml
+    });
+  };
+
+  // Custom toolbar configuration
+  const customToolbar = {
+    container: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['insertTable'],
+      ['clean']
+    ],
+    handlers: {
+      insertTable: insertTable
+    }
+  };
 
   useEffect(() => {
     if (questionBankId) {
@@ -600,12 +641,15 @@ export const QuestionForm = ({
               theme="snow"
               value={formData.explanation}
               onChange={handleExplanationChange}
-              modules={quillModules}
+              modules={customToolbar}
               formats={quillFormats}
-              placeholder="Provide an explanation for the correct answer"
+              placeholder="Provide an explanation for the correct answer. Click the table button to insert tables."
               className="bg-background"
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Tip: Use the table button in the toolbar to insert a 2x2 table. You can edit the content and add more rows/columns as needed.
+          </p>
         </div>
 
         <div>
