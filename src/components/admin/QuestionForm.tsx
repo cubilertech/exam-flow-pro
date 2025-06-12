@@ -109,25 +109,6 @@ export const QuestionForm = ({
     optionTexts?: string;
   }>({});
 
-  // Rich text editor modules configuration with table support
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'color': [] }, { 'background': [] }],
-      ['link'],
-      ['insertTable'],
-      ['clean']
-    ],
-    table: true,
-  };
-
-  const quillFormats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'color', 'background', 'link', 'table'
-  ];
-
   // Custom toolbar handler for table insertion
   const insertTable = () => {
     const tableHtml = `
@@ -150,6 +131,29 @@ export const QuestionForm = ({
       explanation: currentContent + tableHtml
     });
   };
+
+  // Custom toolbar configuration with table support
+  const quillModules = {
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'color': [] }, { 'background': [] }],
+        ['link'],
+        ['insertTable'],
+        ['clean']
+      ],
+      handlers: {
+        insertTable: insertTable
+      }
+    }
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'color', 'background', 'link'
+  ];
 
   // Custom toolbar configuration
   const customToolbar = {
@@ -641,7 +645,7 @@ export const QuestionForm = ({
               theme="snow"
               value={formData.explanation}
               onChange={handleExplanationChange}
-              modules={customToolbar}
+              modules={quillModules}
               formats={quillFormats}
               placeholder="Provide an explanation for the correct answer. Click the table button to insert tables."
               className="bg-background"
