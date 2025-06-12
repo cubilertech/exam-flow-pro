@@ -1,3 +1,4 @@
+
 import React, {
   useEffect,
   useState,
@@ -86,6 +87,7 @@ export const QuestionCard = ({
   const isOptionIncorrect = (optionId: string) => {
     return selectedOptions.includes(optionId) && !isOptionCorrect(optionId);
   };
+
   return (
     <Card className={cn("w-full mb-4 transition-all", isFlagged && "border-amber-400 border-2")}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -153,7 +155,6 @@ export const QuestionCard = ({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 justify-between">
-          {/* {examType === 'study' && selectedOptions.length > 0 && !answerChecked && ( */}
           {examType === 'study' && (
             <Button 
             disabled={selectedOptions.length > 0 ? false : true}
@@ -181,7 +182,10 @@ export const QuestionCard = ({
         
         {showExplanation && question.explanation && (
           <div className="mt-2 p-3 bg-secondary rounded-md">
-            <p className="text-sm">{question.explanation}</p>
+            <div 
+              className="text-sm prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: question.explanation }}
+            />
           </div>
         )}
       </CardContent>

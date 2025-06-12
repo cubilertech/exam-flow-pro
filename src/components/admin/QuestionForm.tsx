@@ -10,6 +10,8 @@ import {
   Plus,
   X,
 } from 'lucide-react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -107,6 +109,23 @@ export const QuestionForm = ({
     optionTexts?: string;
   }>({});
 
+  // Rich text editor modules configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'color', 'background', 'link'
+  ];
+
   useEffect(() => {
     if (questionBankId) {
       fetchCategories(questionBankId);
@@ -148,6 +167,10 @@ export const QuestionForm = ({
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleExplanationChange = (value: string) => {
+    setFormData({ ...formData, explanation: value });
   };
 
   const handleCategoryChange = (value: string) => {
@@ -242,16 +265,6 @@ export const QuestionForm = ({
       }
       
       const bucketExists = buckets.some(b => b.name === 'question_images');
-      
-      // if (!bucketExists) {
-      //   const { data, error: createError } = await supabase.storage.createBucket('question_images', {
-      //     public: true,
-      //     fileSizeLimit: 2097152, // 2MB
-      //   });
-        
-      //   if (createError) throw createError;
-      //   console.log("Created new bucket:", data);
-      // }
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -582,14 +595,17 @@ export const QuestionForm = ({
 
         <div>
           <Label htmlFor="explanation">Explanation</Label>
-          <Textarea
-            id="explanation"
-            name="explanation"
-            value={formData.explanation}
-            onChange={handleTextChange}
-            placeholder="Provide an explanation for the correct answer"
-            className="min-h-[80px]"
-          />
+          <div className="mt-2">
+            <ReactQuill
+              theme="snow"
+              value={formData.explanation}
+              onChange={handleExplanationChange}
+              modules={quillModules}
+              formats={quillFormats}
+              placeholder="Provide an explanation for the correct answer"
+              className="bg-background"
+            />
+          </div>
         </div>
 
         <div>
