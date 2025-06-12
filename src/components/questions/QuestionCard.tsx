@@ -63,7 +63,7 @@ export const QuestionCard = ({
       newSelectedOptions = [optionId];
     }
     
-    onAnswerSelect(question.id, newSelectedOptions);
+    onAnswerSelect?.(question.id, newSelectedOptions);
   };
   
   useEffect(()=>{
@@ -167,7 +167,7 @@ export const QuestionCard = ({
               Check Answer
             </Button>
           )}
-          {examType === 'study' &&  question.explanation && (
+          {question.explanation && (shouldShowAnswers || examType === 'study') && (
             <Button 
               variant="outline" 
               size="sm"
@@ -181,7 +181,8 @@ export const QuestionCard = ({
         </div>
         
         {showExplanation && question.explanation && (
-          <div className="mt-2 p-3 bg-secondary rounded-md">
+          <div className="mt-4 p-4 bg-secondary rounded-md">
+            <h4 className="font-medium text-sm mb-2">Explanation:</h4>
             <div 
               className="text-sm prose prose-sm max-w-none"
               dangerouslySetInnerHTML={{ __html: question.explanation }}
