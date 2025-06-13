@@ -1,0 +1,99 @@
+/* Container class */
+.rich-text-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.7;
+    color: #333;
+    font-size: 1rem;
+  }
+  
+  /* Bold text */
+  .rich-text-content strong,
+  .rich-text-content b {
+    font-weight: 600;
+    color: #111;
+  }
+  
+  /* Unordered list */
+  .rich-text-content ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1em;
+  }
+  
+  /* Ordered list */
+  .rich-text-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 1em;
+  }
+  
+  /* List items */
+  .rich-text-content li {
+    margin-bottom: 0.4em;
+  }
+  
+  /* Tables */
+  .rich-text-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    border: 1px solid #ddd;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  
+  .rich-text-content th,
+  .rich-text-content td {
+    border: 1px solid #ccc;
+    padding: 12px 16px;
+    text-align: left;
+  }
+  
+  .rich-text-content th {
+    background-color: #f8f8f8;
+    font-weight: 600;
+  }
+  
+  /* Blockquote */
+  .rich-text-content blockquote {
+    border-left: 4px solid #007acc;
+    margin: 1em 0;
+    padding-left: 1em;
+    color: #555;
+    background: #f9f9f9;
+  }
+  
+  /* Code block */
+  .rich-text-content pre {
+    background-color: #f4f4f4;
+    padding: 1rem;
+    overflow-x: auto;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.95rem;
+  }
+  
+  .rich-text-content code {
+    background-color: #f1f1f1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+  
+  .remirror-editor.rich-text-content ul[data-task-list] li[data-checked]::marker {
+    content: "☑";
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1.1rem;
+    color: #28a745; 
+  }
+
+  .remirror-editor.rich-text-content ul[data-task-list] li:not([data-checked])::marker {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1.1rem;
+    color: #888;
+  }

@@ -1,42 +1,29 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { useEffect, useState } from "react";
 
-import {
-  AlertTriangle,
-  Image,
-  Loader2,
-  Plus,
-  X,
-} from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import { v4 as uuidv4 } from 'uuid';
+import { AlertTriangle, Image, Loader2, Plus, X } from "lucide-react";
+import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
+import { OnChangeHTML } from "@remirror/react";
 
-import {
-  Alert,
-  AlertDescription,
-} from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@/components/ui/radio-group';
+import { v4 as uuidv4 } from "uuid";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+import "../../style-editor.css";
 
 interface Option {
   id: string;
@@ -53,7 +40,7 @@ interface Question {
   imageUrl?: string;
   categoryId: string;
   tags: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
 }
 
 interface Category {
@@ -70,38 +57,52 @@ interface QuestionFormProps {
   onFormSubmitted: () => void;
 }
 
-export const QuestionForm = ({ 
+function normalizeHTML(input: any) {
+  try {
+    const maybeParsed = JSON.parse(input);
+    return typeof maybeParsed === "string" ? maybeParsed : input;
+  } catch {
+    return input;
+  }
+}
+
+export const QuestionForm = ({
   questionBankId,
-  categoryId, 
-  initialData, 
-  allCategories, 
-  onFormSubmitted 
+  categoryId,
+  initialData,
+  allCategories,
+  onFormSubmitted,
 }: QuestionFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  console.log("initialData?.explanation", initialData?.explanation);
   const [formData, setFormData] = useState<Question>({
-    id: initialData?.id || '',
-    serialNumber: initialData?.serialNumber || '',
-    text: initialData?.text || '',
+    id: initialData?.id || "",
+    serialNumber: initialData?.serialNumber || "",
+    text: initialData?.text || "",
     options: initialData?.options || [
-      { id: uuidv4(), text: '', isCorrect: false },
-      { id: uuidv4(), text: '', isCorrect: false },
-      { id: uuidv4(), text: '', isCorrect: false },
-      { id: uuidv4(), text: '', isCorrect: false }
+      { id: uuidv4(), text: "", isCorrect: false },
+      { id: uuidv4(), text: "", isCorrect: false },
+      { id: uuidv4(), text: "", isCorrect: false },
+      { id: uuidv4(), text: "", isCorrect: false },
     ],
-    explanation: initialData?.explanation || '',
-    imageUrl: initialData?.imageUrl || '',
+    explanation: normalizeHTML(initialData?.explanation),
+    imageUrl: initialData?.imageUrl || "",
     categoryId: initialData?.categoryId || categoryId,
     tags: initialData?.tags || [],
-    difficulty: initialData?.difficulty || 'easy',
+    difficulty: initialData?.difficulty || "easy",
   });
-  const [questionType, setQuestionType] = useState<'single' | 'multiple'>(
-    initialData?.options.filter(o => o.isCorrect).length > 1 ? 'multiple' : 'single'
+  const [questionType, setQuestionType] = useState<"single" | "multiple">(
+    initialData?.options.filter((o) => o.isCorrect).length > 1
+      ? "multiple"
+      : "single",
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    initialData?.imageUrl || null,
+  );
   const [validationErrors, setValidationErrors] = useState<{
     text?: string;
     categoryId?: string;
@@ -109,29 +110,12 @@ export const QuestionForm = ({
     optionTexts?: string;
   }>({});
 
-  // Rich text editor modules configuration
-  const quillModules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'color': [] }, { 'background': [] }],
-      ['link'],
-      ['clean']
-    ],
-  };
-
-  const quillFormats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'color', 'background', 'link'
-  ];
-
   useEffect(() => {
     if (questionBankId) {
       fetchCategories(questionBankId);
     }
   }, [questionBankId]);
-  
+
   useEffect(() => {
     if (allCategories && allCategories.length > 0) {
       setCategories(allCategories);
@@ -147,13 +131,15 @@ export const QuestionForm = ({
         .order("name");
 
       if (error) throw error;
-      
+
       if (data) {
-        setCategories(data.map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          questionBankId: cat.question_bank_id
-        })));
+        setCategories(
+          data.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            questionBankId: cat.question_bank_id,
+          })),
+        );
       }
     } catch (error: any) {
       toast({
@@ -164,45 +150,47 @@ export const QuestionForm = ({
     }
   };
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleTextChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleExplanationChange = (value: string) => {
-    setFormData({ ...formData, explanation: value });
+  const handleExplanationChange = (value: any) => {
+    setFormData({ ...formData, explanation: JSON.stringify(value) });
   };
 
   const handleCategoryChange = (value: string) => {
     setFormData({
       ...formData,
-      categoryId: value
+      categoryId: value,
     });
   };
-  
+
   const handleOptionTextChange = (id: string, value: string) => {
     setFormData({
       ...formData,
-      options: formData.options.map(option =>
-        option.id === id ? { ...option, text: value } : option
-      )
+      options: formData.options.map((option) =>
+        option.id === id ? { ...option, text: value } : option,
+      ),
     });
   };
 
   const handleOptionCorrectChange = (id: string, checked: boolean) => {
     let newOptions = [...formData.options];
-    
-    if (questionType === 'single' && checked) {
-      newOptions = newOptions.map(option => ({
+
+    if (questionType === "single" && checked) {
+      newOptions = newOptions.map((option) => ({
         ...option,
-        isCorrect: option.id === id
+        isCorrect: option.id === id,
       }));
     } else {
-      newOptions = newOptions.map(option =>
-        option.id === id ? { ...option, isCorrect: checked } : option
+      newOptions = newOptions.map((option) =>
+        option.id === id ? { ...option, isCorrect: checked } : option,
       );
     }
-    
+
     setFormData({ ...formData, options: newOptions });
   };
 
@@ -212,8 +200,8 @@ export const QuestionForm = ({
         ...formData,
         options: [
           ...formData.options,
-          { id: uuidv4(), text: '', isCorrect: false }
-        ]
+          { id: uuidv4(), text: "", isCorrect: false },
+        ],
       });
     }
   };
@@ -222,13 +210,13 @@ export const QuestionForm = ({
     if (formData.options.length > 2) {
       setFormData({
         ...formData,
-        options: formData.options.filter(option => option.id !== id)
+        options: formData.options.filter((option) => option.id !== id),
       });
     } else {
       toast({
         title: "Cannot remove option",
         description: "A question must have at least 2 options.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -236,21 +224,21 @@ export const QuestionForm = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
+
       if (file.size > 2 * 1024 * 1024) {
         toast({
           title: "File too large",
           description: "Image must be less than 2MB in size",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
-      
+
       setSelectedFile(file);
-      
+
       const objectUrl = URL.createObjectURL(file);
       setImagePreview(objectUrl);
-      
+
       await uploadImage(file);
     }
   };
@@ -258,38 +246,39 @@ export const QuestionForm = ({
   const uploadImage = async (file: File) => {
     try {
       setIsUploading(true);
-      
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+
+      const { data: buckets, error: bucketsError } =
+        await supabase.storage.listBuckets();
       if (bucketsError) {
         throw bucketsError;
       }
-      
-      const bucketExists = buckets.some(b => b.name === 'question_images');
-      
-      const fileExt = file.name.split('.').pop();
+
+      const bucketExists = buckets.some((b) => b.name === "question_images");
+
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
-      console.log(bucketExists,filePath,file);
+      console.log(bucketExists, filePath, file);
       const { error: uploadError } = await supabase.storage
-        .from('question_images')
+        .from("question_images")
         .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
+          cacheControl: "3600",
+          upsert: true,
         });
-      
+
       if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('question_images')
-        .getPublicUrl(filePath);
-      
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("question_images").getPublicUrl(filePath);
+
       console.log("Uploaded image URL:", publicUrl);
-      
+
       setFormData({
         ...formData,
-        imageUrl: publicUrl
+        imageUrl: publicUrl,
       });
-      
+
       toast({
         title: "Image uploaded",
         description: "Image has been uploaded successfully",
@@ -299,7 +288,7 @@ export const QuestionForm = ({
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload image",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -311,7 +300,7 @@ export const QuestionForm = ({
     setImagePreview(null);
     setFormData({
       ...formData,
-      imageUrl: ''
+      imageUrl: "",
     });
   };
 
@@ -326,109 +315,113 @@ export const QuestionForm = ({
     if (!formData.text.trim()) {
       errors.text = "Question text is required";
     }
-    
+
     if (!formData.categoryId) {
       errors.categoryId = "Category is required";
     }
-    
-    if (!formData.options.some(opt => opt.isCorrect)) {
+
+    if (!formData.options.some((opt) => opt.isCorrect)) {
       errors.options = "At least one correct answer must be selected";
     }
-    
-    if (formData.options.some(opt => !opt.text.trim())) {
+
+    if (formData.options.some((opt) => !opt.text.trim())) {
       errors.optionTexts = "All option texts are required";
     }
 
     setValidationErrors(errors);
-    
+
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast({
         title: "Validation Error",
         description: "Please fix the highlighted errors before submitting",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
-      
+
       console.log("Submitting question with image URL:", formData.imageUrl);
-      
+
       let questionId = formData.id;
-      
+
       if (initialData) {
         const { error: questionError } = await supabase
-          .from('questions')
+          .from("questions")
           .update({
             text: formData.text,
             explanation: formData.explanation,
             image_url: formData.imageUrl,
             category_id: formData.categoryId,
-            difficulty: formData.difficulty
+            difficulty: formData.difficulty,
           })
-          .eq('id', questionId);
-          
+          .eq("id", questionId);
+
         if (questionError) throw questionError;
       } else {
         const { data: questionData, error: questionError } = await supabase
-          .from('questions')
+          .from("questions")
           .insert({
             text: formData.text,
             explanation: formData.explanation,
             image_url: formData.imageUrl,
             category_id: formData.categoryId,
-            difficulty: formData.difficulty
+            difficulty: formData.difficulty,
           })
-          .select('id');
-          
+          .select("id");
+
         if (questionError) throw questionError;
         if (!questionData || questionData.length === 0) {
-          throw new Error('Failed to create question');
+          throw new Error("Failed to create question");
         }
-        
+
         questionId = questionData[0].id;
       }
-      
+
       if (initialData) {
         const { error: deleteError } = await supabase
-          .from('question_options')
+          .from("question_options")
           .delete()
-          .eq('question_id', questionId);
-          
+          .eq("question_id", questionId);
+
         if (deleteError) throw deleteError;
       }
-      
-      const optionsToInsert = formData.options.map(opt => ({
+
+      const optionsToInsert = formData.options.map((opt) => ({
         question_id: questionId,
         text: opt.text,
-        is_correct: opt.isCorrect
+        is_correct: opt.isCorrect,
       }));
-      
+
       const { error: optionsError } = await supabase
-        .from('question_options')
+        .from("question_options")
         .insert(optionsToInsert);
-        
+
       if (optionsError) throw optionsError;
-      
+
       toast({
         title: "Success",
-        description: initialData ? "Question updated successfully" : "Question created successfully",
+        description: initialData
+          ? "Question updated successfully"
+          : "Question created successfully",
       });
-      
+
       onFormSubmitted();
     } catch (error: any) {
       console.error("Question save error:", error);
       toast({
         title: "Error",
-        description: error.message || `Failed to ${initialData ? 'update' : 'create'} question`,
-        variant: "destructive"
+        description:
+          error.message ||
+          `Failed to ${initialData ? "update" : "create"} question`,
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -439,10 +432,10 @@ export const QuestionForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         {Object.keys(validationErrors).length > 0 && (
-          <Alert 
-            variant="destructive" 
+          <Alert
+            variant="destructive"
             className={cn("mb-6", {
-              "border-destructive": Object.keys(validationErrors).length > 0
+              "border-destructive": Object.keys(validationErrors).length > 0,
             })}
           >
             <AlertTriangle className="h-4 w-4" />
@@ -458,11 +451,9 @@ export const QuestionForm = ({
         )}
 
         <div>
-          <Label 
-            htmlFor="text" 
-            className={cn(
-              validationErrors.text && "text-destructive"
-            )}
+          <Label
+            htmlFor="text"
+            className={cn(validationErrors.text && "text-destructive")}
           >
             Question Text *
           </Label>
@@ -474,22 +465,28 @@ export const QuestionForm = ({
             placeholder="Enter the question text"
             className={cn(
               "min-h-[100px]",
-              validationErrors.text && "border-destructive focus-visible:ring-destructive"
+              validationErrors.text &&
+                "border-destructive focus-visible:ring-destructive",
             )}
           />
         </div>
 
         <div>
-          <Label htmlFor="category" className={validationErrors.categoryId ? "text-destructive" : ""}>
+          <Label
+            htmlFor="category"
+            className={validationErrors.categoryId ? "text-destructive" : ""}
+          >
             Category *
           </Label>
           <Select
             value={formData.categoryId}
             onValueChange={handleCategoryChange}
           >
-            <SelectTrigger 
+            <SelectTrigger
               id="category"
-              className={validationErrors.categoryId ? "border-destructive" : ""}
+              className={
+                validationErrors.categoryId ? "border-destructive" : ""
+              }
             >
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
@@ -507,7 +504,9 @@ export const QuestionForm = ({
           <Label>Question Type</Label>
           <RadioGroup
             value={questionType}
-            onValueChange={(value) => setQuestionType(value as 'single' | 'multiple')}
+            onValueChange={(value) =>
+              setQuestionType(value as "single" | "multiple")
+            }
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
@@ -523,37 +522,45 @@ export const QuestionForm = ({
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label className={validationErrors.options || validationErrors.optionTexts ? "text-destructive" : ""}>
+            <Label
+              className={
+                validationErrors.options || validationErrors.optionTexts
+                  ? "text-destructive"
+                  : ""
+              }
+            >
               Answer Options *
             </Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               onClick={addOption}
               disabled={formData.options.length >= 8}
             >
               <Plus className="h-4 w-4 mr-1" /> Add Option
             </Button>
           </div>
-          
+
           <div className="space-y-3">
             {formData.options.map((option, index) => (
               <div key={option.id} className="flex items-start space-x-2">
                 <div className="mt-3">
-                  {questionType === 'single' ? (
+                  {questionType === "single" ? (
                     <RadioGroup
-                      value={formData.options.find(o => o.isCorrect)?.id || ''}
+                      value={
+                        formData.options.find((o) => o.isCorrect)?.id || ""
+                      }
                       onValueChange={(value) => {
                         handleOptionCorrectChange(value, true);
                       }}
                     >
-                      <RadioGroupItem 
-                        value={option.id} 
-                        id={`radio-${option.id}`} 
+                      <RadioGroupItem
+                        value={option.id}
+                        id={`radio-${option.id}`}
                         className={cn(
                           "mt-0.5",
-                          validationErrors.options && "border-destructive"
+                          validationErrors.options && "border-destructive",
                         )}
                       />
                     </RadioGroup>
@@ -561,12 +568,12 @@ export const QuestionForm = ({
                     <Checkbox
                       id={`checkbox-${option.id}`}
                       checked={option.isCorrect}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleOptionCorrectChange(option.id, checked === true)
                       }
                       className={cn(
                         "mt-0.5",
-                        validationErrors.options && "border-destructive"
+                        validationErrors.options && "border-destructive",
                       )}
                     />
                   )}
@@ -574,9 +581,13 @@ export const QuestionForm = ({
                 <div className="flex-1">
                   <Input
                     value={option.text}
-                    onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
+                    onChange={(e) =>
+                      handleOptionTextChange(option.id, e.target.value)
+                    }
                     placeholder={`Option ${index + 1}`}
-                    className={validationErrors.optionTexts ? "border-destructive" : ""}
+                    className={
+                      validationErrors.optionTexts ? "border-destructive" : ""
+                    }
                   />
                 </div>
                 <Button
@@ -595,16 +606,14 @@ export const QuestionForm = ({
 
         <div>
           <Label htmlFor="explanation">Explanation</Label>
-          <div className="mt-2">
-            <ReactQuill
-              theme="snow"
-              value={formData.explanation}
-              onChange={handleExplanationChange}
-              modules={quillModules}
-              formats={quillFormats}
-              placeholder="Provide an explanation for the correct answer"
-              className="bg-background"
-            />
+          <div className="mt-2 rich-text-content">
+            <WysiwygEditor
+              placeholder="Enter text..."
+              initialContent={formData.explanation}
+              stringHandler={"html"}
+            >
+              <OnChangeHTML onChange={handleExplanationChange} />
+            </WysiwygEditor>
           </div>
         </div>
 
@@ -614,10 +623,10 @@ export const QuestionForm = ({
             {imagePreview ? (
               <div className="space-y-2">
                 <div className="relative w-full rounded-lg overflow-hidden border bg-background flex items-center justify-center">
-                  <img 
-                    src={imagePreview} 
-                    alt="Question image" 
-                    className="max-h-[200px] object-contain" 
+                  <img
+                    src={imagePreview}
+                    alt="Question image"
+                    className="max-h-[200px] object-contain"
                   />
                   {isUploading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/80">
@@ -639,8 +648,8 @@ export const QuestionForm = ({
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">
-                <label 
-                  htmlFor="image-upload" 
+                <label
+                  htmlFor="image-upload"
                   className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -652,11 +661,11 @@ export const QuestionForm = ({
                       PNG, JPG, GIF up to 2MB
                     </p>
                   </div>
-                  <input 
-                    id="image-upload" 
-                    type="file" 
+                  <input
+                    id="image-upload"
+                    type="file"
                     accept="image/*"
-                    className="hidden" 
+                    className="hidden"
                     onChange={handleFileChange}
                     disabled={isUploading}
                   />
@@ -670,7 +679,12 @@ export const QuestionForm = ({
           <Label htmlFor="difficulty">Difficulty</Label>
           <Select
             value={formData.difficulty}
-            onValueChange={(value) => setFormData({...formData, difficulty: value as 'easy' | 'medium' | 'hard'})}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                difficulty: value as "easy" | "medium" | "hard",
+              })
+            }
           >
             <SelectTrigger id="difficulty">
               <SelectValue placeholder="Select difficulty" />
@@ -682,15 +696,22 @@ export const QuestionForm = ({
             </SelectContent>
           </Select>
           <div className="w-full h-2 mt-2 bg-gray-200 rounded overflow-hidden">
-            <div 
+            <div
               className={`h-full ${
-                formData.difficulty === 'hard' 
-                  ? 'bg-red-600' 
-                  : formData.difficulty === 'medium' 
-                    ? 'bg-yellow-600' 
-                    : 'bg-green-600'
+                formData.difficulty === "hard"
+                  ? "bg-red-600"
+                  : formData.difficulty === "medium"
+                    ? "bg-yellow-600"
+                    : "bg-green-600"
               }`}
-              style={{ width: formData.difficulty === 'hard' ? '100%' : formData.difficulty === 'medium' ? '66%' : '33%' }}
+              style={{
+                width:
+                  formData.difficulty === "hard"
+                    ? "100%"
+                    : formData.difficulty === "medium"
+                      ? "66%"
+                      : "33%",
+              }}
             ></div>
           </div>
         </div>
@@ -701,10 +722,13 @@ export const QuestionForm = ({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting || isUploading}>
-          {isSubmitting ? 
-            (initialData ? "Updating..." : "Creating...") : 
-            (initialData ? "Update Question" : "Create Question")
-          }
+          {isSubmitting
+            ? initialData
+              ? "Updating..."
+              : "Creating..."
+            : initialData
+              ? "Update Question"
+              : "Create Question"}
         </Button>
       </div>
     </form>
