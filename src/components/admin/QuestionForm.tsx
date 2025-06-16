@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 
 import { AlertTriangle, Image, Loader2, Plus, X } from "lucide-react";
+
 import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
 import { OnChangeHTML } from "@remirror/react";
+import "../../style-editor.css";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -23,7 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import "../../style-editor.css";
 
 interface Option {
   id: string;
