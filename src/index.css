@@ -136,3 +136,10 @@
     @apply bg-white/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl hover:shadow-2xl transition-all duration-300;
   }
 }
+
+.no-copy {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+}

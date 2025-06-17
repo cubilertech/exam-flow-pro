@@ -123,8 +123,10 @@ export const QuestionCard = ({
       </CardHeader>
 
       <CardContent>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">{question.text}</h3>
+        <div className="mb-4 no-copy">
+          <h3 className="text-lg font-semibold mb-2 no-copy">
+            {question.text}
+          </h3>
           {question.imageUrl && (
             <div className="my-4">
               <img
@@ -165,7 +167,7 @@ export const QuestionCard = ({
               >
                 <p
                   className={cn(
-                    "text-sm",
+                    "text-sm no-copy",
                     showCorrectness &&
                       isCorrect &&
                       "text-green-700 font-medium",
