@@ -6,9 +6,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { BookOpen, TestTube, BarChart, Users, CheckCircle, Clock, Target, TrendingUp, Globe, Shield } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useState } from "react";
 
 const Index = () => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const [selectedDuration, setSelectedDuration] = useState("3");
+
+  const pricingData = {
+    "3": {
+      part1: { price: "783 SAR", duration: "3 months" },
+      promotion: { price: "888 SAR", duration: "3 months" },
+      final: { price: "983 SAR", duration: "3 months" }
+    },
+    "6": {
+      part1: { price: "883 SAR", duration: "6 months" },
+      promotion: { price: "988 SAR", duration: "6 months" },
+      final: { price: "1083 SAR", duration: "6 months" }
+    },
+    "12": {
+      part1: { price: "1083 SAR", duration: "12 months" },
+      promotion: { price: "1188 SAR", duration: "12 months" },
+      final: { price: "1283 SAR", duration: "12 months" }
+    }
+  };
 
   if (isAuthenticated) {
     return <Dashboard />;
@@ -178,9 +199,29 @@ const Index = () => {
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
               SaudiKnowledgeSeeker SBPM Pricing
             </h2>
-            <Badge variant="success" className="text-lg px-4 py-2">
+            <Badge variant="success" className="text-lg px-4 py-2 mb-8">
               30% Soft Opening Discount applied to all plans for a limited time!
             </Badge>
+            
+            {/* Duration Toggle */}
+            <div className="flex justify-center mb-8">
+              <ToggleGroup 
+                type="single" 
+                value={selectedDuration} 
+                onValueChange={(value) => value && setSelectedDuration(value)}
+                className="bg-muted rounded-lg p-1"
+              >
+                <ToggleGroupItem value="3" className="px-6 py-2">
+                  3 Months
+                </ToggleGroupItem>
+                <ToggleGroupItem value="6" className="px-6 py-2">
+                  6 Months
+                </ToggleGroupItem>
+                <ToggleGroupItem value="12" className="px-6 py-2">
+                  12 Months
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
@@ -188,30 +229,18 @@ const Index = () => {
             <Card className="relative border-2 hover:border-primary/20 transition-all">
               <CardHeader>
                 <CardTitle className="text-xl text-center">SBPM Part 1 QBank</CardTitle>
-                <CardDescription className="text-center">Full QBank Access, 800+ Questions</CardDescription>
+                <CardDescription className="text-center">
+                  Full QBank Access<br />
+                  750+ Questions
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>3 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1249 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">874 SAR</span>
-                    </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {pricingData[selectedDuration as keyof typeof pricingData].part1.price}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>6 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1399 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">979 SAR</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>12 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1599 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">1084 SAR</span>
-                    </div>
+                  <div className="text-sm text-muted-foreground">
+                    {pricingData[selectedDuration as keyof typeof pricingData].part1.duration} Access
                   </div>
                 </div>
                 <Button className="w-full" asChild>
@@ -221,33 +250,24 @@ const Index = () => {
             </Card>
 
             {/* SBPM Promotion QBanks */}
-            <Card className="relative border-2 hover:border-primary/20 transition-all">
+            <Card className="relative border-2 border-primary/30 hover:border-primary/50 transition-all">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <Badge className="bg-primary text-white">Most Popular</Badge>
+              </div>
               <CardHeader>
                 <CardTitle className="text-xl text-center">SBPM Promotion 1, 2, or 3</CardTitle>
-                <CardDescription className="text-center">Full QBank Access, 750+ Questions</CardDescription>
+                <CardDescription className="text-center">
+                  Full QBank Access<br />
+                  750+ Questions
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>3 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1119 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">783 SAR</span>
-                    </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {pricingData[selectedDuration as keyof typeof pricingData].promotion.price}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>6 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1269 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">888 SAR</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>12 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1419 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">993 SAR</span>
-                    </div>
+                  <div className="text-sm text-muted-foreground">
+                    {pricingData[selectedDuration as keyof typeof pricingData].promotion.duration} Access
                   </div>
                 </div>
                 <Button className="w-full" asChild>
@@ -257,75 +277,25 @@ const Index = () => {
             </Card>
 
             {/* SBPM Part Final QBank */}
-            <Card className="relative border-2 border-primary/30 hover:border-primary/50 transition-all">
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <Badge className="bg-primary text-white">Most Popular</Badge>
-              </div>
+            <Card className="relative border-2 hover:border-primary/20 transition-all">
               <CardHeader>
                 <CardTitle className="text-xl text-center">SBPM Part Final (2) Written</CardTitle>
-                <CardDescription className="text-center">Full QBank Access, 1,000+ Questions</CardDescription>
+                <CardDescription className="text-center">
+                  Full QBank Access<br />
+                  750+ Questions
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>3 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1349 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">944 SAR</span>
-                    </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">
+                    {pricingData[selectedDuration as keyof typeof pricingData].final.price}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span>6 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1499 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">1049 SAR</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>12 months Access:</span>
-                    <div className="text-right">
-                      <span className="line-through text-muted-foreground">1599 SAR</span>
-                      <span className="text-lg font-bold text-primary ml-2">1119 SAR</span>
-                    </div>
+                  <div className="text-sm text-muted-foreground">
+                    {pricingData[selectedDuration as keyof typeof pricingData].final.duration} Access
                   </div>
                 </div>
                 <Button className="w-full" asChild>
                   <Link to="/register">Choose Plan</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Individual Subjects */}
-          <div className="mt-12">
-            <Card className="max-w-4xl mx-auto">
-              <CardHeader>
-                <CardTitle className="text-xl text-center">SBPM Individual Subjects QBank</CardTitle>
-                <CardDescription className="text-center text-sm leading-relaxed">
-                  Epidemiology/Biostatistics/Vital Statistics and Demography, Healthcare Management, Quality and Informatics, 
-                  Experimental Designs, Behavioral and Social Health, Health Education and Promotion, Maternal & Child Health, 
-                  Clinical Preventive Medicine: Communicable Diseases, Clinical Preventive Medicine: Non-Communicable Diseases, 
-                  Occupational & Environmental Health, Critical Appraisal & Research Proposal Writing, Health Planning, 
-                  Evaluation and Economics, Infection Control, Disaster's Management, and Communicating Health Information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                  <div className="p-4 border rounded-lg">
-                    <div className="text-lg font-bold text-primary">159 SAR</div>
-                    <div className="text-sm text-muted-foreground">1 month Access</div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="text-lg font-bold text-primary">189 SAR</div>
-                    <div className="text-sm text-muted-foreground">3 months Access</div>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="text-lg font-bold text-primary">219 SAR</div>
-                    <div className="text-sm text-muted-foreground">6 months Access</div>
-                  </div>
-                </div>
-                <Button className="w-full mt-4" variant="outline" asChild>
-                  <Link to="/register">View Individual Subjects</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -435,6 +405,111 @@ const Index = () => {
                 <Link to="#pricing">View Pricing</Link>
               </Button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Agreement Statement */}
+      <div className="py-12 bg-secondary/30">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl lg:text-3xl font-bold text-center mb-8">
+            Subscriber Agreement
+          </h2>
+          
+          <div className="max-w-6xl mx-auto">
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-xl">Subscriber Agreement for Medical Exam Question Banks</CardTitle>
+                <CardDescription>
+                  Please read this agreement carefully before subscribing to our services.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="max-h-96 overflow-y-auto">
+                <div className="space-y-4 text-sm">
+                  <p>
+                    This Subscriber Agreement ("Agreement") is entered into between SaudiKnowledgeSeeker Company ("Provider"), 
+                    owner of the medical exam question banks, including Preventive Medicine (Part 1, Part Final, Promotion 1, 2, 3, 
+                    and Final Clinical Examination) ("Materials"), and the individual or entity subscribing to access the Materials ("Subscriber"). 
+                    By clicking "Agree," the Subscriber agrees to be bound by the terms below.
+                  </p>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">1. Access</h4>
+                    <p>1.1 The Provider grants the Subscriber a non-exclusive, non-transferable, limited license to access the selected Materials for personal, non-commercial educational purposes, such as exam preparation.</p>
+                    <p>1.2 Access is provided via SaudiKnowledgeSeeker platform and requires an active subscription and compliance with this Agreement.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">2. Intellectual Property</h4>
+                    <p>2.1 The Materials, including questions, and explanations, are the Provider's exclusive intellectual property, protected by copyright and other laws.</p>
+                    <p>2.2 No ownership or rights to the Materials are transferred, and all rights not granted are reserved by the Provider.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">3. Use Restrictions</h4>
+                    <p>3.1 The Subscriber shall not:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Copy, reproduce, distribute, publish, or share the Materials, in whole or part, in any form without prior written consent.</li>
+                      <li>Modify, adapt, or create derivative works from the Materials.</li>
+                      <li>Share access credentials with third parties.</li>
+                      <li>Use the Materials for commercial purposes, e.g., resale or training.</li>
+                    </ul>
+                    <p>3.2 Unauthorized use is a breach of this Agreement and violates the Provider's intellectual property rights.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">4. Breach Consequences</h4>
+                    <p>4.1 Upon breach, including unauthorized copying or distribution:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Access will be terminated immediately without refund.</li>
+                      <li>Legal action will be pursued for damages and injunctive relief under intellectual property laws.</li>
+                    </ul>
+                    <p>4.2 The Subscriber is liable for all legal fees and damages incurred by the Provider.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">5. Confidentiality</h4>
+                    <p>5.1 The Subscriber agrees to treat the Materials as confidential and prevent unauthorized disclosure.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">6. Term and Termination</h4>
+                    <p>6.1 This Agreement remains in effect during the active subscription or until terminated.</p>
+                    <p>6.2 The Provider may terminate the Agreement upon breach, effective immediately with written notice.</p>
+                    <p>6.3 Upon termination, the Subscriber must cease using and destroy all copies of the Materials.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">7. Liability Limitation</h4>
+                    <p>7.1 The Materials are provided "as is." The Provider does not guarantee accuracy or suitability for exams.</p>
+                    <p>7.2 The Provider is not liable for damages arising from use of the Materials.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">8. Governing Law</h4>
+                    <p>8.1 This Agreement is governed by the laws of Saudi Arabia jurisdiction.</p>
+                    <p>8.2 Disputes will be resolved via courts in Saudi Arabia.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">9. Entire Agreement</h4>
+                    <p>9.1 This Agreement supersedes all prior understandings.</p>
+                    <p>9.2 The Provider may amend the Agreement, notifying the Subscriber via email.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">10. Acknowledgment</h4>
+                    <p>By clicking "Agree," the Subscriber acknowledges understanding and agreeing to these terms. Unauthorized use will result in legal action to protect the Provider's rights.</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Contact Information:</h4>
+                    <p>SaudiKnowledgeSeeker Company</p>
+                    <p>Company Email: [Company Email]</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
