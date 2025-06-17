@@ -1,17 +1,11 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { useEffect, useState } from "react";
 
-import { Loader2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import {
-  Link,
-  useNavigate,
-} from 'react-router-dom';
-import { z } from 'zod';
+import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { z } from "zod";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,7 +13,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -27,38 +21,40 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   registerFailure,
   registerStart,
   registerSuccess,
-} from '@/features/auth/authSlice';
-import { useToast } from '@/hooks/use-toast';
-import { useAppDispatch } from '@/lib/hooks';
-import { signUp } from '@/services/authService';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from "@/features/auth/authSlice";
+import { useToast } from "@/hooks/use-toast";
+import { useAppDispatch } from "@/lib/hooks";
+import { signUp } from "@/services/authService";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-  country: z.string().min(1, "Please select your country"),
-  city: z.string().min(1, "Please select your city"),
-  gender: z.string().min(1, "Please select your gender"),
-  phone: z.string().optional(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    country: z.string().min(1, "Please select your country"),
+    city: z.string().min(1, "Please select your city"),
+    gender: z.string().min(1, "Please select your gender"),
+    phone: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -102,15 +98,17 @@ export const RegisterForm = () => {
       setLoadingCountries(true);
       try {
         // Using REST Countries API
-        const response = await fetch("https://restcountries.com/v3.1/all");
-        const data = await response.json();
-        
-        const formattedCountries = data.map((country: any) => ({
-          code: country.cca2,
-          name: country.name.common
-        })).sort((a: Country, b: Country) => 
-          a.name.localeCompare(b.name)
+        const response = await fetch(
+          "https://restcountries.com/v3.1/all?fields=name,flags,cca2",
         );
+        const data = await response.json();
+
+        const formattedCountries = data
+          .map((country: any) => ({
+            code: country.cca2,
+            name: country.name.common,
+          }))
+          .sort((a: Country, b: Country) => a.name.localeCompare(b.name));
         setCountries(formattedCountries);
       } catch (error) {
         console.error("Failed to fetch countries:", error);
@@ -126,21 +124,24 @@ export const RegisterForm = () => {
   useEffect(() => {
     const fetchCities = async () => {
       if (!selectedCountry) return;
-      
+
       setLoadingCities(true);
       try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/cities",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ country: selectedCountry }),
           },
-          body: JSON.stringify({ country: selectedCountry }),
-        });
+        );
         const data = await response.json();
-        if(data?.data?.length > 0){
+        if (data?.data?.length > 0) {
           setCities(data?.data?.map((city: any) => ({ name: city })));
-        }else{
-          setCities([])
+        } else {
+          setCities([]);
         }
       } catch (error) {
         console.error("Failed to fetch cities:", error);
@@ -156,41 +157,38 @@ export const RegisterForm = () => {
     try {
       setLoading(true);
       dispatch(registerStart());
-            
-      const userData = await signUp(
-        data.email,
-        data.password,
-        {
-          username: data.username,
-          country: data.country,
-          city: data.city,
-          gender: data.gender,
-          phone: data.phone,
-        }
-      );
-      
+
+      const userData = await signUp(data.email, data.password, {
+        username: data.username,
+        country: data.country,
+        city: data.city,
+        gender: data.gender,
+        phone: data.phone,
+      });
+
       dispatch(registerSuccess(userData));
       navigate("/my-exams");
     } catch (error: any) {
       setLoading(false);
-    
+
       // Improved error handling for Supabase errors
       let errorMessage = "Registration failed. Please try again.";
-      
-      if (error?.message?.includes('User already registered')) {
-        errorMessage = "This email is already registered. Please use a different email.";
+
+      if (error?.message?.includes("User already registered")) {
+        errorMessage =
+          "This email is already registered. Please use a different email.";
       } else if (error?.message) {
         errorMessage = error.message;
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         errorMessage = error;
       }
-      
-      console.error('Registration error:', error);
+
+      console.error("Registration error:", error);
       dispatch(registerFailure(errorMessage));
       toast({
         title: "Error",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -249,7 +247,11 @@ export const RegisterForm = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="********" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="********"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -262,7 +264,11 @@ export const RegisterForm = () => {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="********" {...field} />
+                      <Input
+                        type="password"
+                        placeholder="********"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -276,11 +282,11 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Country</FormLabel>
-                    <Select 
+                    <Select
                       onValueChange={(value) => {
                         field.onChange(value);
                         handleCountryChange(value);
-                      }} 
+                      }}
                       defaultValue={field.value}
                       disabled={loadingCountries}
                     >
@@ -314,8 +320,8 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>City</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                       disabled={!selectedCountry || loadingCities}
                     >
@@ -353,7 +359,10 @@ export const RegisterForm = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />

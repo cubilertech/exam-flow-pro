@@ -1,27 +1,21 @@
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { useEffect, useState } from "react";
 
-import { Loader2 } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { updateProfileSuccess } from '@/features/auth/authSlice';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  useAppDispatch,
-  useAppSelector,
-} from '@/lib/hooks';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { updateProfileSuccess } from "@/features/auth/authSlice";
+import { supabase } from "@/integrations/supabase/client";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import {
   Select,
@@ -29,7 +23,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
+} from "../ui/select";
 
 interface EditProfileFormData {
   username: string;
@@ -53,46 +47,52 @@ interface EditProfileModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) {
+export function EditProfileModal({
+  open,
+  onOpenChange,
+}: EditProfileModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
-  
+
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
 
-  const { register, handleSubmit, control, setValue, watch } = useForm<EditProfileFormData>({
-    defaultValues: {
-      username: user?.username || '',
-      country: user?.country || '',
-      gender: user?.gender || '',
-      phone: user?.phone || '',
-      city: user?.city || '',
-    },
-  });
+  const { register, handleSubmit, control, setValue, watch } =
+    useForm<EditProfileFormData>({
+      defaultValues: {
+        username: user?.username || "",
+        country: user?.country || "",
+        gender: user?.gender || "",
+        phone: user?.phone || "",
+        city: user?.city || "",
+      },
+    });
 
   // Watch country field to trigger city fetch
-  const watchCountry = watch('country');
+  const watchCountry = watch("country");
 
   // Fetch countries on component mount
   useEffect(() => {
     const fetchCountries = async () => {
       setLoadingCountries(true);
       try {
-        const response = await fetch("https://restcountries.com/v3.1/all");
-        const data = await response.json();
-        
-        const formattedCountries = data.map((country: any) => ({
-          code: country.cca2,
-          name: country.name.common
-        })).sort((a: Country, b: Country) => 
-          a.name.localeCompare(b.name)
+        const response = await fetch(
+          "https://restcountries.com/v3.1/all?fields=name,flags,cca2",
         );
+        const data = await response.json();
+
+        const formattedCountries = data
+          .map((country: any) => ({
+            code: country.cca2,
+            name: country.name.common,
+          }))
+          .sort((a: Country, b: Country) => a.name.localeCompare(b.name));
         setCountries(formattedCountries);
-        
+
         // If user has a country, set it as selected
         if (user?.country) {
           setSelectedCountry(user.country);
@@ -112,18 +112,21 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
   useEffect(() => {
     const fetchCities = async () => {
       if (!watchCountry) return;
-      
+
       setLoadingCities(true);
       try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          "https://countriesnow.space/api/v0.1/countries/cities",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ country: watchCountry }),
           },
-          body: JSON.stringify({ country: watchCountry }),
-        });
+        );
         const data = await response.json();
-        
+
         if (data?.data?.length > 0) {
           setCities(data.data.map((city: any) => ({ name: city })));
         } else {
@@ -142,11 +145,11 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
 
   const onSubmit = async (data: EditProfileFormData) => {
     if (!user?.id) return;
-    
+
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           username: data.username,
           country: data.country,
@@ -154,23 +157,25 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
           phone_number: data.phone,
           city: data.city,
         })
-        .eq('id', user.id);
+        .eq("id", user.id);
 
       if (error) throw error;
 
-      dispatch(updateProfileSuccess({
-        username: data.username,
-        country: data.country,
-        gender: data.gender,
-        phone: data.phone,
-        city: data.city,
-      }));
+      dispatch(
+        updateProfileSuccess({
+          username: data.username,
+          country: data.country,
+          gender: data.gender,
+          phone: data.phone,
+          city: data.city,
+        }),
+      );
 
-      toast.success('Profile updated successfully');
+      toast.success("Profile updated successfully");
       onOpenChange(false);
     } catch (error) {
-      toast.error('Failed to update profile');
-      console.error('Error updating profile:', error);
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +190,7 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
-            <Input id="username" {...register('username')} />
+            <Input id="username" {...register("username")} />
           </div>
 
           {/* Country Select */}
@@ -193,9 +198,9 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
             <Label>Country</Label>
             <Select
               onValueChange={(value) => {
-                setValue('country', value);
+                setValue("country", value);
                 setSelectedCountry(value);
-                setValue('city', ''); // Reset city when country changes
+                setValue("city", ""); // Reset city when country changes
               }}
               value={watchCountry}
               disabled={loadingCountries}
@@ -224,8 +229,8 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
           <div className="space-y-2">
             <Label>City</Label>
             <Select
-              onValueChange={(value) => setValue('city', value)}
-              value={watch('city')}
+              onValueChange={(value) => setValue("city", value)}
+              value={watch("city")}
               disabled={!watchCountry || loadingCities}
             >
               <SelectTrigger>
@@ -240,7 +245,7 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
                   <SelectValue placeholder="Select city" />
                 )}
               </SelectTrigger>
-              <SelectContent  className="max-h-[300px]">
+              <SelectContent className="max-h-[300px]">
                 {cities.map((city) => (
                   <SelectItem key={city.name} value={city.name}>
                     {city.name}
@@ -254,8 +259,8 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
           <div className="space-y-2">
             <Label>Gender</Label>
             <Select
-              onValueChange={(value) => setValue('gender', value)}
-              value={watch('gender')}
+              onValueChange={(value) => setValue("gender", value)}
+              value={watch("gender")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select gender" />
@@ -269,16 +274,20 @@ export function EditProfileModal({ open, onOpenChange }: EditProfileModalProps) 
 
           <div className="space-y-2">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" {...register('phone')} />
+            <Input id="phone" {...register("phone")} />
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} type="button">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              type="button"
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? 'Updating...' : 'Save Changes'}
+              {isLoading ? "Updating..." : "Save Changes"}
             </Button>
           </div>
         </form>
