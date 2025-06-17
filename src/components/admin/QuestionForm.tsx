@@ -2,9 +2,28 @@ import { useEffect, useState } from "react";
 
 import { AlertTriangle, Image, Loader2, Plus, X } from "lucide-react";
 
-import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
-import { OnChangeHTML } from "@remirror/react";
-import "../../style-editor.css";
+import "remirror/styles/all.css";
+import {
+  HeadingExtension,
+  TableExtension,
+  CodeExtension,
+  BoldExtension,
+  BlockquoteExtension,
+  BulletListExtension,
+  NodeFormattingExtension,
+} from "remirror/extensions";
+import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
+import {
+  ToggleCodeButton,
+  Toolbar,
+  ToggleBoldButton,
+  CreateTableButton,
+  HeadingLevelButtonGroup,
+  IndentationButtonGroup,
+  TextAlignmentButtonGroup,
+} from "@remirror/react-ui";
+import { i18nFormat } from "@remirror/i18n";
+// import "../../style-editor.css";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -67,6 +86,16 @@ function normalizeHTML(input: any) {
   }
 }
 
+const extensions = () => [
+  new TableExtension(),
+  new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
+  new CodeExtension(),
+  new BoldExtension(),
+  new BlockquoteExtension(),
+  new NodeFormattingExtension(),
+  new BulletListExtension(),
+];
+
 export const QuestionForm = ({
   questionBankId,
   categoryId,
@@ -78,7 +107,6 @@ export const QuestionForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  console.log("initialData?.explanation", initialData?.explanation);
   const [formData, setFormData] = useState<Question>({
     id: initialData?.id || "",
     serialNumber: initialData?.serialNumber || "",
@@ -110,6 +138,12 @@ export const QuestionForm = ({
     options?: string;
     optionTexts?: string;
   }>({});
+
+  const { manager, state, onChange } = useRemirror({
+    extensions: extensions,
+    content: formData.explanation,
+    stringHandler: "html",
+  });
 
   useEffect(() => {
     if (questionBankId) {
@@ -608,13 +642,25 @@ export const QuestionForm = ({
         <div>
           <Label htmlFor="explanation">Explanation</Label>
           <div className="mt-2 rich-text-content">
-            <WysiwygEditor
-              placeholder="Enter text..."
-              initialContent={formData.explanation}
-              stringHandler={"html"}
-            >
-              <OnChangeHTML onChange={handleExplanationChange} />
-            </WysiwygEditor>
+            <ThemeProvider>
+              <Remirror
+                manager={manager}
+                autoFocus
+                onChange={onChange}
+                initialContent={state}
+                autoRender="end"
+                i18nFormat={i18nFormat}
+              >
+                <Toolbar>
+                  <ToggleBoldButton />
+                  <HeadingLevelButtonGroup />
+                  <ToggleCodeButton />
+                  <TextAlignmentButtonGroup />
+                  <IndentationButtonGroup />
+                  <CreateTableButton />
+                </Toolbar>
+              </Remirror>
+            </ThemeProvider>
           </div>
         </div>
 
