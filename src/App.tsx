@@ -13,6 +13,7 @@ import MyExams from "./pages/MyExams";
 import TakeExam from "./pages/TakeExam";
 import ExamResults from "./pages/ExamResults";
 import NotFound from "./pages/NotFound";
+import Agreement from "./pages/Agreement";
 import { MainLayout } from "./layouts/MainLayout";
 import QuestionBank from "./pages/QuestionBank";
 import QuestionBankDetail from "./pages/QuestionBankDetail";
@@ -31,6 +32,7 @@ function App() {
               <Route path="/" element={<MainLayout><Index/></MainLayout>}/>
               <Route path="/login" element={<Login/>}/>
               <Route path="/register" element={<Register/>}/>
+              <Route path="/agreement" element={<MainLayout><Agreement/></MainLayout>}/>
               <Route path="/profile" element={<PrivateRoute><MainLayout><Profile/></MainLayout></PrivateRoute>}/>
               <Route path="/my-exams" element={<StudentRoute><MainLayout><MyExams/></MainLayout></StudentRoute>}/>
               <Route path="/exam/take" element={<StudentRoute><MainLayout><TakeExam/></MainLayout></StudentRoute>}/>
