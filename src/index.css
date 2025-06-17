@@ -15,9 +15,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 260 10% 20%;
 
-    /* Primary - Purple */
+    /* Primary - Purple with gradient support */
     --primary: 260 50% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-gradient-from: 260 60% 55%;
+    --primary-gradient-to: 260 40% 45%;
 
     /* Secondary - Lighter Purple */
     --secondary: 260 30% 96%;
@@ -40,7 +42,7 @@
     --input: 260 20% 90%;
     --ring: 260 50% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -55,6 +57,8 @@
 
     --primary: 260 50% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-gradient-from: 260 60% 65%;
+    --primary-gradient-to: 260 40% 55%;
 
     --secondary: 260 20% 20%;
     --secondary-foreground: 260 10% 90%;
@@ -82,6 +86,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(260 25% 96%) 100%);
+    min-height: 100vh;
   }
 }
 
@@ -91,30 +97,42 @@
   }
 
   .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-2;
   }
 
   .btn-primary {
-    @apply bg-examPrimary text-white hover:bg-examSecondary transition-colors;
+    @apply bg-gradient-to-r from-[hsl(var(--primary-gradient-from))] to-[hsl(var(--primary-gradient-to))] text-white hover:shadow-lg hover:scale-105 transition-all duration-300;
   }
 
   .btn-secondary {
-    @apply bg-examSecondary text-white hover:bg-examPrimary transition-colors;
+    @apply bg-gradient-to-r from-examSecondary to-examAccent text-white hover:shadow-lg hover:scale-105 transition-all duration-300;
   }
 
   .input-primary {
-    @apply border-2 focus:border-examPrimary focus:ring-1 focus:ring-examPrimary;
+    @apply border-2 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 rounded-lg;
   }
 
   .difficulty-easy {
-    @apply bg-green-100 text-green-800 border-green-200;
+    @apply bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-green-200;
   }
 
   .difficulty-medium {
-    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+    @apply bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-yellow-200;
   }
 
   .difficulty-hard {
-    @apply bg-red-100 text-red-800 border-red-200;
+    @apply bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-red-200;
+  }
+
+  .gradient-bg {
+    @apply bg-gradient-to-br from-[hsl(var(--primary-gradient-from))] via-[hsl(var(--primary))] to-[hsl(var(--primary-gradient-to))];
+  }
+
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl;
+  }
+
+  .modern-card {
+    @apply bg-white/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-xl hover:shadow-2xl transition-all duration-300;
   }
 }

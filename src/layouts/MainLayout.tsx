@@ -17,7 +17,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex flex-col w-full bg-background">
+      <div className="min-h-screen flex flex-col w-full bg-gradient-to-br from-background via-background to-muted/30">
         <Navbar />
         <div className="flex flex-1">
           {!isHomePage && <AppSidebar />}
@@ -25,9 +25,11 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             <main className="flex-1 p-4">
               {children}
             </main>
-            <footer className="py-6 border-t">
+            <footer className="py-8 border-t border-white/20 bg-gradient-to-r from-primary/5 to-secondary/5 backdrop-blur-sm">
               <div className="container text-center text-sm text-muted-foreground">
-                <p>© 2025 ExamFlowPro. All rights reserved.</p>
+                <p className="bg-gradient-to-r from-primary-from to-primary-to bg-clip-text text-transparent font-medium">
+                  © 2025 ExamFlowPro. All rights reserved.
+                </p>
               </div>
             </footer>
           </SidebarInset>
