@@ -14,7 +14,7 @@ const buttonVariants = cva(
         destructive:
           "bg-gradient-to-r from-red-500 to-red-600 text-destructive-foreground hover:shadow-lg hover:scale-105",
         outline:
-          "border-2 border-input bg-background hover:bg-gradient-to-r hover:from-accent/10 hover:to-primary/10 hover:text-accent-foreground hover:border-primary/50 transition-all duration-300",
+          "border-2 border-input bg-background text-primary hover:border-primary/50 transition-all duration-300",
         secondary:
           "bg-gradient-to-r from-secondary-from to-secondary-to text-secondary-foreground hover:shadow-lg hover:scale-105",
         ghost: "hover:bg-gradient-to-r hover:from-accent/10 hover:to-primary/10 hover:text-accent-foreground transition-all duration-300",

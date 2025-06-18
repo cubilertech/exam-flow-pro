@@ -62,20 +62,20 @@ export const Navbar = () => {
     }
   };
 
-  const handleQuestionBankChange = (questionBankId: string) => {
-    setActiveQuestionBankById(questionBankId);
-  };
+  // const handleQuestionBankChange = (questionBankId: string) => {
+  //   setActiveQuestionBankById(questionBankId);
+  // };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between sm:px-8  px-4">
         <div className="flex items-center gap-2">
-          <Link to="/" className="font-bold text-2xl text-primary">
+          <Link to="/" className="font-bold  text-primary text-lg sm:text-2xl">
             ExamFlowPro
           </Link>
         </div>
 
-        <div className="flex-1 flex items-center justify-center">
+        {/* <div className="flex-1 flex items-center justify-center">
         {isAuthenticated && (
           <>
             <p className="text-lg text-muted-foreground pr-3">Questions Bank</p>
@@ -117,7 +117,7 @@ export const Navbar = () => {
             </div>
           </>
           )}
-        </div>
+        </div> */}
 
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
@@ -148,10 +148,10 @@ export const Navbar = () => {
             </DropdownMenu>
           ) : (
             <div className="flex gap-2">
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className='py-1 px-2 sm:py-3 sm:px-6 '>
                 <Link to="/login">Login</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className='py-2 px-4 sm:py-3 sm:px-6 '>
                 <Link to="/register">Register</Link>
               </Button>
             </div>
