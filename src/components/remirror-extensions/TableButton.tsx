@@ -3,7 +3,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"; // adjust path to match your setup
+} from "@/components/ui/dropdown-menu";
 import { useRemirrorContext } from "@remirror/react";
 import { Table2, Plus, Trash2 } from "lucide-react";
 import { IconButton } from "@mui/material";
