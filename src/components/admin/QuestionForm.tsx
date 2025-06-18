@@ -1,28 +1,29 @@
 import { useEffect, useState } from "react";
 
-import { AlertTriangle, Image, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Image, Loader2, Plus, X, Trash2 } from "lucide-react";
 
 import "remirror/styles/all.css";
 import {
   HeadingExtension,
-  TableExtension,
   CodeExtension,
   BoldExtension,
   BlockquoteExtension,
   BulletListExtension,
   NodeFormattingExtension,
+  TableExtension,
 } from "remirror/extensions";
 import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
+import { htmlToProsemirrorNode } from "remirror";
 import {
   ToggleCodeButton,
   Toolbar,
   ToggleBoldButton,
-  CreateTableButton,
   HeadingLevelButtonGroup,
   IndentationButtonGroup,
   TextAlignmentButtonGroup,
 } from "@remirror/react-ui";
 import { i18nFormat } from "@remirror/i18n";
+import { UploadImageButton } from "../remirror-extensions/UploadImageButton";
 // import "../../style-editor.css";
 
 import { v4 as uuidv4 } from "uuid";
@@ -44,7 +45,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
+import { TableDropdown } from "../remirror-extensions/TableButton";
+import { Box } from "@mui/material";
+import { imageExtension, reactComponentExtension } from "@/lib/image-extension";
 interface Option {
   id: string;
   text: string;
@@ -87,13 +90,15 @@ function normalizeHTML(input: any) {
 }
 
 const extensions = () => [
-  new TableExtension(),
   new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
   new CodeExtension(),
-  new BoldExtension(),
+  new BoldExtension({}),
   new BlockquoteExtension(),
-  new NodeFormattingExtension(),
-  new BulletListExtension(),
+  new NodeFormattingExtension({}),
+  new BulletListExtension({}),
+  new TableExtension(),
+  imageExtension(),
+  reactComponentExtension(),
 ];
 
 export const QuestionForm = ({
@@ -142,7 +147,7 @@ export const QuestionForm = ({
   const { manager, state, onChange } = useRemirror({
     extensions: extensions,
     content: formData.explanation,
-    stringHandler: "html",
+    stringHandler: htmlToProsemirrorNode,
   });
 
   useEffect(() => {
@@ -646,18 +651,24 @@ export const QuestionForm = ({
               <Remirror
                 manager={manager}
                 autoFocus
-                onChange={onChange}
+                onChange={({ state, helpers }) => {
+                  const html = helpers.getHTML();
+                  handleExplanationChange(html);
+                }}
                 initialContent={state}
                 autoRender="end"
                 i18nFormat={i18nFormat}
               >
-                <Toolbar>
-                  <ToggleBoldButton />
-                  <HeadingLevelButtonGroup />
-                  <ToggleCodeButton />
-                  <TextAlignmentButtonGroup />
-                  <IndentationButtonGroup />
-                  <CreateTableButton />
+                <Toolbar sx={{ gap: "0px" }}>
+                  <Box sx={{ display: "flex" }}>
+                    <ToggleBoldButton />
+                    <HeadingLevelButtonGroup />
+                    <ToggleCodeButton />
+                    <TextAlignmentButtonGroup />
+                    <IndentationButtonGroup />
+                    <UploadImageButton />
+                    <TableDropdown />
+                  </Box>
                 </Toolbar>
               </Remirror>
             </ThemeProvider>
