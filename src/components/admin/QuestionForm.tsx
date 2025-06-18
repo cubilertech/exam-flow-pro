@@ -1,10 +1,30 @@
 import { useEffect, useState } from "react";
 
-import { AlertTriangle, Image, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Image, Loader2, Plus, X, Trash2 } from "lucide-react";
 
-import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
-import { OnChangeHTML } from "@remirror/react";
-import "../../style-editor.css";
+import "remirror/styles/all.css";
+import {
+  HeadingExtension,
+  CodeExtension,
+  BoldExtension,
+  BlockquoteExtension,
+  BulletListExtension,
+  NodeFormattingExtension,
+  TableExtension,
+} from "remirror/extensions";
+import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
+import { htmlToProsemirrorNode } from "remirror";
+import {
+  ToggleCodeButton,
+  Toolbar,
+  ToggleBoldButton,
+  HeadingLevelButtonGroup,
+  IndentationButtonGroup,
+  TextAlignmentButtonGroup,
+} from "@remirror/react-ui";
+import { i18nFormat } from "@remirror/i18n";
+import { UploadImageButton } from "../remirror-extensions/UploadImageButton";
+// import "../../style-editor.css";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -25,7 +45,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
+import { TableDropdown } from "../remirror-extensions/TableButton";
+import { Box } from "@mui/material";
+import { imageExtension, reactComponentExtension } from "@/lib/image-extension";
 interface Option {
   id: string;
   text: string;
@@ -67,6 +89,18 @@ function normalizeHTML(input: any) {
   }
 }
 
+const extensions = () => [
+  new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
+  new CodeExtension(),
+  new BoldExtension({}),
+  new BlockquoteExtension(),
+  new NodeFormattingExtension({}),
+  new BulletListExtension({}),
+  new TableExtension(),
+  imageExtension(),
+  reactComponentExtension(),
+];
+
 export const QuestionForm = ({
   questionBankId,
   categoryId,
@@ -78,7 +112,6 @@ export const QuestionForm = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  console.log("initialData?.explanation", initialData?.explanation);
   const [formData, setFormData] = useState<Question>({
     id: initialData?.id || "",
     serialNumber: initialData?.serialNumber || "",
@@ -110,6 +143,12 @@ export const QuestionForm = ({
     options?: string;
     optionTexts?: string;
   }>({});
+
+  const { manager, state, onChange } = useRemirror({
+    extensions: extensions,
+    content: formData.explanation,
+    stringHandler: htmlToProsemirrorNode,
+  });
 
   useEffect(() => {
     if (questionBankId) {
@@ -608,13 +647,31 @@ export const QuestionForm = ({
         <div>
           <Label htmlFor="explanation">Explanation</Label>
           <div className="mt-2 rich-text-content">
-            <WysiwygEditor
-              placeholder="Enter text..."
-              initialContent={formData.explanation}
-              stringHandler={"html"}
-            >
-              <OnChangeHTML onChange={handleExplanationChange} />
-            </WysiwygEditor>
+            <ThemeProvider>
+              <Remirror
+                manager={manager}
+                autoFocus
+                onChange={({ state, helpers }) => {
+                  const html = helpers.getHTML();
+                  handleExplanationChange(html);
+                }}
+                initialContent={state}
+                autoRender="end"
+                i18nFormat={i18nFormat}
+              >
+                <Toolbar sx={{ gap: "0px" }}>
+                  <Box sx={{ display: "flex" }}>
+                    <ToggleBoldButton />
+                    <HeadingLevelButtonGroup />
+                    <ToggleCodeButton />
+                    <TextAlignmentButtonGroup />
+                    <IndentationButtonGroup />
+                    <UploadImageButton />
+                    <TableDropdown />
+                  </Box>
+                </Toolbar>
+              </Remirror>
+            </ThemeProvider>
           </div>
         </div>
 
