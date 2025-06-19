@@ -1,5 +1,4 @@
-
-import { Home, HelpCircle, FileText, BookOpen } from "lucide-react";
+import { Home, HelpCircle, FileText } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAppSelector } from "@/lib/hooks";
 import {
@@ -24,11 +23,6 @@ export function AppSidebar() {
       title: "My Exams",
       url: "/my-exams",
       icon: FileText,
-    },
-    {
-      title: "Case Study Exam",
-      url: "/case-study-exams",
-      icon: BookOpen,
     },
   ];
 

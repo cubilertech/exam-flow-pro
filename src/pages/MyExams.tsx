@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { ExamsTable } from '@/components/exams/student/ExamsTable';
+import ExamsTable from '@/components/exams/student/ExamsTable';
 import NewExamModal from '@/components/exams/student/NewExamModal';
 
 const MyExams = () => {
