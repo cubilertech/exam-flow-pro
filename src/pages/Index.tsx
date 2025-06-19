@@ -13,6 +13,7 @@ import PricingCards from "@/components/pricingCards/PricingCards";
 import Footer from "@/components/footer/Footer";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import AnnouncementCard from "@/components/announcementCard/AnnouncementCard";
 
 const Index = () => {
   const cardsRef = useRef([]);
@@ -256,6 +257,10 @@ const Index = () => {
        {/* Pricing Section */}
        <PricingCards />
 
+
+       {/* AnnouncementCard */}
+       <AnnouncementCard/>
+
         {/* QBank Details */}
       <div className="py-16 bg-secondary/30">
         <div className="container mx-auto px-4">
@@ -361,6 +366,8 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+
 
 
 

@@ -604,10 +604,10 @@ const TakeExam = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
+    <div className="container px-3 sm:px-8 mx-auto py-6 max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-3">
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
           <div className="flex space-x-2">
@@ -646,7 +646,7 @@ const TakeExam = () => {
               {getRemainingTime()}
             </Badge>
           )}
-          <Button onClick={handleFinishExam} variant="default">
+          <Button onClick={handleFinishExam} variant="default" className="py-2 px-4 sm:py-3 sm:px-6">
             Finish Exam
           </Button>
         </div>

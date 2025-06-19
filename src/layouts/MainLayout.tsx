@@ -18,12 +18,13 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <SidebarProvider>
+      {/* <div className="min-h-screen flex w-full flex-col min-w-full bg-gradient-to-br from-background via-background to-muted/30"> */}
       <div className="min-h-screen flex w-full flex-col min-w-full bg-gradient-to-br from-background via-background to-muted/30">
         <Navbar />
-        <div className="flex flex-1">
+        <div className="w-full sm:flex sm:flex-1">
           {!isHomePage && <AppSidebar />}
           <SidebarInset className="flex-1">
-            <main className="flex-1 p-4">
+            <main className=" p-4 ">
               {children}
             </main>
             {/* <footer className="py-8 border-t border-white/20 bg-gradient-to-r from-primary/5 to-secondary/5 backdrop-blur-sm">

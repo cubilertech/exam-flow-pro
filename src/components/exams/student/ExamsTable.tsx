@@ -310,7 +310,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
               <TableCell>
                 {formatDate(exam.testDate)}
               </TableCell>
-              <TableCell>{exam.questionCount}</TableCell>
+              <TableCell>
+                {exam.questionCount}
+                </TableCell>
               <TableCell className="hidden md:table-cell">
                 {isComplete ? formatTime(exam.timeTaken) : '-'}
               </TableCell>
@@ -325,7 +327,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
               </TableCell>
               <TableCell className="text-right">
                 {isComplete ? (
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className=' mb-1 sm:mb-0'>
                     <Link to={`/exam-results/${exam.resultId}`}>
                       <BarChart2 className="h-4 w-4 mr-2" />
                       Results
@@ -336,6 +338,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
+                    className='mb-1 sm:mb-0'
                   >
                     <PlayCircle className="h-4 w-4 mr-2" />
                     Continue

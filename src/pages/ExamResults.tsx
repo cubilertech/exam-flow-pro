@@ -253,9 +253,9 @@ const ExamResults = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-5xl">
+    <div className="container mx-auto  max-w-5xl">
       <div className="mb-8">
-        <Button variant="ghost" onClick={() => navigate('/my-exams')} className="mb-2">
+        <Button variant="ghost" onClick={() => navigate('/my-exams')} className="mb-3 bg-secondary px-4 py-2 sm:px-6 sm:py-3">
           <ChevronLeft className="h-4 w-4 mr-2" />
           Back to My Exams
         </Button>
@@ -436,24 +436,26 @@ const ExamResults = () => {
                 />
               )}
               
-              <div className="flex justify-between mt-6">
+              <div className="flex flex-col sm:flex-row justify-between mt-6  ">
+              
                 <Button 
                   onClick={handlePrevQuestion} 
                   disabled={currentQuestionIndex === 0}
                   variant="outline"
+                  
                 >
                   <ArrowLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
                 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-4 px-3 p-1 w-full ">
+                  <span className=" text-center  text-muted-foreground">
                     {currentQuestionIndex + 1} of {questions.length}
                   </span>
                 </div>
                 
                 {currentQuestionIndex === questions.length - 1 ? (
-                  <Button onClick={() => setActiveTab('summary')} variant="default">
+                  <Button onClick={() => setActiveTab('summary')} variant="default" >
                     Back to Summary
                   </Button>
                 ) : (
