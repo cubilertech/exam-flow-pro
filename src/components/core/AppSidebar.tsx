@@ -1,4 +1,5 @@
-import { Home, HelpCircle, FileText } from "lucide-react";
+
+import { Home, HelpCircle, FileText, BookOpen } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 import { useAppSelector } from "@/lib/hooks";
 import {
@@ -24,6 +25,11 @@ export function AppSidebar() {
       url: "/my-exams",
       icon: FileText,
     },
+    {
+      title: "Case Study Exams",
+      url: "/case-study-exams",
+      icon: BookOpen,
+    },
   ];
 
   // Admin-only menu items
@@ -32,6 +38,11 @@ export function AppSidebar() {
       title: "Question Banks",
       url: "/questions",
       icon: HelpCircle,
+    },
+    {
+      title: "Case Study Exams",
+      url: "/case-study-exams",
+      icon: BookOpen,
     },
   ];
 

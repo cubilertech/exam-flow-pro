@@ -18,6 +18,8 @@ import { MainLayout } from "./layouts/MainLayout";
 import QuestionBank from "./pages/QuestionBank";
 import QuestionBankDetail from "./pages/QuestionBankDetail";
 import Profile from "./pages/Profile";
+import CaseStudyExams from "./pages/CaseStudyExams";
+import CaseStudyExamDetail from "./pages/CaseStudyExamDetail";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { StudentRoute } from "./components/auth/StudentRoute";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
@@ -39,6 +41,8 @@ function App() {
               <Route path="/exam-results/:resultId" element={<StudentRoute><MainLayout><ExamResults/></MainLayout></StudentRoute>}/>
               <Route path="/questions" element={<AdminRoute><MainLayout><QuestionBank/></MainLayout></AdminRoute>}/>
               <Route path="/questions/:id" element={<AdminRoute><MainLayout><QuestionBankDetail/></MainLayout></AdminRoute>}/>
+              <Route path="/case-study-exams" element={<PrivateRoute><MainLayout><CaseStudyExams/></MainLayout></PrivateRoute>}/>
+              <Route path="/case-study-exams/:examId" element={<PrivateRoute><MainLayout><CaseStudyExamDetail/></MainLayout></PrivateRoute>}/>
               <Route path="*" element={<NotFound/>}/>
             </Routes>
           </AuthProvider>
