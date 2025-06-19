@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MyExams from "./pages/MyExams";
+import CaseStudyExams from "./pages/CaseStudyExams";
 import TakeExam from "./pages/TakeExam";
 import ExamResults from "./pages/ExamResults";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ function App() {
               <Route path="/agreement" element={<MainLayout><Agreement/></MainLayout>}/>
               <Route path="/profile" element={<PrivateRoute><MainLayout><Profile/></MainLayout></PrivateRoute>}/>
               <Route path="/my-exams" element={<StudentRoute><MainLayout><MyExams/></MainLayout></StudentRoute>}/>
+              <Route path="/case-study-exams" element={<StudentRoute><MainLayout><CaseStudyExams/></MainLayout></StudentRoute>}/>
               <Route path="/exam/take" element={<StudentRoute><MainLayout><TakeExam/></MainLayout></StudentRoute>}/>
               <Route path="/exam-results/:resultId" element={<StudentRoute><MainLayout><ExamResults/></MainLayout></StudentRoute>}/>
               <Route path="/subjects/:examId" element={<StudentRoute><MainLayout><Subjects/></MainLayout></StudentRoute>}/>
