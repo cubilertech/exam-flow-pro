@@ -15,7 +15,11 @@ interface Exam {
   question_bank_id: string;
 }
 
-export const ExamsTable = () => {
+interface ExamsTableProps {
+  filterStatus?: 'all' | 'completed' | 'inprogress';
+}
+
+export const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
   const { subscriptions } = useQuestionBankSubscriptions();
   const [exams, setExams] = useState<Exam[]>([]);
   const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
@@ -38,7 +42,7 @@ export const ExamsTable = () => {
       const { data, error } = await supabase
         .from('exams')
         .select('*')
-        .in('question_bank_id', questionBank_ids);
+        .in('question_bank_id', questionBankIds);
 
       if (error) throw error;
       setExams(data || []);
