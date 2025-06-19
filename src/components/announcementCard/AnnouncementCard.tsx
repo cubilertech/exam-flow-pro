@@ -25,96 +25,7 @@ const AnnouncementCard = () => {
     }
   ];
 
-  const qbankCategories = [
-    {
-      title: "Advanced Epidemiology/Biostatistics/Vital Statistics and Demography",
-      description: "This QBank is needed for the Part 1 Exam, Part Final (2) Written Exam, and Promotion 1 and 3 Exams",
-      questionsCount: "250+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "449 SAR", price: "314 SAR" },
-        { duration: "3 Months", originalPrice: "499 SAR", price: "349 SAR" },
-        { duration: "6 Months", originalPrice: "559 SAR", price: "391 SAR" }
-      ],
-      color: "bg-blue-600"
-    },
-    {
-      title: "Clinical Preventive Medicine: Communicable Diseases",
-      description: "This QBank is needed for the Part 1 Exam, Part Final (2) Written Exam, and Promotion 2 Exam",
-      questionsCount: "185+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "339 SAR", price: "237 SAR" },
-        { duration: "3 Months", originalPrice: "379 SAR", price: "265 SAR" },
-        { duration: "6 Months", originalPrice: "429 SAR", price: "300 SAR" }
-      ],
-      color: "bg-green-600"
-    },
-    {
-      title: "Clinical Preventive Medicine: Non-Communicable Diseases",
-      description: "This QBank is needed for the Part 1 Exam, Part Final (2) Written Exam, and Promotion 2 Exam",
-      questionsCount: "160+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "279 SAR", price: "195 SAR" },
-        { duration: "3 Months", originalPrice: "319 SAR", price: "223 SAR" },
-        { duration: "6 Months", originalPrice: "369 SAR", price: "258 SAR" }
-      ],
-      color: "bg-purple-600"
-    },
-    {
-      title: "Maternal & Child Health",
-      description: "This QBank is needed for the Part Final (2) Written Exam, and Promotion 3 Exam",
-      questionsCount: "115+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "179 SAR", price: "125 SAR" },
-        { duration: "3 Months", originalPrice: "229 SAR", price: "160 SAR" },
-        { duration: "6 Months", originalPrice: "279 SAR", price: "195 SAR" }
-      ],
-      color: "bg-pink-600"
-    },
-    {
-      title: "Disaster's Management",
-      description: "This QBank is needed for the Part Final (2) Written Exam, and Promotion 3 Exam",
-      questionsCount: "100+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "169 SAR", price: "118 SAR" },
-        { duration: "3 Months", originalPrice: "219 SAR", price: "153 SAR" },
-        { duration: "6 Months", originalPrice: "269 SAR", price: "188 SAR" }
-      ],
-      color: "bg-red-600"
-    },
-    {
-      title: "Occupational & Environmental Health",
-      description: "This QBank is needed for the Part 1 Exam, Part Final (2) Written Exam, and Promotion 1 Exam",
-      questionsCount: "95+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "149 SAR", price: "104 SAR" },
-        { duration: "3 Months", originalPrice: "199 SAR", price: "139 SAR" },
-        { duration: "6 Months", originalPrice: "249 SAR", price: "174 SAR" }
-      ],
-      color: "bg-teal-600"
-    },
-    {
-      title: "Experimental Designs",
-      description: "This QBank is needed for Part Final (2) Written Exam, and Promotion 3 Exam",
-      questionsCount: "75+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "119 SAR", price: "83 SAR" },
-        { duration: "3 Months", originalPrice: "159 SAR", price: "111 SAR" },
-        { duration: "6 Months", originalPrice: "199 SAR", price: "139 SAR" }
-      ],
-      color: "bg-orange-600"
-    },
-    {
-      title: "Infection Control",
-      description: "This QBank is needed for the Part Final (2) Written Exam, and Promotion 3 Exam",
-      questionsCount: "85+ Questions",
-      plans: [
-        { duration: "1 Month", originalPrice: "119 SAR", price: "83 SAR" },
-        { duration: "3 Months", originalPrice: "169 SAR", price: "118 SAR" },
-        { duration: "6 Months", originalPrice: "219 SAR", price: "153 SAR" }
-      ],
-      color: "bg-indigo-600"
-    }
-  ];
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-0 sm:py-2 px-0 sm:px-4">
@@ -178,10 +89,10 @@ const AnnouncementCard = () => {
                         <h3 className="font-bold  mb-3 leading-tight text-base sm:text-lg group-hover:text-yellow-200 transition-colors duration-300">
                           {exam.title}
                         </h3>
-                        <div className="flex items-center gap-2 text-purple-200 text-sm bg-white/10 rounded-full px-3 py-1 border border-white/20">
+                        {/* <div className="flex items-center gap-2 text-purple-200 text-sm bg-white/10 rounded-full px-3 py-1 border border-white/20">
                           <BookOpen className="h-2 sm:h-4 w-2 sm:w-4 text-yellow-300" />
                           <span className="font-medium">{exam.examType}</span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                     
@@ -193,16 +104,16 @@ const AnnouncementCard = () => {
               
               {/* Enhanced Call-to-Action */}
               <div className="text-center">
-                <div className="inline-flex items-center justify-center gap-3 bg-primary rounded-full px-8 py-4 border border-white/30 shadow-lg">
+                <div className="inline-flex items-center justify-center gap-3 text-black rounded-full px-8 py-4 ">
                   <Calendar className="h-6 w-6 text-yellow-300 animate-pulse" />
-                  <span className="text-sm md:text-xl font-bold ">
+                  <span className="text-[12px] md:text-xl font-bold ">
                     Stay tuned for more details and prepare to excel with SaudiKnowledgeSeeker!
                   </span>
                   <Sparkles className="h-6 w-6 text-pink-300 animate-pulse delay-500" />
                 </div>
                 
                 <div className="mt-6 flex items-center justify-center gap-2 text-black">
-                  <span className="text-sm font-medium">Your success journey starts here</span>
+                  <span className="text-[10px] font-medium">Your success journey starts here</span>
                   <div className="flex gap-1">
                     {[...Array(5)].map((_, i) => (
                       <Star key={i} className="h-4 w-4 text-yellow-400 animate-pulse" fill="currentColor" style={{ animationDelay: `${i * 200}ms` }} />

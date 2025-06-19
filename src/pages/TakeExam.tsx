@@ -610,14 +610,14 @@ const TakeExam = () => {
           <h1 className="text-xl sm:text-2xl font-bold">
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
-          <div className="flex space-x-2">
+          <div className="flex space-x-1 sm:space-x-2">
             <Badge
               variant={isCurrentQuestionFlagged ? "secondary" : "outline"}
               className="cursor-pointer hover:bg-secondary"
               onClick={() => handleFlagQuestion(currentQuestion.id)}
             >
               <Flag
-                className={`h-3 w-3 mr-1 ${isCurrentQuestionFlagged ? "text-amber-500" : ""}`}
+                className={`h-2 sm:h-3 w-2 sm:w-3 mr-1 ${isCurrentQuestionFlagged ? "text-amber-500" : ""}`}
               />
               {isCurrentQuestionFlagged ? "Flagged" : "Flag"}
             </Badge>
@@ -632,7 +632,7 @@ const TakeExam = () => {
                 setShowNotesDialog(true);
               }}
             >
-              <StickyNote className="h-3 w-3 mr-1" />
+              <StickyNote className="h-2 sm:h-3 w-2 sm:w-3 mr-1" />
               Notes
             </Badge>
           </div>

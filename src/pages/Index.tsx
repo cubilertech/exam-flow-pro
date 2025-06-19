@@ -86,7 +86,7 @@ const Index = () => {
   }, []);
 
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const [selectedDuration, setSelectedDuration] = useState("3");
+  // const [selectedDuration, setSelectedDuration] = useState("3");
 
   const pricingData = {
     "3": {
