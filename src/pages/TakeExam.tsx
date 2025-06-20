@@ -61,7 +61,7 @@ const TakeExam = () => {
   const [noteIsSaving, setNoteIsSaving] = useState(false);
   const [examDuration, setExamDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [examDetails, setExamDetails] = useState<any>(null);
+  const [examDetails, setExamDetails] = useState<import("@/features/study/studySlice").ExamData | null>(null);
   const [isFlagging, setIsFlagging] = useState(false);
 
   useEffect(() => {
@@ -88,7 +88,17 @@ const TakeExam = () => {
 
           if (error) throw error;
 
-          setExamDetails(data);
+          setExamDetails({
+            categoryIds: data.category_ids,
+            difficultyLevels: data.difficulty_levels,
+            questionCount: data.question_count,
+            isTimed: data.is_timed,
+            timeLimit: data.time_limit,
+            timeLimitType: data.time_limit_type,
+            examType: data.exam_type as "study" | "test",
+            name: data.name,
+            id: data.id
+          });
         } catch (error) {
           console.error("Error fetching exam details:", error);
         }
@@ -169,8 +179,8 @@ const TakeExam = () => {
   useEffect(() => {
     if (
       examDetails &&
-      examDetails.is_timed &&
-      examDetails.time_limit &&
+      examDetails.isTimed &&
+      examDetails.timeLimit &&
       currentTestStartTime
     ) {
       const checkTimeLimit = () => {
@@ -179,10 +189,10 @@ const TakeExam = () => {
         const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
 
         let timeLimit;
-        if (examDetails.time_limit_type === "total_time") {
-          timeLimit = examDetails.time_limit;
+        if (examDetails.timeLimitType === "total_time") {
+          timeLimit = examDetails.timeLimit;
         } else {
-          timeLimit = examDetails.time_limit * currentTestQuestions.length;
+          timeLimit = examDetails.timeLimit * currentTestQuestions.length;
         }
 
         if (elapsedSeconds >= timeLimit) {
@@ -300,15 +310,15 @@ const TakeExam = () => {
   };
 
   const getRemainingTime = () => {
-    if (!examDetails || !examDetails.is_timed || !examDetails.time_limit) {
+    if (!examDetails || !examDetails.isTimed || !examDetails.timeLimit) {
       return null;
     }
 
     let totalTimeLimit;
-    if (examDetails.time_limit_type === "total_time") {
-      totalTimeLimit = examDetails.time_limit;
+    if (examDetails.timeLimitType === "total_time") {
+      totalTimeLimit = examDetails.timeLimit;
     } else {
-      totalTimeLimit = examDetails.time_limit * currentTestQuestions.length;
+      totalTimeLimit = examDetails.timeLimit * currentTestQuestions.length;
     }
 
     const remainingSeconds = Math.max(0, totalTimeLimit - examDuration);
@@ -580,7 +590,7 @@ const TakeExam = () => {
         timeCompleted: new Date().toISOString(),
         examId: currentExamId,
         examName: currentExamName || "Exam",
-        is_timed: examDetails?.is_timed,
+        is_timed: examDetails?.isTimed,
       };
 
       dispatch(submitTestResult(result));
@@ -639,7 +649,7 @@ const TakeExam = () => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {examDetails?.is_timed && (
+          {examDetails?.isTimed && (
             <Badge variant="outline" className="px-2 py-1">
               <Timer className="h-4 w-4 mr-1.5" />
               {/* {examDetails?.is_timed ? getRemainingTime() : formatTime(examDuration)} */}
@@ -735,7 +745,7 @@ const TakeExam = () => {
                   {totalQuestions - getCompletedQuestionCount()}
                 </span>
               </div>
-              {examDetails?.is_timed && (
+              {examDetails?.isTimed && (
                 <div className="flex justify-between items-center">
                   <span>Time taken:</span>
                   <span className="font-medium">

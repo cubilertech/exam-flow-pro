@@ -86,7 +86,7 @@ export function EditProfileModal({
         const data = await response.json();
 
         const formattedCountries = data
-          .map((country: any) => ({
+          .map((country: { name: { common: string }; cca2: string }) => ({
             code: country.cca2,
             name: country.name.common,
           }))
@@ -128,7 +128,7 @@ export function EditProfileModal({
         const data = await response.json();
 
         if (data?.data?.length > 0) {
-          setCities(data.data.map((city: any) => ({ name: city })));
+          setCities(data.data.map((city: string) => ({ name: city })));
         } else {
           setCities([]);
         }

@@ -84,9 +84,10 @@ export const LoginForm = () => {
       } else {
         throw new Error("No user data returned from login");
       }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      const errorMessage = error.message || "Login failed. Please check your credentials.";
+    } catch (error) {
+      const err =  error as Error;
+      console.error("Login error:", err);
+      const errorMessage = err.message || "Login failed. Please check your credentials.";
       dispatch(loginFailure(errorMessage));
       setFormError(errorMessage);
       toast.error(errorMessage);

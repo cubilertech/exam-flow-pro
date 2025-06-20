@@ -56,7 +56,7 @@ export const Navbar = () => {
       dispatch(logout());
       toast.success("Logged out successfully");
       navigate("/login");
-    } catch (error: any) {
+    } catch (error: Error) {
       console.error("Logout error:", error);
       toast.error(`Logout failed: ${error.message}`);
     }

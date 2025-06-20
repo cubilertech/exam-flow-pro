@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -135,14 +136,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       : subscriptions[0].id;
   }, [subscriptions, activeQuestionBankId]);
 
-  useEffect(() => {
-    if (open && initialSelectedBank) {
-      setSelectedQuestionBank(initialSelectedBank);
-      fetchCategoriesByQuestionBank(initialSelectedBank);
-    }
-  }, [open, initialSelectedBank]);
-
-  const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
+    const fetchCategoriesByQuestionBank = useCallback(async (questionBankId: string) => {
     try {
       setLoading(true);
 
@@ -192,7 +186,16 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (open && initialSelectedBank) {
+      setSelectedQuestionBank(initialSelectedBank);
+      fetchCategoriesByQuestionBank(initialSelectedBank);
+    }
+  }, [open, initialSelectedBank, fetchCategoriesByQuestionBank]);
+
+ 
 
   const calculateTimeLimit = (values: NewExamFormValues) => {
     if (values.timedMode === "untimed") {
@@ -266,23 +269,51 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         return;
       }
 
-      const questions: Question[] = questionsData.map(q => ({
-        id: q.id,
-        serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
-        text: q.text,
-        options: q.question_options.map((opt: any) => ({
-          id: opt.id,
-          text: opt.text,
-          isCorrect: opt.is_correct
-        })),
-        explanation: q.explanation || "",
-        imageUrl: q.image_url || undefined,
-        categoryId: q.category_id || "",
-        tags: [],
-        difficulty: q.difficulty || "medium",
-        correctAnswerRate: q.answered_correctly_count && q.answered_count ?
-          (q.answered_correctly_count / q.answered_count) * 100 : undefined
-      }));
+interface SupabaseQuestionOption {
+  id: string;
+  text: string;
+  is_correct: boolean;
+}
+
+interface SupabaseQuestion {
+  id: string;
+  serial_number: string;
+  text: string;
+  question_options: SupabaseQuestionOption[];
+  explanation: string | null;
+  image_url: string | null;
+  category_id: string;
+  difficulty: string;
+  answered_correctly_count: number | null;
+  answered_count: number | null;
+}
+
+const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
+  const difficulty: "easy" | "medium" | "hard" =
+    ["easy", "medium", "hard"].includes(q.difficulty)
+      ? q.difficulty as "easy" | "medium" | "hard"
+      : "medium";
+
+  return {
+    id: q.id,
+    serialNumber: parseInt(q.serial_number.replace(/\D/g, '')) || 0,
+    text: q.text,
+    options: q.question_options.map((opt: SupabaseQuestionOption) => ({
+      id: opt.id,
+      text: opt.text,
+      isCorrect: opt.is_correct
+    })),
+    explanation: q.explanation || "",
+    imageUrl: q.image_url || undefined,
+    categoryId: q.category_id || "",
+    tags: [],
+    difficulty,
+    correctAnswerRate: q.answered_correctly_count && q.answered_count
+      ? (q.answered_correctly_count / q.answered_count) * 100
+      : undefined
+  };
+});
+
       dispatch(startTest({
         questions,
         examId: examData.id,
@@ -510,13 +541,13 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                                   >
                                     <FormControl>
                                       <Checkbox
-                                        checked={field.value?.includes(item.id as any)}
+                                        checked={field.value?.includes(item.id as NewExamFormValues['difficultyLevels'][number])}
                                         onCheckedChange={(checked) => {
                                           if (item.id === "all" && checked) {
                                             return field.onChange(["all"]);
                                           } else if (checked && !isDisabled) {
                                             const newValue = field.value.filter(v => v !== "all");
-                                            return field.onChange([...newValue, item.id as any]);
+                                            return field.onChange([...newValue, item.id as NewExamFormValues['difficultyLevels'][number]]);
                                           } else {
                                             return field.onChange(
                                               field.value?.filter((value) => value !== item.id)

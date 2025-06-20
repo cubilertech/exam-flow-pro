@@ -1,6 +1,15 @@
 import { User } from '@/features/auth/authSlice';
 import { supabase } from '@/integrations/supabase/client';
 
+interface UserProfile {
+  username: string;
+  country?: string;
+  gender?: string;
+  phone_number?: string;
+  city?: string;
+}
+
+
 // Check if a user is an admin
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
@@ -17,7 +26,8 @@ export const checkIsAdmin = async (userId: string): Promise<boolean> => {
     
     return !!data;
   } catch (error) {
-    console.error('Error checking admin status:', error);
+    const err = error as Error;
+    console.error('Error checking admin status:', err);
     return false;
   }
 };
@@ -44,7 +54,8 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
       city: data.city || '',
     } : null;
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    const err = error as Error;
+    console.error('Error fetching user profile:', err);
     return null;
   }
 };
@@ -120,8 +131,9 @@ export const signUp = async (
       city: userData.city,
       isAdmin,
     };
-  } catch (error: any) {
-    console.error('Sign up error:', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Sign up error:', err);
     throw error;
   }
 };
@@ -150,7 +162,7 @@ export const signIn = async (email: string, password: string) => {
     console.log('User authenticated successfully:', authData.user.id);
     
     // 2. Fetch user profile data with additional error handling
-    let profile: any = { username: email.split('@')[0] };
+    let profile: UserProfile = { username: email.split('@')[0] };
     
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -179,7 +191,8 @@ export const signIn = async (email: string, password: string) => {
         }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      const err = error as Error;
+      console.error('Error fetching profile:', err);
     }
     
     // 3. Check if the user is an admin
@@ -187,7 +200,8 @@ export const signIn = async (email: string, password: string) => {
     try {
       isAdmin = await checkIsAdmin(authData.user.id);
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      const err = error as Error;
+      console.error('Error checking admin status:', err);
     }
     
     console.log('Login process completed successfully');
@@ -203,8 +217,9 @@ export const signIn = async (email: string, password: string) => {
       city: profile.city || '',
       isAdmin,
     };
-  } catch (error: any) {
-    console.error('Sign in error:', error);
+  } catch (error) {
+    const err = error as Error;
+    console.error('Sign in error:', err);
     throw error;
   }
 };
@@ -219,7 +234,8 @@ export const signOut = async () => {
     }
     console.log('User signed out successfully');
   } catch (error) {
-    console.error('Sign out error:', error);
+    const err = error as Error;
+    console.error('Sign out error:', err);
     throw error;
   }
 };
@@ -246,7 +262,8 @@ export const setupAuthListener = (callback: (user: User | null) => void) => {
         
         callback(userData);
       } catch (error) {
-        console.error('Error setting up auth listener:', error);
+        const err = error as Error;
+        console.error('Error setting up auth listener:', err);
         callback(null);
       }
     } else if (event === 'SIGNED_OUT') {

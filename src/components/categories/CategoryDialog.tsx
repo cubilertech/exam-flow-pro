@@ -92,10 +92,11 @@ export function CategoryDialog({
       onOpenChange(false);
       form.reset();
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "An error occurred",
+        description: err.message || "An error occurred",
         variant: "destructive",
       });
     } finally {

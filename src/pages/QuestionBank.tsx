@@ -88,10 +88,11 @@ const QuestionBank = () => {
         
         setQuestionBanks(banksWithCounts);
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to load question banks",
+        description: err.message || "Failed to load question banks",
         variant: "destructive",
       });
     } finally {

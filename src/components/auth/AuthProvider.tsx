@@ -51,12 +51,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 gender: 'gender' in profile ? profile.gender || '' : '',
                 phone: 'phone_number' in profile ? profile.phone_number || '' : '',
                 city: 'city' in profile ? profile.city || '' : '',
-                isAdmin: !!adminData
+                isAdmin: Boolean(adminData)
               }));
 
               // Redirect based on role
               if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
-                if (!!adminData) {
+                if (adminData) {
                   navigate('/questions');
                 } else {
                   navigate('/my-exams');
@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             gender: 'gender' in profile ? profile.gender || '' : '',
             phone: 'phone_number' in profile ? profile.phone_number || '' : '',
             city: 'city' in profile ? profile.city || '' : '',
-            isAdmin: !!adminData
+            isAdmin: Boolean(adminData)
           }));
         }
       } catch (error) {

@@ -1,3 +1,4 @@
+
 import React, {
   useEffect,
   useState,
@@ -47,6 +48,44 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/lib/hooks';
 
+interface ExamResultData {
+  id: string;
+  testDate: string;
+  correctCount: number;
+  incorrectCount: number;
+  score: number;
+  timeTaken: number;
+  answers: Answer[];
+  examId: string;
+  examName: string;
+  categoryIds: string[];
+  questionCount: number;
+}
+
+interface Answer {
+  questionId: string;
+  // Add other properties of an answer if they exist
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface QuestionOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+interface Question {
+  id: string;
+  serialNumber: number;
+  text: string;
+  options: QuestionOption[];
+  // Add other properties of a question if they exist
+}
+
 const ExamResults = () => {
   const { resultId } = useParams<{ resultId: string }>();
   const navigate = useNavigate();
@@ -55,9 +94,9 @@ const ExamResults = () => {
   const [activeTab, setActiveTab] = useState<'summary' | 'questions'>('summary');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [examResult, setExamResult] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [examResult, setExamResult] = useState<ExamResultData | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   
   // Find the test result in Redux store first
   const storeResult = testResults.find(result => result.id === resultId);
@@ -68,7 +107,13 @@ const ExamResults = () => {
         setLoading(true);
 
         if (storeResult) {
-          setExamResult(storeResult);
+          setExamResult({
+            ...storeResult,
+            examId: storeResult.examId || '', // Ensure examId is provided
+            examName: storeResult.examName || 'Exam',
+            categoryIds: storeResult.categoryIds || [],
+            questionCount: (storeResult.correctCount || 0) + (storeResult.incorrectCount || 0)
+          });
           await fetchQuestions(storeResult.answers);
           if (storeResult?.categoryIds) {
             const { data: catData } = await supabase
@@ -119,10 +164,17 @@ const ExamResults = () => {
           questionCount: data.correct_count + data.incorrect_count
         };
         
-        setExamResult(transformedResult);
+        setExamResult({
+          ...transformedResult,
+          answers: Array.isArray(transformedResult.answers) 
+            ? transformedResult.answers 
+            : typeof transformedResult.answers === 'string'
+              ? JSON.parse(transformedResult.answers)
+              : []
+        });
         
         // Fetch questions based on answer data
-        await fetchQuestions(data.answers);
+        await fetchQuestions(Array.isArray(data.answers) ? data.answers : typeof data.answers === 'string' ? JSON.parse(data.answers) : []);
         
         // Fetch categories
         if (data.user_exams?.category_ids) {
@@ -147,20 +199,20 @@ const ExamResults = () => {
     fetchExamResult();
   }, [resultId, navigate, storeResult]);
   
-  const fetchQuestions = async (answers: any) => {
+  const fetchQuestions = async (answers: Answer[]) => {
     try {
       // Make sure answers is an array before proceeding
       const answersArray = Array.isArray(answers) 
         ? answers 
         : typeof answers === 'string' 
           ? JSON.parse(answers) 
-          : answers && typeof answers === 'object' && answers.hasOwnProperty('length') 
+          : answers && typeof answers === 'object' && 'length' in answers
             ? Array.from(answers) 
             : [];
             
       if (answersArray.length === 0) return;
       
-      const questionIds = answersArray.map((a: any) => a.questionId); 
+      const questionIds = answersArray.map((a: Answer) => a.questionId); 
       
       const { data, error } = await supabase
         .from('questions')
@@ -176,13 +228,13 @@ const ExamResults = () => {
       
       // Transform questions to match our format
       const formattedQuestions = data.map(q => {
-        const answer = answersArray.find((a: any) => a.questionId === q.id);
+        const answer = answersArray.find((a: Answer) => a.questionId === q.id);
         
         return {
           id: q.id,
           serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
           text: q.text,
-          options: q.question_options.map((opt: any) => ({
+          options: q.question_options.map((opt: { id: string; text: string; is_correct: boolean }) => ({
             id: opt.id,
             text: opt.text,
             isCorrect: opt.is_correct
@@ -265,7 +317,7 @@ const ExamResults = () => {
         </p>
       </div>
       
-      <Tabs value={activeTab}  className="w-full" onValueChange={(value) => setActiveTab(value as any)}>
+      <Tabs value={activeTab}  className="w-full" onValueChange={(value: 'summary' | 'questions') => setActiveTab(value)}>
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -324,7 +376,7 @@ const ExamResults = () => {
                     <span className="text-sm font-medium text-muted-foreground">Questions</span>
                     <span className="font-medium">{examResult.questionCount}</span>
                   </div>
-                  {examResult?.is_timed &&   <div className="flex flex-col space-y-1">
+                  {examResult?.isTimed &&   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Time Taken</span>
                     <span className="font-medium">{formatTime(examResult.timeTaken)}</span>
                   </div> }

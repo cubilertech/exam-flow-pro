@@ -90,7 +90,8 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
 
         // Refresh the questions list
         window.location.reload();
-      } catch (error: any) {
+      } catch (error) {
+        const err = error as Error;
         toast({
           title: "Error",
           description: error.message || "Failed to delete question",

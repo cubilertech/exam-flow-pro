@@ -49,10 +49,11 @@ export function DeleteCategoryDialog({
       
       onOpenChange(false);
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to delete category",
+        description: err.message || "Failed to delete category",
         variant: "destructive",
       });
     } finally {

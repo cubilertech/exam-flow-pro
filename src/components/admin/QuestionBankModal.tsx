@@ -107,12 +107,13 @@ export function QuestionBankModal({ open, onOpenChange, onSuccess }: QuestionBan
       onOpenChange(false);
       if (onSuccess) onSuccess();
       
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
+    } catch (error) {
+  const err = error as Error;
+  toast({
+    title: "Error",
+    description: err.message || "Something went wrong",
+    variant: "destructive",
+  });
     } finally {
       setIsSubmitting(false);
     }
