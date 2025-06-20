@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { AlertTriangle, Image, Loader2, Plus, X, Trash2 } from "lucide-react";
-
 import "remirror/styles/all.css";
 import {
   HeadingExtension,
@@ -24,7 +23,7 @@ import {
 } from "@remirror/react-ui";
 import { i18nFormat } from "@remirror/i18n";
 import { UploadImageButton } from "../remirror-extensions/UploadImageButton";
-// import "../../style-editor.css";
+
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -172,7 +171,6 @@ export const QuestionForm = ({
     }
   }, [toast]);
 
-  
 const { manager, state, onChange } = useRemirror({
     extensions: extensions,
     content: formData.explanation,
