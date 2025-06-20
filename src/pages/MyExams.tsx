@@ -10,16 +10,16 @@ const MyExams = () => {
   const [isNewExamModalOpen, setIsNewExamModalOpen] = useState(false);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto px-0 sm:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">My Exams</h1>
-        <Button onClick={() => setIsNewExamModalOpen(true)}>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">My Exams</h1>
+        <Button onClick={() => setIsNewExamModalOpen(true)} className='py-2 px-4 sm:py-3 sm:text-sm sm:px-6'>
           <Plus className="mr-2 h-4 w-4" />
           New Exam
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="all" className=" overflow-x-scroll">
         <TabsList className="mb-4">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>

@@ -104,14 +104,15 @@ export const RegisterForm = () => {
         const data = await response.json();
 
         const formattedCountries = data
-          .map((country: any) => ({
+          .map((country: { cca2: string; name: { common: string } }) => ({
             code: country.cca2,
             name: country.name.common,
           }))
           .sort((a: Country, b: Country) => a.name.localeCompare(b.name));
         setCountries(formattedCountries);
       } catch (error) {
-        console.error("Failed to fetch countries:", error);
+        const err = error as Error;
+        console.error("Failed to fetch countries:", err);
       } finally {
         setLoadingCountries(false);
       }
@@ -139,7 +140,7 @@ export const RegisterForm = () => {
         );
         const data = await response.json();
         if (data?.data?.length > 0) {
-          setCities(data?.data?.map((city: any) => ({ name: city })));
+          setCities(data?.data?.map((city: string) => ({ name: city })));
         } else {
           setCities([]);
         }
@@ -168,22 +169,19 @@ export const RegisterForm = () => {
 
       dispatch(registerSuccess(userData));
       navigate("/my-exams");
-    } catch (error: any) {
-      setLoading(false);
-
-      // Improved error handling for Supabase errors
+    }catch (error) {
+      const err = error as Error;
+    
       let errorMessage = "Registration failed. Please try again.";
-
-      if (error?.message?.includes("User already registered")) {
+    
+      if (err.message.includes("User already registered")) {
         errorMessage =
           "This email is already registered. Please use a different email.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-
-      console.error("Registration error:", error);
+    
+      console.error("Registration error:", err);
       dispatch(registerFailure(errorMessage));
       toast({
         title: "Error",

@@ -3,12 +3,58 @@ import React, {
   useState,
 } from 'react';
 
+interface ExamResult {
+  id: string;
+  score: number;
+  time_taken: number;
+  correct_count: number;
+  incorrect_count: number;
+  completed_at: string;
+}
+
+interface Exam {
+  id: string;
+  name: string;
+  testDate: string;
+  questionCount: number;
+  completed: boolean;
+  score: number | null;
+  timeTaken: number;
+  correctCount: number;
+  incorrectCount: number;
+  resultId: string | null;
+  categoryIds: string[];
+  difficulty_levels: string[];
+  is_timed: boolean;
+  time_limit: number | null;
+  time_limit_type: string | null;
+  exam_type: string;
+}
+
+interface QuestionOption {
+  id: string;
+  text: string;
+  is_correct: boolean;
+}
+
+interface Question {
+  id: string;
+  text: string;
+  serialNumber: number;
+  explanation: string | null;
+  imageUrl: string | null;
+  categoryId: string;
+  difficulty: string;
+  tags: string[];
+  options: QuestionOption[];
+}
+
 import { format } from 'date-fns';
-import {
+import{
   BarChart2,
   BookOpen,
   CheckCircle,
-  Clock,
+  Clock, 
   Loader2,
   PlayCircle,
   Trash2,
@@ -56,7 +102,7 @@ interface ExamsTableProps {
 }
 
 const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
-  const [exams, setExams] = useState<any[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAppSelector((state) => state.auth);
   const activeQuestionBankId = useAppSelector(state => state.questions.activeQuestionBankId);
@@ -92,7 +138,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         }
         const formattedExams = data.map(exam => {
           const latestResult = exam.exam_results && exam.exam_results.length > 0
-            ? exam.exam_results.sort((a: any, b: any) => 
+            ? exam.exam_results.sort((a: ExamResult, b: ExamResult) => 
                 new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime()
               )[0]
             : null;
@@ -126,7 +172,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         
         setExams(filteredExams);
       } catch (error) {
-        console.error('Error fetching exams:', error);
+        const err = error as Error;
+        console.error('Error fetching exams:', err);
         toast.error('Failed to load exams');
       } finally {
         setLoading(false);
@@ -136,20 +183,21 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     fetchExams();
   }, [user?.id, filterStatus, activeQuestionBankId]);
 
-  const handleContinueExam = async (exam: any) => {
+  const handleContinueExam = async (exam: Exam) => {
     try {
       toast.loading("Loading exam...");
       
+      const allowedDifficulties = ["easy", "medium", "hard"] as const;
       dispatch(setCurrentExam({
         id: exam.id,
         name: exam.name,
         categoryIds: exam.categoryIds,
-        difficultyLevels: exam.difficulty_levels,
+        difficultyLevels: (exam.difficulty_levels || []).filter((d): d is typeof allowedDifficulties[number] => allowedDifficulties.includes(d as typeof allowedDifficulties[number])),
         questionCount: exam.questionCount,
         isTimed: exam.is_timed,
         timeLimit: exam.time_limit,
         timeLimitType: exam.time_limit_type,
-        examType: exam.exam_type // Add the missing examType property
+        examType: (exam.exam_type === 'study' || exam.exam_type === 'test') ? exam.exam_type : 'test'
       }));
       let query = supabase
       .from('questions')
@@ -158,7 +206,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     
 
        if (exam.difficulty_levels?.length) {
-      query = query.in('difficulty', exam.difficulty_levels);
+      const allowedDifficulties = ["easy", "medium", "hard"];
+      const filteredDifficulties = exam.difficulty_levels.filter((d: string) => allowedDifficulties.includes(d)) as ("easy" | "medium" | "hard")[];
+      query = query.in('difficulty', filteredDifficulties);
       }
       const { data: questions, error } = await query.limit(exam.questionCount);
       // const { data: questions, error } = await supabase
@@ -176,22 +226,52 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         return;
       }
 
-      const formattedQuestions = questions.map((q: any) => ({
+      interface SupabaseQuestionOption {
+        id: string;
+        text: string;
+        is_correct: boolean;
+      }
+      interface SupabaseQuestion {
+        id: string;
+        text: string;
+        serial_number: number;
+        explanation: string | null;
+        image_url: string | null;
+        category_id: string;
+        difficulty: string;
+        question_options: SupabaseQuestionOption[];
+      }
+      // const formattedQuestions = (questions as unknown as SupabaseQuestion[]).map((q) => ({
+      //   id: q.id,
+      //   text: q.text,
+      //   serialNumber:  Number(q.serial_number),
+      //   explanation: q.explanation,
+      //   imageUrl: q.image_url,
+      //   categoryId: q.category_id,
+      //   difficulty: q.difficulty,
+      //   tags: [],
+      //   options: q.question_options.map((opt) => ({
+      //     id: opt.id,
+      //     text: opt.text,
+      //     isCorrect: opt.is_correct
+      //   }))
+      // }));
+
+      const formattedQuestions = (questions as unknown as SupabaseQuestion[]).map((q) => ({
         id: q.id,
         text: q.text,
-        serialNumber: q.serial_number,
+        serialNumber: Number(q.serial_number),
         explanation: q.explanation,
         imageUrl: q.image_url,
         categoryId: q.category_id,
-        difficulty: q.difficulty,
+        difficulty: allowedDifficulties.includes(q.difficulty as typeof allowedDifficulties[number]) ? q.difficulty as typeof allowedDifficulties[number] : "easy" as const,
         tags: [],
-        options: q.question_options.map((opt: any) => ({
+        options: q.question_options.map((opt) => ({
           id: opt.id,
           text: opt.text,
-          isCorrect: opt.is_correct
+          isCorrect: opt.is_correct // Ensure property name matches Option interface
         }))
       }));
-
       dispatch(loadExamQuestions(formattedQuestions));
       
       dispatch(startExam({
@@ -203,7 +283,8 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       
       navigate('/exam/take');
     } catch (error) {
-      console.error('Error continuing exam:', error);
+      const err = error as Error;
+      console.error('Error continuing exam:', err);
       toast.dismiss();
       toast.error('Failed to continue exam');
     }
@@ -267,7 +348,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     return format(new Date(dateString), 'MMM d, yyyy');
   };
 
-  const getExamStatus = (exam: any) => {
+  const getExamStatus = (exam: Exam) => {
     if (exam.completed) {
       return {
         label: 'Completed',
@@ -310,7 +391,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
               <TableCell>
                 {formatDate(exam.testDate)}
               </TableCell>
-              <TableCell>{exam.questionCount}</TableCell>
+              <TableCell>
+                {exam.questionCount}
+                </TableCell>
               <TableCell className="hidden md:table-cell">
                 {isComplete ? formatTime(exam.timeTaken) : '-'}
               </TableCell>
@@ -325,7 +408,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
               </TableCell>
               <TableCell className="text-right">
                 {isComplete ? (
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className=' mb-1 sm:mb-0'>
                     <Link to={`/exam-results/${exam.resultId}`}>
                       <BarChart2 className="h-4 w-4 mr-2" />
                       Results
@@ -336,6 +419,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => handleContinueExam(exam)}
+                    className='mb-1 sm:mb-0'
                   >
                     <PlayCircle className="h-4 w-4 mr-2" />
                     Continue

@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -101,7 +102,7 @@ interface CategoryCount {
 const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { subscriptions,activeQuestionBankId } = useQuestionBankSubscriptions();
+  const { subscriptions, activeQuestionBankId } = useQuestionBankSubscriptions();
   const { user } = useAppSelector((state) => state.auth);
   const [categories, setCategories] = useState<CategoryCount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -123,58 +124,51 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       examName: "",
     },
   });
-  
+
   const timedMode = form.watch("timedMode");
   const timeLimitType = form.watch("timeLimitType");
-  
+
   const initialSelectedBank = useMemo(() => {
     if (subscriptions.length === 0) return null;
-    
-    return activeQuestionBankId 
+
+    return activeQuestionBankId
       ? subscriptions.find(qb => qb.id === activeQuestionBankId)?.id || subscriptions[0].id
       : subscriptions[0].id;
   }, [subscriptions, activeQuestionBankId]);
-  
-  useEffect(() => {
-    if (open && initialSelectedBank) {
-      setSelectedQuestionBank(initialSelectedBank);
-      fetchCategoriesByQuestionBank(initialSelectedBank);
-    }
-  }, [open, initialSelectedBank]);
 
-  const fetchCategoriesByQuestionBank = async (questionBankId: string) => {
+    const fetchCategoriesByQuestionBank = useCallback(async (questionBankId: string) => {
     try {
       setLoading(true);
-      
+
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
         .eq('question_bank_id', questionBankId);
-        
+
       if (categoriesError) throw categoriesError;
-      
+
       const categoriesWithCounts = await Promise.all(categoriesData.map(async (category) => {
         // First, query for all questions for this category
         const { data: questions, error: questionsError } = await supabase
           .from('questions')
           .select('id, difficulty')
           .eq('category_id', category.id);
-        
+
         if (questionsError) throw questionsError;
-        
+
         // Count the occurrences of each difficulty level manually
         const difficultyCount = {
           easy: 0,
           medium: 0,
           hard: 0
         };
-        
+
         questions?.forEach((question) => {
           if (question.difficulty in difficultyCount) {
             difficultyCount[question.difficulty as keyof typeof difficultyCount]++;
           }
         });
-        
+
         return {
           id: category.id,
           name: category.name,
@@ -183,7 +177,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           difficultyCount
         };
       }));
-      
+
       setCategories(categoriesWithCounts);
       form.setValue("categories", []);
     } catch (error) {
@@ -192,13 +186,22 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (open && initialSelectedBank) {
+      setSelectedQuestionBank(initialSelectedBank);
+      fetchCategoriesByQuestionBank(initialSelectedBank);
+    }
+  }, [open, initialSelectedBank, fetchCategoriesByQuestionBank]);
+
+ 
 
   const calculateTimeLimit = (values: NewExamFormValues) => {
     if (values.timedMode === "untimed") {
       return null;
     }
-    
+
     if (values.timeLimitType === "seconds_per_question") {
       return values.timeLimit;
     } else {
@@ -212,7 +215,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       toast.error('You must be logged in to create an exam');
       return;
     }
-    
+
     if (subscriptions.length === 0) {
       toast.error('You need to have at least one question bank subscription');
       return;
@@ -220,11 +223,11 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
     try {
       setIsSaving(true);
-      
+
       const questionBankId = selectedQuestionBank || subscriptions[0].id;
-      
+
       const timeLimit = calculateTimeLimit(values);
-      
+
       const { data: examData, error: examError } = await supabase
         .from('user_exams')
         .insert({
@@ -242,9 +245,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         })
         .select()
         .single();
-      
+
       if (examError) throw examError;
-      
+
       let query = supabase
         .from('questions')
         .select('*, question_options(*)')
@@ -256,53 +259,81 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
           query = query.in('difficulty', validDifficulties);
         }
       }
-      
+
       const { data: questionsData, error: questionsError } = await query.limit(values.numberOfQuestions);
-      
+
       if (questionsError) throw questionsError;
-      
+
       if (!questionsData || questionsData.length === 0) {
         toast.error("No questions match your criteria");
         return;
       }
-      
-      const questions: Question[] = questionsData.map(q => ({
-        id: q.id,
-        serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
-        text: q.text,
-        options: q.question_options.map((opt: any) => ({
-          id: opt.id,
-          text: opt.text,
-          isCorrect: opt.is_correct
-        })),
-        explanation: q.explanation || "",
-        imageUrl: q.image_url || undefined,
-        categoryId: q.category_id || "",
-        tags: [],
-        difficulty: q.difficulty || "medium",
-        correctAnswerRate: q.answered_correctly_count && q.answered_count ? 
-          (q.answered_correctly_count / q.answered_count) * 100 : undefined
-      }));
+
+interface SupabaseQuestionOption {
+  id: string;
+  text: string;
+  is_correct: boolean;
+}
+
+interface SupabaseQuestion {
+  id: string;
+  serial_number: string;
+  text: string;
+  question_options: SupabaseQuestionOption[];
+  explanation: string | null;
+  image_url: string | null;
+  category_id: string;
+  difficulty: string;
+  answered_correctly_count: number | null;
+  answered_count: number | null;
+}
+
+const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
+  const difficulty: "easy" | "medium" | "hard" =
+    ["easy", "medium", "hard"].includes(q.difficulty)
+      ? q.difficulty as "easy" | "medium" | "hard"
+      : "medium";
+
+  return {
+    id: q.id,
+    serialNumber: parseInt(q.serial_number.replace(/\D/g, '')) || 0,
+    text: q.text,
+    options: q.question_options.map((opt: SupabaseQuestionOption) => ({
+      id: opt.id,
+      text: opt.text,
+      isCorrect: opt.is_correct
+    })),
+    explanation: q.explanation || "",
+    imageUrl: q.image_url || undefined,
+    categoryId: q.category_id || "",
+    tags: [],
+    difficulty,
+    correctAnswerRate: q.answered_correctly_count && q.answered_count
+      ? (q.answered_correctly_count / q.answered_count) * 100
+      : undefined
+  };
+});
+
       dispatch(startTest({
         questions,
         examId: examData.id,
         examName: values.examName,
       }));
       const isTimed = values.timedMode === "untimed" ? false : true
-       dispatch(setCurrentExam({
-              id: examData.id,
-              name: values.examName,
-              categoryIds: values.categories,
-              difficultyLevels: values.difficultyLevels,
-              questionCount: values.numberOfQuestions,
-              isTimed: isTimed,
-              timeLimit: values.timeLimit,
-              timeLimitType: values.timeLimitType,
-              examType: values.examType // Add the missing examType property
-            }));
+      dispatch(setCurrentExam({
+        id: examData.id,
+        name: values.examName,
+        categoryIds: values.categories,
+        difficultyLevels: values.difficultyLevels,
+        questionCount: values.numberOfQuestions,
+        isTimed: isTimed,
+        timeLimit: values.timeLimit,
+        timeLimitType: values.timeLimitType,
+        examType: values.examType // Add the missing examType property
+      }));
       onOpenChange(false);
       navigate('/exam/take');
-      
+
     } catch (error) {
       console.error("Error starting exam:", error);
       toast.error("Failed to start the exam. Please try again.");
@@ -312,15 +343,15 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   };
   // Calculate Total Questions
   const selectedCategories = form.watch('categories') || [];
-  const totalQuestions =  categories
-  .filter(cat => selectedCategories.includes(cat.id))
-  .reduce((total, cat) => total + cat.questionCount, 0)
+  const totalQuestions = categories
+    .filter(cat => selectedCategories.includes(cat.id))
+    .reduce((total, cat) => total + cat.questionCount, 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[501px] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Create a New Exam</DialogTitle>
+          <DialogTitle className='font-extrabold '>Create a New Exam</DialogTitle>
           <DialogDescription>
             Customize your exam settings below.
           </DialogDescription>
@@ -333,7 +364,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 name="examType"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>Exam Type</FormLabel>
+                    <FormLabel className='font-extrabold'>Exam Type</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -349,25 +380,25 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                           </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="study" id="study" />
-                        </FormControl>
-                        <FormLabel htmlFor="study" className="font-normal flex items-center">
-                          Study
-                          <TooltipProvider >
-                            <Tooltip delayDuration={0}>
-                              <TooltipTrigger asChild>
-                                <button type="button" className="focus:outline-none">
-                                  <Info className="h-4 w-4 ml-2 text-muted-foreground" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" align="center" className="max-w-[200px]">
-                                <p>Final response to a question used to determine score</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </FormLabel>
-                      </FormItem>
+                          <FormControl>
+                            <RadioGroupItem value="study" id="study" />
+                          </FormControl>
+                          <FormLabel htmlFor="study" className="font-normal flex items-center">
+                            Study
+                            <TooltipProvider >
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  <button type="button" className="focus:outline-none">
+                                    <Info className="h-4 w-4 ml-2 text-muted-foreground" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" align="center" className="max-w-[200px]">
+                                  <p>Final response to a question used to determine score</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </FormLabel>
+                        </FormItem>
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
@@ -377,7 +408,8 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
               {subscriptions.length > 0 && (
                 <FormItem>
-                  <FormLabel>Question Bank</FormLabel>
+                  <FormLabel className='font-extrabold'>Question Bank</FormLabel>
+
                   <Select
                     value={selectedQuestionBank || undefined}
                     onValueChange={(value) => {
@@ -405,7 +437,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 render={() => (
                   <FormItem>
                     <div className="mb-4">
-                      <FormLabel className="text-base">Categories</FormLabel>
+                      <FormLabel className="text-base font-extrabold ">
+                        Categories
+                      </FormLabel>
                       <FormDescription>
                         Select the categories you want to include in your exam.
                       </FormDescription>
@@ -436,10 +470,10 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                                         return checked
                                           ? field.onChange([...field.value, category.id])
                                           : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== category.id
-                                              )
-                                            );
+                                            field.value?.filter(
+                                              (value) => value !== category.id
+                                            )
+                                          );
                                       }}
                                     />
                                   </FormControl>
@@ -458,110 +492,110 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 )}
               />
 
-<FormField
-  control={form.control}
-  name="difficultyLevels"
-  render={() => {
-    const selectedCategories = form.watch('categories') || []; // Track selected categories
-
-    return (
-      <FormItem>
-        <div className="mb-4">
-          <FormLabel className="text-base">Difficulty Level</FormLabel>
-          <FormDescription>
-            Select the difficulty levels to include in your exam.
-          </FormDescription>
-        </div>
-        <div className="flex gap-4">
-          {[
-            { id: "all", label: "All" },
-            { id: "easy", label: "Easy" },
-            { id: "medium", label: "Medium" },
-            { id: "hard", label: "Hard" },
-          ].map((item) => {
-            // Calculate questionCount based on SELECTED categories only
-            const questionCount = item.id === "all"
-              ? categories
-                  .filter(cat => selectedCategories.includes(cat.id))
-                  .reduce((total, cat) => total + cat.questionCount, 0)
-              : categories
-                  .filter(cat => selectedCategories.includes(cat.id))
-                  .reduce(
-                    (total, cat) => 
-                      total + (cat.difficultyCount[item.id as keyof typeof cat.difficultyCount] || 0), 
-                    0
-                  );
-
-            const isDisabled = item.id !== "all" && questionCount === 0;
-
-            return (
               <FormField
-                key={item.id}
                 control={form.control}
                 name="difficultyLevels"
-                render={({ field }) => {
+                render={() => {
+                  const selectedCategories = form.watch('categories') || []; // Track selected categories
+
                   return (
-                    <FormItem
-                      key={item.id}
-                      className="flex flex-row items-start space-x-3 space-y-0"
-                    >
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value?.includes(item.id as any)}
-                          onCheckedChange={(checked) => {
-                            if (item.id === "all" && checked) {
-                              return field.onChange(["all"]);
-                            } else if (checked && !isDisabled) {
-                              const newValue = field.value.filter(v => v !== "all");
-                              return field.onChange([...newValue, item.id as any]);
-                            } else {
-                              return field.onChange(
-                                field.value?.filter((value) => value !== item.id)
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel className="text-base font-extrabold">Difficulty Level</FormLabel>
+                        <FormDescription>
+                          Select the difficulty levels to include in your exam.
+                        </FormDescription>
+                      </div>
+                      <div className="flex gap-4">
+                        {[
+                          { id: "all", label: "All" },
+                          { id: "easy", label: "Easy" },
+                          { id: "medium", label: "Medium" },
+                          { id: "hard", label: "Hard" },
+                        ].map((item) => {
+                          // Calculate questionCount based on SELECTED categories only
+                          const questionCount = item.id === "all"
+                            ? categories
+                              .filter(cat => selectedCategories.includes(cat.id))
+                              .reduce((total, cat) => total + cat.questionCount, 0)
+                            : categories
+                              .filter(cat => selectedCategories.includes(cat.id))
+                              .reduce(
+                                (total, cat) =>
+                                  total + (cat.difficultyCount[item.id as keyof typeof cat.difficultyCount] || 0),
+                                0
                               );
-                            }
-                          }}
-                          disabled={isDisabled}
-                          className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
-                        />
-                      </FormControl>
-                      <FormLabel className={`font-normal ${isDisabled ? "opacity-50" : ""}`}>
-                        {item.label} ({questionCount})
-                      </FormLabel>
+
+                          const isDisabled = item.id !== "all" && questionCount === 0;
+
+                          return (
+                            <FormField
+                              key={item.id}
+                              control={form.control}
+                              name="difficultyLevels"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={item.id}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(item.id as NewExamFormValues['difficultyLevels'][number])}
+                                        onCheckedChange={(checked) => {
+                                          if (item.id === "all" && checked) {
+                                            return field.onChange(["all"]);
+                                          } else if (checked && !isDisabled) {
+                                            const newValue = field.value.filter(v => v !== "all");
+                                            return field.onChange([...newValue, item.id as NewExamFormValues['difficultyLevels'][number]]);
+                                          } else {
+                                            return field.onChange(
+                                              field.value?.filter((value) => value !== item.id)
+                                            );
+                                          }
+                                        }}
+                                        disabled={isDisabled}
+                                        className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className={`font-normal ${isDisabled ? "opacity-50" : ""}`}>
+                                      {item.label} ({questionCount})
+                                    </FormLabel>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                      <FormMessage />
                     </FormItem>
                   );
                 }}
               />
-            );
-          })}
-        </div>
-        <FormMessage />
-      </FormItem>
-    );
-  }}
-/>
 
               <FormField
                 control={form.control}
                 name="numberOfQuestions"
                 render={({ field }) => (
                   <FormItem>
-                  <FormLabel>Number of Questions (max {totalQuestions})</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      min={1} 
-                      max={totalQuestions} 
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        // if (!isNaN(value) && value <= totalQuestions) {
+                    <FormLabel className='font-extrabold'>Number of Questions (max {totalQuestions})</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        min={1}
+                        max={totalQuestions}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          // if (!isNaN(value) && value <= totalQuestions) {
                           field.onChange(value);
-                        // }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                          // }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
               <FormField
@@ -569,7 +603,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 name="timedMode"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>Timed Mode</FormLabel>
+                    <FormLabel className="font-extrabold">Timed Mode</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -606,9 +640,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                     name="timeLimitType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Time Limit Type</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <FormLabel >Time Limit Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                           value={field.value}
                         >
@@ -635,10 +669,10 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                         <FormItem>
                           <FormLabel>Seconds per question</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
-                              min={5} 
+                            <Input
+                              type="number"
+                              {...field}
+                              min={5}
                               placeholder="60"
                               onChange={(e) => field.onChange(parseInt(e.target.value))}
                             />
@@ -661,9 +695,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                           <FormItem className="flex-1">
                             <FormLabel>Minutes</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
+                              <Input
+                                type="number"
+                                {...field}
                                 min={0}
                                 max={180}
                                 placeholder="0"
@@ -681,9 +715,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                           <FormItem className="flex-1">
                             <FormLabel>Seconds</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
+                              <Input
+                                type="number"
+                                {...field}
                                 min={0}
                                 max={59}
                                 placeholder="0"
@@ -704,7 +738,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                 name="examName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Exam Name</FormLabel>
+                    <FormLabel className='font-extrabold'>Exam Name</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter a name for your exam" {...field} />
                     </FormControl>
@@ -718,8 +752,9 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                   Cancel
                 </Button>
                 <Button 
-                  type="submit" 
+                  type="submit"
                   disabled={form.getValues().categories.length === 0 || isSaving}
+                  className='mb-2 sm:mb-0'
                 >
                   {isSaving ? "Creating..." : "Start Exam"}
                 </Button>

@@ -83,6 +83,12 @@ interface QuestionBank {
   description: string | null;
 }
 
+interface QuestionOption {
+  id: string;
+  text: string;
+  is_correct: boolean;
+}
+
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   description: z.string().optional(),
@@ -154,10 +160,11 @@ const QuestionBankDetail = () => {
       if (data) {
         setQuestionBank(data);
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to load question bank",
+        description: err.message || "Failed to load question bank",
         variant: "destructive",
       });
       navigate("/questions"); // Redirect on error
@@ -181,10 +188,11 @@ const QuestionBankDetail = () => {
           questionBankId: cat.question_bank_id,
         })));
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to load categories",
+        description: err.message || "Failed to load categories",
         variant: "destructive",
       });
     }
@@ -241,7 +249,7 @@ const QuestionBankDetail = () => {
           explanation: q.explanation || "",
           imageUrl: q.image_url,
           categoryId: q.category_id || "",
-          options: q.question_options.map((opt: any) => ({
+          options: q.question_options.map((opt: QuestionOption) => ({
             id: opt.id,
             text: opt.text,
             isCorrect: opt.is_correct
@@ -252,10 +260,11 @@ const QuestionBankDetail = () => {
         
         setQuestions(formattedQuestions);
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to load questions",
+        description: err.message || "Failed to load questions",
         variant: "destructive",
       });
     } finally {
@@ -365,10 +374,11 @@ const QuestionBankDetail = () => {
       setDeletedCategoryIds([]);
       fetchQuestionBank();
       fetchCategories();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({ 
         title: "Error",
-        description: error.message || "Failed to update question bank",
+        description: err.message || "Failed to update question bank",
         variant: "destructive",
       });
     } finally {

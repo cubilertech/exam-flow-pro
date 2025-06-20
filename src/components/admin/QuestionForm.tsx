@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AlertTriangle, Image, Loader2, Plus, X, Trash2 } from "lucide-react";
 
@@ -80,7 +80,7 @@ interface QuestionFormProps {
   onFormSubmitted: () => void;
 }
 
-function normalizeHTML(input: any) {
+function normalizeHTML(input: string) {
   try {
     const maybeParsed = JSON.parse(input);
     return typeof maybeParsed === "string" ? maybeParsed : input;
@@ -143,26 +143,7 @@ export const QuestionForm = ({
     options?: string;
     optionTexts?: string;
   }>({});
-
-  const { manager, state, onChange } = useRemirror({
-    extensions: extensions,
-    content: formData.explanation,
-    stringHandler: htmlToProsemirrorNode,
-  });
-
-  useEffect(() => {
-    if (questionBankId) {
-      fetchCategories(questionBankId);
-    }
-  }, [questionBankId]);
-
-  useEffect(() => {
-    if (allCategories && allCategories.length > 0) {
-      setCategories(allCategories);
-    }
-  }, [allCategories]);
-
-  const fetchCategories = async (questionBankId: string) => {
+  const fetchCategories = useCallback(async (questionBankId: string) => {
     try {
       const { data, error } = await supabase
         .from("categories")
@@ -181,14 +162,36 @@ export const QuestionForm = ({
           })),
         );
       }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       toast({
         title: "Error",
-        description: error.message || "Failed to load categories",
+        description: err.message || "Failed to load categories",
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
+
+  
+const { manager, state, onChange } = useRemirror({
+    extensions: extensions,
+    content: formData.explanation,
+    stringHandler: htmlToProsemirrorNode,
+  });
+
+  useEffect(() => {
+    if (questionBankId) {
+      fetchCategories(questionBankId);
+    }
+  }, [questionBankId, fetchCategories]);
+
+  useEffect(() => {
+    if (allCategories && allCategories.length > 0) {
+      setCategories(allCategories);
+    }
+  }, [allCategories]);
+
+ 
 
   const handleTextChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -197,7 +200,7 @@ export const QuestionForm = ({
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleExplanationChange = (value: any) => {
+  const handleExplanationChange = (value: string) => {
     setFormData({ ...formData, explanation: JSON.stringify(value) });
   };
 
@@ -323,11 +326,12 @@ export const QuestionForm = ({
         title: "Image uploaded",
         description: "Image has been uploaded successfully",
       });
-    } catch (error: any) {
-      console.error("Upload error:", error);
+    } catch (error) {
+      const err = error as Error;
+      console.error("Upload error:", err);
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload image",
+        description: err.message || "Failed to upload image",
         variant: "destructive",
       });
     } finally {
@@ -454,12 +458,13 @@ export const QuestionForm = ({
       });
 
       onFormSubmitted();
-    } catch (error: any) {
-      console.error("Question save error:", error);
+    } catch (error) {
+      const err = error as Error;
+      console.error("Question save error:", err);
       toast({
         title: "Error",
         description:
-          error.message ||
+          err.message ||
           `Failed to ${initialData ? "update" : "create"} question`,
         variant: "destructive",
       });

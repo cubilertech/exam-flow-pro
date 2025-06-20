@@ -23,7 +23,7 @@ interface QuestionCardProps {
   onCheckAnswer?: () => void;
 }
 
-function normalizeHTML(input: any) {
+function normalizeHTML(input: string) {
   try {
     const maybeParsed = JSON.parse(input);
     return typeof maybeParsed === "string" ? maybeParsed : input;
