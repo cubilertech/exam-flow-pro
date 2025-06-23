@@ -246,9 +246,9 @@ export const CaseStudySubjectDetail = () => {
   // };
 
   const filteredCases = cases.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    (caseItem) =>
+      caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {

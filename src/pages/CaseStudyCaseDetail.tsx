@@ -4,6 +4,8 @@ import {
   PenSquare,
   Plus,
   Search,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -35,8 +36,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
 import {
   Sheet,
@@ -45,7 +44,22 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CaseQuestionForm } from "@/components/case-study/CaseQuestionForm";
-import { on } from "events";
+
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface Case {
   id: string;
@@ -81,6 +95,34 @@ const DemoQuestionData: Question[] = [
   },
   {
     questionId: "q2",
+    questionText: "What is the normal heart rate?",
+    answer: "60-100 bpm",
+    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
+    caseId: "1",
+  },
+    {
+    questionId: "q3",
+    questionText: "What is the normal heart rate?",
+    answer: "60-100 bpm",
+    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
+    caseId: "1",
+  },
+    {
+    questionId: "q4",
+    questionText: "What is the normal heart rate?",
+    answer: "60-100 bpm",
+    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
+    caseId: "1",
+  },
+    {
+    questionId: "q5",
+    questionText: "What is the normal heart rate?",
+    answer: "60-100 bpm",
+    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
+    caseId: "1",
+  },  
+  {
+    questionId: "q6",
     questionText: "Which valve is between left atrium and ventricle?",
     answer: "Mitral valve",
     explanation: "Mitral valve prevents backflow into left atrium.",
@@ -93,6 +135,52 @@ const formSchema = z.object({
   description: z.string().optional(),
 });
 
+const SortableItem = ({ question,}:{ question: Question;}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: question.questionId });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 cursor-move">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col md:flex-row  justify-between items-start gap-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-tight">
+              {question.questionText}
+            </h3>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-primary border-primary hover:bg-blue-50 hover:border-blue-300"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+    
+      </Card>
+    </div>
+  );
+};
+
 export const CaseStudyCaseDetail = () => {
   const { examId, subjectId, caseId } = useParams<{
     examId: string;
@@ -104,7 +192,8 @@ export const CaseStudyCaseDetail = () => {
   const isAdmin = user?.isAdmin || false;
 
   const [caseInfo, setCaseInfo] = useState<Case | null>(null);
-  const [questions, setQuestion] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questionOrder, setQuestionOrder] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,10 +211,8 @@ export const CaseStudyCaseDetail = () => {
 
   useEffect(() => {
     if (caseId) {
-         // fetchCase();
-      // fetchQuestions();
       setCaseInfo(DemoCaseInfoData);
-      setQuestion(DemoQuestionData);
+      setQuestions(DemoQuestionData);
     }
   }, [caseId]);
 
@@ -138,74 +225,38 @@ export const CaseStudyCaseDetail = () => {
     }
   }, [caseInfo, form]);
 
-  const filteredCases = questions.filter(
-    (c) =>
-      c.questionText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.explanation?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    const ordered = DemoQuestionData.filter((q) =>
+      q.questionText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.explanation.toLowerCase().includes(searchTerm.toLowerCase())
+    ).map((q) => q.questionId);
 
-   // const fetctCase = async () => {
-  //   try {
-  //     const { data, error } = await supabase
-  //       .from("cases")
-  //       .select("*")
-  //       .eq("caseId", caseId)
-  //       .single();
+    setQuestionOrder(ordered);
+  }, [questions, searchTerm]);
 
-  //     if (error) throw error;
-  //     setCaseInfo(data);
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to load subject info",
-  //       variant: "destructive",
-  //     });
-  //     navigate("/case-study-exams");
-  //   }
-  // };
+  const filteredQuestions = questionOrder
+    .map((id) => questions.find((q) => q.questionId === id))
+    .filter((q): q is Question => !!q);
 
- 
+  const sensors = useSensors(useSensor(PointerSensor));
 
-  // const fetchQuestions = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const { data, error } = await supabase
-  //       .from("questions")
-  //       .select("*")
-  //       .eq("case_id", caseId)
-  //       .order("order_index", { ascending: true });
-
-  //     if (error) throw error;
-  //     setQuestions(data);
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to load cases",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = questionOrder.indexOf(active.id);
+      const newIndex = questionOrder.indexOf(over.id);
+      const newOrder = arrayMove(questionOrder, oldIndex, newIndex);
+      setQuestionOrder(newOrder);
+    }
+  };
 
   const onEditCase = async (values: z.infer<typeof formSchema>) => {
     if (!caseId) return;
     try {
-    //   setIsSubmitting(true);
-
-    //   const { error } = await supabase
-    //     .from("cases")
-    //     .update({
-    //       name: values.name,
-    //       description: values.description || null,
-    //     })
-    //     .eq("caseId", caseId);
-        const error = null; // Simulating no error for demo
-
+      const error = null;
       if (error) throw error;
-
       toast({ title: "Updated", description: "Case updated successfully" });
-      setEditDialogOpen(false);
+      setSheetOpen(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -218,22 +269,18 @@ export const CaseStudyCaseDetail = () => {
   };
 
   const handleFormSubmitted = () => {
-    // This function can be used to refresh the questions after adding a new one
-    // For now, we will just log a message
-     setSheetOpen(false);
-    // setCurrentQuestion(null);
-    // fetchQuestions();
-    console.log("New question added, refresh questions if needed");
+    setSheetOpen(false);
   };
 
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">
-      <div className="flex flex-col md:flex-row  items-start md:items-center mb-6">
-        <Button variant="outline"
-        size="sm" onClick={() => navigate(-1)} className="mr-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
+        <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="mr-2">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">{caseInfo?.name}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
+          {caseInfo?.name}
+        </h1>
         <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
           <PenSquare className="mr-2 h-4 w-4" /> Edit Case
         </Button>
@@ -243,12 +290,12 @@ export const CaseStudyCaseDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Explanation</CardTitle>
-            <CardDescription>{caseInfo.description}</CardDescription>
+            <p className="text-muted-foreground">{caseInfo.description}</p>
           </CardHeader>
         </Card>
       )}
 
-      <div className="rounded-lg border p-6 ">
+      <div className="rounded-lg border p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="relative flex-1 mr-4">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -259,27 +306,20 @@ export const CaseStudyCaseDetail = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <Button onClick={() => setSheetOpen(true)} className="px-3 md:px-6 py-2 md:py-3">
             <Plus className="h-4 w-4 mr-2" /> Add Question
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCases.map((q) => (
-            <Card key={q.questionId} className="p-4">
-              <CardHeader>
-                <CardTitle className="text-lg">{q.questionText}</CardTitle>
-                <CardDescription>{q.answer}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {q.explanation}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={questionOrder} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-y-3">
+              {filteredQuestions.map((q) => (
+                <SortableItem key={q.questionId} question={q} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -296,7 +336,7 @@ export const CaseStudyCaseDetail = () => {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter subject name" {...field} />
+                      <Input placeholder="Enter case name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -309,27 +349,18 @@ export const CaseStudyCaseDetail = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Enter description (optional)"
-                        className="resize-none"
-                        {...field}
-                      />
+                      <Textarea placeholder="Enter description (optional)" className="resize-none" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <DialogFooter className="pt-4">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setEditDialogOpen(false)}
-                  disabled={isSubmitting}
-                >
+                <Button variant="outline" type="button" onClick={() => setEditDialogOpen(false)} disabled={isSubmitting}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Subject"}
+                  {isSubmitting ? "Updating..." : "Update Case"}
                 </Button>
               </DialogFooter>
             </form>
@@ -343,10 +374,7 @@ export const CaseStudyCaseDetail = () => {
             <SheetTitle>Add New Question</SheetTitle>
           </SheetHeader>
           <div className="py-4">
-            <CaseQuestionForm
-              caseId={caseId  || ""}
-              onFormSubmitted={handleFormSubmitted}
-            />
+            <CaseQuestionForm caseId={caseId || ""} onFormSubmitted={handleFormSubmitted} />
           </div>
         </SheetContent>
       </Sheet>
