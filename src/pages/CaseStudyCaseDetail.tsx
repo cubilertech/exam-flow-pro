@@ -110,14 +110,26 @@ const SortableItem = ({
     transition,
   };
 
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
+  }
+
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
       <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 cursor-move">
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-tight">
-              {selectedQuestion.question_text}
-            </h3>
+            <h3
+              className="text-base md:text-lg font-semibold text-gray-900 leading-tight"
+              dangerouslySetInnerHTML={{
+                __html: normalizeHTML(selectedQuestion.question_text),
+              }}
+            ></h3>
             <div className="flex gap-2 flex-shrink-0">
               <Button
                 data-no-drag
