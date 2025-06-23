@@ -12,38 +12,17 @@ import { Plus, ArrowLeft, BookOpen, FileText } from "lucide-react";
 import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreateCaseStudySubjectModal } from "@/components/case-study/CreateCaseStudySubjectModal";
+import { CreateCaseStudySubjectModal } from "@/components/case-study-admin/CreateCaseStudySubjectModal";
 
-const DemoSubjectData: Subject[] = [
-  {
-    id: "1",
-    name: "Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    case_count: 5,
-  },
-  {
-    id: "2",
-    name: "Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    case_count: 3,
-  },
-  {
-    id: "3",
-    name: "Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    case_count: 4,
-  },
-  {
-    id: "4",
-    name: "Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    case_count: 2,
-  },
-];
+interface CaseStudyExamInfo {
+  id: string;
+  title: string;
+  description: string;
+  order_index: number;
+  created_at: string;
+  subject_count?: number;
+  is_subscribed?: boolean;
+}
 
 interface Subject {
   id: string;
@@ -53,24 +32,6 @@ interface Subject {
   case_count?: number;
 }
 
-interface CaseStudyExamInfo {
-  id: string;
-  name: string;
-  description: string;
-  order_index: number;
-  created_at: string;
-  subject_count?: number;
-  is_subscribed?: boolean;
-}
-
-const DemoExamInfoData: CaseStudyExamInfo = {
-  id: "1",
-  name: "Exam Cardiology",
-  description: "Study of heart and blood vessels",
-  created_at: "2023-10-01T00:00:00Z",
-  order_index: 1,
-  subject_count: 5,
-};
 
 const CaseStudyExamDetail = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -182,7 +143,7 @@ const CaseStudyExamDetail = () => {
           Back
         </Button>
         <div className="mt-2 md:mt-0">
-          <h1 className="text-3xl font-bold tracking-tight">{examInfo.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{examInfo.title}</h1>
           {examInfo.description && (
             <p className="text-muted-foreground">{examInfo.description}</p>
           )}

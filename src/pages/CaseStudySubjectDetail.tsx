@@ -40,7 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
-import { CreateCaseStudyCaseModal } from "@/components/case-study/CreateCaseStudyCaseModal";
+import { CreateCaseStudyCaseModal } from "@/components/case-study-admin/CreateCaseStudyCaseModal";
 
 interface Subject {
   id: string;
@@ -161,9 +161,10 @@ export const CaseStudySubjectDetail = () => {
   const filteredCases = cases.filter(
     (c) =>
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase()),
+      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+ 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {
     if (!subjectId) return;
     try {
@@ -207,9 +208,11 @@ export const CaseStudySubjectDetail = () => {
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {subjectInfo?.name}
         </h1>
-        <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-          <PenSquare className="mr-2 h-4 w-4" /> Edit Subject
-        </Button>
+        {isAdmin && (
+          <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+            <PenSquare className="mr-2 h-4 w-4" /> Edit Subject
+          </Button>
+        )}
       </div>
 
       {subjectInfo?.description && (
@@ -234,12 +237,14 @@ export const CaseStudySubjectDetail = () => {
           </div>
 
           {/* disabled={loading} */}
-          <Button
-            onClick={() => setIsCreateSubjectModalOpen(true)}
-            className="px-4 md:px-6 py-2 md:py-3"
-          >
-            <Plus className="h-2 w-2 mr-2" /> Add Case
-          </Button>
+          {isAdmin && (
+            <Button
+              onClick={() => setIsCreateSubjectModalOpen(true)}
+              className="px-4 md:px-6 py-2 md:py-3"
+            >
+              <Plus className="h-2 w-2 mr-2" /> Add Case
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -249,7 +254,7 @@ export const CaseStudySubjectDetail = () => {
               className="cursor-pointer transition-shadow hover:shadow-lg"
               onClick={() =>
                 navigate(
-                  `/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`,
+                  `/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`
                 )
               }
             >
@@ -268,6 +273,7 @@ export const CaseStudySubjectDetail = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
 
           {filteredCases.length === 0 && (
             <div className="text-center py-12">
@@ -282,7 +288,6 @@ export const CaseStudySubjectDetail = () => {
               </p>
             </div>
           )}
-        </div>
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

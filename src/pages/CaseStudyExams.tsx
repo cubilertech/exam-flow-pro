@@ -12,11 +12,11 @@ import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { CreateCaseStudyExamModal } from "@/components/case-study/CreateCaseStudyExamModal";
+import { CreateCaseStudyExamModal } from "@/components/case-study-admin/CreateCaseStudyExamModal";
 
 interface CaseStudyExam {
   id: string;
-  name: string;
+  title: string;
   description: string;
   created_at: string;
   subjectCount: number;
@@ -42,6 +42,7 @@ const CaseStudyExams = () => {
         .from("exams_case")
         .select("*, subjects(*)")
         .order("created_at", { ascending: false });
+        console.log("Fetched exams data:", examsData);
 
       if (examsData.length > 0)
         examsWithSubjectCount = examsData.map((exam) => ({
@@ -50,6 +51,7 @@ const CaseStudyExams = () => {
         }));
 
       setExams(examsWithSubjectCount || []);
+      
       if (examsError) throw examsError;
     } catch (error) {
       console.error("Error fetching case study exams:", error);
@@ -60,11 +62,12 @@ const CaseStudyExams = () => {
   };
 
   const handleExamClick = (exam: CaseStudyExam) => {
-    if (isAdmin) {
+    // if (isAdmin) {
       navigate(`/case-study-exams/${exam.id}`);
-    } else {
-      toast.error("Please subscribe to this exam to access it");
-    }
+    // } else {
+    //   console.log("Exam clicked:", exam); ******************* for subscription logic
+    //   toast.error("Please subscribe to this exam to access it");
+    // }
   };
 
   if (loading) {
