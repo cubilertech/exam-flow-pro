@@ -1,13 +1,16 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { title } from 'process';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CreateCaseStudyExamModalProps {
   open: boolean;
@@ -52,8 +55,8 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
       onOpenChange(false);
       onSuccess();
     } catch (error) {
-      console.error('Error creating case study exam:', error);
-      toast.error('Failed to create case study exam');
+      console.error("Error creating case study exam:", error);
+      toast.error("Failed to create case study exam");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,13 +84,18 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Enter exam description (optional)"
               rows={3}
             />
@@ -98,7 +106,7 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Exam'}
+              {isSubmitting ? "Creating..." : "Create Exam"}
             </Button>
           </div>
         </form>
