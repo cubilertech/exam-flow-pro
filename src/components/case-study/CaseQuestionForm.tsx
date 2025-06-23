@@ -8,11 +8,7 @@ import {
   BulletListExtension,
   TableExtension,
 } from "remirror/extensions";
-import {
-  Remirror,
-  ThemeProvider,
-  useRemirror,
-} from "@remirror/react";
+import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
 import { htmlToProsemirrorNode } from "remirror";
 import {
   ToggleCodeButton,
@@ -32,19 +28,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RemirrorFields {
-  question: string;
-  answer: string;
+  question_text: string;
+  correct_answer: string;
   explanation: string;
 }
 interface Question {
-  questionId: string;
-  questionText: string;
-  answer: string;
-  explaination: string;
-  caseId: string;
-} 
+  id: string;
+  question_text: string;
+  correct_answer: string;
+  explanation: string;
+}
 
 interface CaseQuestionFormProps {
   caseId: string;
@@ -52,11 +48,15 @@ interface CaseQuestionFormProps {
   initialData: Question | null;
 }
 
-export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: CaseQuestionFormProps) => {
+export const CaseQuestionForm = ({
+  caseId,
+  onFormSubmitted,
+  initialData,
+}: CaseQuestionFormProps) => {
   const [formData, setFormData] = useState<RemirrorFields>({
-    question: initialData?.questionText || "",
-    answer: initialData?.answer  || "",
-    explanation: initialData?.explaination || "",
+    question_text: initialData?.question_text || "",
+    correct_answer: initialData?.correct_answer || "",
+    explanation: initialData?.explanation || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,13 +76,13 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: Case
 
   const questionEditor = useRemirror({
     extensions,
-    content: formData.question,
+    content: formData.question_text,
     stringHandler: htmlToProsemirrorNode,
   });
 
   const answerEditor = useRemirror({
     extensions,
-    content: formData.answer,
+    content: formData.correct_answer,
     stringHandler: htmlToProsemirrorNode,
   });
 
@@ -98,13 +98,11 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: Case
 
   const validateForm = () => {
     return (
-      formData.question.trim() &&
-      formData.answer.trim() &&
+      formData.question_text.trim() &&
+      formData.correct_answer.trim() &&
       formData.explanation.trim()
     );
   };
-  console.log("Form Data:", initialData, formData);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -117,37 +115,59 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: Case
       });
       return;
     }
-  
+
     setIsSubmitting(true);
 
     try {
-      console.log("Form submitted:", formData);
-      // Your Supabase save logic here
-      // await supabase.from('case_questions').insert({
-      //   case_id: caseId,
-      //   question: formData.question,
-      //   answer: formData.answer,
-      //   explanation: formData.explanation,
-      // });
-      // Simulate a successful submission
-      onFormSubmitted();
+      if (initialData?.id) {
+        // Update existing question
+        await supabase
+          .from("case_questions")
+          .update({
+            question_text: formData.question_text,
+            correct_answer: formData.correct_answer,
+            explanation: formData.explanation,
+          })
+          .eq("id", initialData.id);
+      } else {
+        // Create new question
+        await supabase.from("case_questions").insert({
+          case_id: caseId,
+          question_text: formData.question_text,
+          correct_answer: formData.correct_answer,
+          explanation: formData.explanation,
+        });
+      }
+
       setShowErrors(false);
-      setFormData({ question: "", answer: "", explanation: "" });
-    //  toast({
-    //     title: "Success",
-    //     description: initialData
-    //       ? "Question updated successfully"
-    //       : "Question created successfully",
-    //   });   
+      setFormData({
+        question_text: "",
+        correct_answer: "",
+        explanation: "",
+      });
+
+      toast({
+        title: "Success",
+        description: initialData?.id
+          ? "Question updated successfully"
+          : "Question created successfully",
+      });
+
+      onFormSubmitted();
     } catch (err) {
       console.error("Submit error:", err);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    setFormData({ question: "", answer: "", explanation: "" });
+    setFormData({ question_text: "", correct_answer: "", explanation: "" });
     setShowErrors(false);
     onFormSubmitted(); // Call the callback to reset the form state
   };
@@ -171,7 +191,7 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: Case
             manager={questionEditor.manager}
             initialContent={questionEditor.state}
             onChange={({ helpers }) =>
-              handleRemirrorChange("question", helpers.getHTML())
+              handleRemirrorChange("question_text", helpers.getHTML())
             }
             autoRender="end"
             i18nFormat={i18nFormat}
@@ -199,7 +219,7 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: Case
             manager={answerEditor.manager}
             initialContent={answerEditor.state}
             onChange={({ helpers }) =>
-              handleRemirrorChange("answer", helpers.getHTML())
+              handleRemirrorChange("correct_answer", helpers.getHTML())
             }
             autoRender="end"
             i18nFormat={i18nFormat}

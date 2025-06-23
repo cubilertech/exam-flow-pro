@@ -276,10 +276,10 @@ export const CaseStudySubjectDetail = () => {
         </div>
 
           {filteredCases.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 ">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                No Case available
+                No Subject available
               </h3>
               <p className="text-sm text-muted-foreground">
                 {isAdmin
