@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { title } from 'process';
 
 interface CreateCaseStudyExamModalProps {
   open: boolean;
@@ -14,9 +15,14 @@ interface CreateCaseStudyExamModalProps {
   onSuccess: () => void;
 }
 
+interface FormData {
+  title: string;
+  description: string;
+}
+
 export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: CreateCaseStudyExamModalProps) => {
-  const [formData, setFormData] = useState({
-    name: '',
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
     description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,8 +30,8 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
-      toast.error('Please enter an exam name');
+    if (!formData.title.trim()) {
+      toast.error('Please enter an exam title');
       return;
     }
 
@@ -33,16 +39,16 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
       setIsSubmitting(true);
       
       const { error } = await supabase
-        .from('case_study_exams')
+        .from('exams')
         .insert({
-          name: formData.name.trim(),
+          title: formData.title.trim(),
           description: formData.description.trim() || null
         });
 
       if (error) throw error;
 
       toast.success('Case study exam created successfully');
-      setFormData({ name: '', description: '' });
+      setFormData({ title: '', description: '' });
       onOpenChange(false);
       onSuccess();
     } catch (error) {
@@ -54,7 +60,7 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '' });
+    setFormData({ title: '', description: '' });
     onOpenChange(false);
   };
 
@@ -68,10 +74,10 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
           <div className="space-y-2">
             <Label htmlFor="name">Exam Name *</Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter exam name"
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Enter exam title"
               required
             />
           </div>

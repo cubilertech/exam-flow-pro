@@ -16,7 +16,7 @@ import { CreateCaseStudyExamModal } from "@/components/case-study/CreateCaseStud
 
 interface CaseStudyExam {
   id: string;
-  title: string;
+  name: string;
   description: string;
   created_at: string;
   subject_count?: number;
@@ -74,22 +74,21 @@ const CaseStudyExams = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  useEffect(() => { 
-    fetchExams();
-  }, []);
+  // useEffect(() => { ***************
+  //   fetchExams();
+  // }, []);
 
   const fetchExams = async () => {
     try {
       setLoading(true);
 
       // Fetch case study exams
-      const { data: examsData, error: examsError } = await supabase 
-        .from('exams')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // const { data: examsData, error: examsError } = await supabase ****************
+      //   .from('case_study_exams')
+      //   .select('*')
+      //   .order('created_at', { ascending: false });
 
-      setExams(examsData || []);
-      // console.log("Fetched exams:", examsData);
+      const examsError = null;
 
       if (examsError) throw examsError;
 
