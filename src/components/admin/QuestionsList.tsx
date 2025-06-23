@@ -195,7 +195,7 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
             onClick={() => setSearchTerm("")}
             className="mt-2"
           >
-            Clear search
+            Clear search 
           </Button>
         </div>
       )}

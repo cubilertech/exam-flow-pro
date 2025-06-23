@@ -15,7 +15,7 @@ interface CreateSubjectModalProps {
   onSuccess: () => void;
 }
 
-export const CreateSubjectModal = ({ open, onOpenChange, examId, onSuccess }: CreateSubjectModalProps) => {
+export const CreateCaseStudySubjectModal = ({ open, onOpenChange, examId, onSuccess }: CreateSubjectModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     description: ''

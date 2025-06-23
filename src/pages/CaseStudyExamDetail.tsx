@@ -7,8 +7,36 @@ import { Plus, ArrowLeft, BookOpen, FileText } from "lucide-react";
 import { useAppSelector } from '@/lib/hooks';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CreateSubjectModal } from '@/components/case-study/CreateSubjectModal';
+import { CreateCaseStudySubjectModal } from '@/components/case-study/CreateCaseStudySubjectModal';
 
+
+const DemoSubjectData : Subject[] = [
+  {  id: '1',
+    name: 'Cardiology', 
+    description: 'Study of heart and blood vessels',
+    order_index: 1,
+    case_count: 5
+  },
+  { id: '2',
+    name: 'Neurology', 
+    description: 'Study of the nervous system',
+    order_index: 2,
+    case_count: 3
+  },
+  { id: '3',
+    name: 'Oncology', 
+    description: 'Study of cancer',
+    order_index: 3,
+    case_count: 4
+  },
+  { id: '4',
+    name: 'Pediatrics', 
+    description: 'Study of children’s health',
+    order_index: 4,
+    case_count: 2
+  }
+]
+  
 interface Subject {
   id: string;
   name: string;
@@ -17,11 +45,24 @@ interface Subject {
   case_count?: number;
 }
 
-interface ExamInfo {
+interface CaseStudyExamInfo {
   id: string;
   name: string;
   description: string;
+  order_index: number;
+  created_at: string;
+  subject_count?: number;
+  is_subscribed?: boolean;
 }
+
+const DemoExamInfoData: CaseStudyExamInfo = {
+  id: "1",
+  name: "Exam Cardiology",
+  description: "Study of heart and blood vessels",
+  created_at: "2023-10-01T00:00:00Z",
+  order_index: 1,
+  subject_count: 5,
+};
 
 const CaseStudyExamDetail = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -29,58 +70,69 @@ const CaseStudyExamDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
   
-  const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
+  const [examInfo, setExamInfo] = useState<CaseStudyExamInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] = useState(false);
 
   useEffect(() => {
-    if (examId) {
-      fetchExamData();
-    }
+    // if (examId) {
+    //   fetchExamData();
+    // }         
+
+    setSubjects(DemoSubjectData);
+    setExamInfo(DemoExamInfoData);
+
+    setLoading(false); // ← fix
   }, [examId]);
 
   const fetchExamData = async () => {
     if (!examId) return;
     
     try {
-      setLoading(true);
+      // setLoading(true);
       
       // Fetch exam info
-      const { data: examData, error: examError } = await supabase
-        .from('case_study_exams')
-        .select('*')
-        .eq('id', examId)
-        .single();
+      // const { data: examData, error: examError } = await supabase *******************
+      //   .from('case_study_exams')
+      //   .select('*')
+      //   .eq('id', examId)
+      //   .single();
 
-      if (examError) throw examError;
+      const examData = {
+        id: 'demo-exam',
+        name: 'Demo Case Study Exam',
+        description: 'This is a demo exam for case study subjects'
+      };
+
+      // if (examError) throw examError; ******************
       setExamInfo(examData);
 
       // Fetch subjects
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('case_study_subjects')
-        .select('*')
-        .eq('exam_id', examId)
-        .order('order_index', { ascending: true });
+      // const { data: subjectsData, error: subjectsError } = await supabase *******************
+      //   .from('case_study_subjects')
+      //   .select('*')
+      //   .eq('exam_id', examId)
+      //   .order('order_index', { ascending: true });
 
-      if (subjectsError) throw subjectsError;
+      // if (subjectsError) throw subjectsError; ****************
 
-      // For each subject, get case count
-      const subjectsWithCaseCount = await Promise.all(
-        (subjectsData || []).map(async (subject) => {
-          const { count: caseCount } = await supabase
-            .from('case_studies')
-            .select('*', { count: 'exact', head: true })
-            .eq('subject_id', subject.id);
+      // For each subject, get case count************************
+      // const subjectsWithCaseCount = await Promise.all(
+      //   (subjectsData || []).map(async (subject) => {
+      //     const { count: caseCount } = await supabase
+      //       .from('case_studies')
+      //       .select('*', { count: 'exact', head: true })
+      //       .eq('subject_id', subject.id);
 
-          return {
-            ...subject,
-            case_count: caseCount || 0
-          };
-        })
-      );
+      //     return {
+      //       ...subject,
+      //       case_count: caseCount || 0
+      //     };
+      //   })
+      // );
 
-      setSubjects(subjectsWithCaseCount);
+      // setSubjects(subjectsWithCaseCount); **************
     } catch (error) {
       console.error('Error fetching exam data:', error);
       toast.error('Failed to load exam data');
@@ -88,6 +140,8 @@ const CaseStudyExamDetail = () => {
       setLoading(false);
     }
   };
+
+
 
   const handleSubjectClick = (subject: Subject) => {
     navigate(`/case-study-exams/${examId}/subjects/${subject.id}`);
@@ -124,7 +178,9 @@ const CaseStudyExamDetail = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center space-x-4">
+      
+      {/* <div className="flex flex-col md:flex-row items-start md:items-center space-x-4"> */}
+      <div className="flex flex-col md:flex-row items-start md:items-center space-x-4">
         <Button 
           variant="outline" 
           size="sm"
@@ -133,7 +189,7 @@ const CaseStudyExamDetail = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <div>
+        <div className='mt-2 md:mt-0'>
           <h1 className="text-3xl font-bold tracking-tight">{examInfo.name}</h1>
           {examInfo.description && (
             <p className="text-muted-foreground">{examInfo.description}</p>
@@ -193,7 +249,7 @@ const CaseStudyExamDetail = () => {
       )}
 
       {isAdmin && (
-        <CreateSubjectModal
+        <CreateCaseStudySubjectModal
           open={isCreateSubjectModalOpen}
           onOpenChange={setIsCreateSubjectModalOpen}
           examId={examId!}

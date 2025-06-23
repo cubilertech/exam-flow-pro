@@ -90,7 +90,7 @@ function normalizeHTML(input: string) {
 // this function is used to normalize the HTML input
 const extensions = () => [
   new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
-  new CodeExtension(),
+  new CodeExtension(),  
   new BoldExtension({}),
   new BlockquoteExtension(),
   new NodeFormattingExtension({}),
