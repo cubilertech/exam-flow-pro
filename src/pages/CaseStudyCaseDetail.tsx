@@ -58,79 +58,29 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Case {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  subject_id: number;
+  scenario: string;
   order_index: number;
   question_count: number;
 }
 
 interface Question {
-  questionId: string;
-  questionText: string;
-  answer: string;
-  explaination: string;
-  caseId: string;
+  id: string;
+  question_text: string;
+  case_id: number;
+  correct_answer: string;
+  explanation: string;
+  order_index: number;
 }
 
-const DemoCaseInfoData: Case = {
-  id: "1",
-  name: "Case Cardiology",
-  description: "Study of heart and blood vessels",
-  order_index: 1,
-  question_count: 5,
-};
-
-const DemoQuestionData: Question[] = [
-  {
-    questionId: "q1",
-    questionText: "What is the normal heart rate?",
-    answer: "60-100 bpm",
-    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
-    caseId: "1",
-  },
-  {
-    questionId: "q2",
-    questionText: "What is the normal heart rate?",
-    answer: "60-100 bpm",
-    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
-    caseId: "1",
-  },
-  {
-    questionId: "q3",
-    questionText: "What is the normal heart rate?",
-    answer: "60-100 bpm",
-    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
-    caseId: "1",
-  },
-  {
-    questionId: "q4",
-    questionText: "What is the normal heart rate?",
-    answer: "60-100 bpm",
-    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
-    caseId: "1",
-  },
-  {
-    questionId: "q5",
-    questionText: "What is the normal heart rate?",
-    answer: "60-100 bpm",
-    explanation: "Normal adult resting heart rate is 60–100 beats per minute.",
-    caseId: "1",
-  },
-  {
-    questionId: "q6",
-    questionText: "Which valve is between left atrium and ventricle?",
-    answer: "Mitral valve",
-    explanation: "Mitral valve prevents backflow into left atrium.",
-    caseId: "1",
-  },
-];
-
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  description: z.string().optional(),
+  title: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  scenario: z.string().optional(),
 });
 
 const SortableItem = ({
@@ -143,7 +93,7 @@ const SortableItem = ({
   onEdit: (question: Question) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: selectedQuestion.questionId });
+    useSortable({ id: selectedQuestion.id });
   const customListeners = {
     ...listeners,
     onPointerDown: (event: React.PointerEvent) => {
@@ -166,7 +116,7 @@ const SortableItem = ({
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-tight">
-              {selectedQuestion.questionText}
+              {selectedQuestion.question_text}
             </h3>
             <div className="flex gap-2 flex-shrink-0">
               <Button
@@ -214,7 +164,7 @@ export const CaseStudyCaseDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<Question | null>(
-    null
+    null,
   );
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -223,39 +173,66 @@ export const CaseStudyCaseDetail = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
+      title: "",
+      scenario: "",
     },
   });
 
   useEffect(() => {
     if (caseId) {
-      setCaseInfo(DemoCaseInfoData);
-      setQuestions(DemoQuestionData);
+      fetchCaseDetail(caseId);
+      fetchQuestions(caseId);
     }
   }, [caseId]);
 
   useEffect(() => {
     if (caseInfo) {
       form.reset({
-        name: caseInfo.name,
-        description: caseInfo.description || "",
+        title: caseInfo.title,
+        scenario: caseInfo.scenario || "",
       });
     }
   }, [caseInfo, form]);
 
   useEffect(() => {
-    const ordered = DemoQuestionData.filter(
-      (q) =>
-        q.questionText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        q.explaination.toLowerCase().includes(searchTerm.toLowerCase())
-    ).map((q) => q.questionId);
+    const ordered = questions
+      .filter(
+        (q) =>
+          q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          q.explanation.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+      .map((q) => q.id);
 
     setQuestionOrder(ordered);
   }, [questions, searchTerm]);
 
+  const fetchCaseDetail = async (caseId: string) => {
+    const { data, error } = await supabase
+      .from("cases")
+      .select("*")
+      .eq("id", caseId)
+      .order("order_index", { ascending: true })
+      .single();
+
+    if (data) {
+      setCaseInfo(data);
+    }
+  };
+
+  const fetchQuestions = async (caseId: string) => {
+    const { data, error } = await supabase
+      .from("case_questions")
+      .select("*")
+      .eq("case_id", caseId)
+      .order("order_index", { ascending: true });
+
+    if (data.length > 0) {
+      setQuestions(data);
+    }
+  };
+
   const filteredQuestions = questionOrder
-    .map((id) => questions.find((q) => q.questionId === id))
+    .map((id) => questions.find((q) => q.id === id))
     .filter((q): q is Question => !!q);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -282,9 +259,12 @@ export const CaseStudyCaseDetail = () => {
     if (!questionToDelete) return;
     try {
       setIsDeleting(true);
-      const updated = questions.filter(
-        (q) => q.questionId !== questionToDelete.questionId
-      );
+      const { error: deleteError } = await supabase
+        .from("case_questions")
+        .delete()
+        .eq("id", questionToDelete.id);
+      if (deleteError) throw deleteError;
+      const updated = questions.filter((q) => q.id !== questionToDelete.id);
       setQuestions(updated);
       toast({ title: "Deleted", description: "Question removed." });
     } catch {
@@ -308,8 +288,15 @@ export const CaseStudyCaseDetail = () => {
   const onEditCase = async (values: z.infer<typeof formSchema>) => {
     if (!caseId) return;
     try {
-      const error = null;
+      const { error, data } = await supabase
+        .from("cases")
+        .update({
+          title: values.title,
+          scenario: values.scenario || null,
+        })
+        .eq("id", caseId);
       if (error) throw error;
+      await fetchCaseDetail(caseId);
       toast({ title: "Updated", description: "Case updated successfully" });
       setSheetOpen(false);
     } catch (error) {
@@ -320,13 +307,14 @@ export const CaseStudyCaseDetail = () => {
       });
     } finally {
       setIsSubmitting(false);
+      setEditDialogOpen(false);
     }
   };
 
   const handleFormSubmitted = () => {
     setSheetOpen(false);
     setCurrentQuestion(null);
-    // fetchQuestions();
+    fetchQuestions(caseId);
   };
 
   return (
@@ -341,18 +329,18 @@ export const CaseStudyCaseDetail = () => {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
-          {caseInfo?.name}
+          {caseInfo?.title}
         </h1>
         <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
           <PenSquare className="mr-2 h-4 w-4" /> Edit Case
         </Button>
       </div>
 
-      {caseInfo?.description && (
+      {caseInfo?.scenario && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Explanation</CardTitle>
-            <p className="text-muted-foreground">{caseInfo.description}</p>
+            <p className="text-muted-foreground">{caseInfo.scenario}</p>
           </CardHeader>
         </Card>
       )}
@@ -391,7 +379,7 @@ export const CaseStudyCaseDetail = () => {
             <div className="flex flex-col gap-y-3">
               {filteredQuestions.map((question) => (
                 <SortableItem
-                  key={question.questionId}
+                  key={question.id}
                   selectedQuestion={question}
                   onDelete={handleDeleteQuestion}
                   onEdit={handleEditQuestion}
@@ -414,7 +402,7 @@ export const CaseStudyCaseDetail = () => {
             >
               <FormField
                 control={form.control}
-                name="name"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Name</FormLabel>
@@ -427,10 +415,10 @@ export const CaseStudyCaseDetail = () => {
               />
               <FormField
                 control={form.control}
-                name="description"
+                name="scenario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Scenario</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Enter description (optional)"
@@ -489,7 +477,7 @@ export const CaseStudyCaseDetail = () => {
             <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete question "
-              {questionToDelete?.questionText}"?
+              {questionToDelete?.question_text}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
