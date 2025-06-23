@@ -39,9 +39,8 @@ const CaseStudyExams = () => {
       setLoading(true);
       let examsWithSubjectCount = [];
       const { data: examsData, error: examsError } = await supabase
-        .from("exams")
+        .from("exams_case")
         .select("*, subjects(*)")
-        .is("question_bank_id", null)
         .order("created_at", { ascending: false });
 
       if (examsData.length > 0)

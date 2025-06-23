@@ -1,12 +1,16 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CreateSubjectModalProps {
   open: boolean;
@@ -15,48 +19,51 @@ interface CreateSubjectModalProps {
   onSuccess: () => void;
 }
 
-export const CreateCaseStudySubjectModal = ({ open, onOpenChange, examId, onSuccess }: CreateSubjectModalProps) => {
+export const CreateCaseStudySubjectModal = ({
+  open,
+  onOpenChange,
+  examId,
+  onSuccess,
+}: CreateSubjectModalProps) => {
   const [formData, setFormData] = useState({
-    name: '',
-    description: ''
+    name: "",
+    description: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
-      toast.error('Please enter a subject name');
+      toast.error("Please enter a subject name");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
-      const { error } = await supabase
-        .from('case_study_subjects')
-        .insert({
-          exam_id: examId,
-          name: formData.name.trim(),
-          description: formData.description.trim() || null
-        });
+
+      const { error } = await supabase.from("subjects").insert({
+        exams_case_id: examId,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+      });
 
       if (error) throw error;
 
-      toast.success('Subject created successfully');
-      setFormData({ name: '', description: '' });
+      toast.success("Subject created successfully");
+      setFormData({ name: "", description: "" });
       onOpenChange(false);
       onSuccess();
     } catch (error) {
-      console.error('Error creating subject:', error);
-      toast.error('Failed to create subject');
+      console.error("Error creating subject:", error);
+      toast.error("Failed to create subject");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '' });
+    setFormData({ name: "", description: "" });
     onOpenChange(false);
   };
 
@@ -72,18 +79,25 @@ export const CreateCaseStudySubjectModal = ({ open, onOpenChange, examId, onSucc
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
               placeholder="Enter subject name"
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               placeholder="Enter subject description (optional)"
               rows={3}
             />
@@ -94,7 +108,7 @@ export const CreateCaseStudySubjectModal = ({ open, onOpenChange, examId, onSucc
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Subject'}
+              {isSubmitting ? "Creating..." : "Create Subject"}
             </Button>
           </div>
         </form>

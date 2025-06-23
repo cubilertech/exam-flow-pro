@@ -262,6 +262,29 @@ export type Database = {
           },
         ]
       }
+      exams_case: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+      }
       flagged_questions: {
         Row: {
           created_at: string
@@ -466,10 +489,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "subjects_exam_id_fkey"
-            columns: ["exam_id"]
+            foreignKeyName: "subjects_exams_case_id_fkey"
+            columns: ["exams_case_id"]
             isOneToOne: false
-            referencedRelation: "exams"
+            referencedRelation: "exams_case"
             referencedColumns: ["id"]
           },
         ]

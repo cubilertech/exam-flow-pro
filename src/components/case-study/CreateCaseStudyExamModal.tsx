@@ -40,7 +40,7 @@ export const CreateCaseStudyExamModal = ({
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase.from("exams").insert({
+      const { error } = await supabase.from("exams_case").insert({
         title: formData.name.trim(),
         description: formData.description.trim() || null,
       });
