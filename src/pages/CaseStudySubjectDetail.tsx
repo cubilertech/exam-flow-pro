@@ -59,96 +59,6 @@ interface Case {
   question_count: number;
 }
 
-<<<<<<< HEAD
-const DemoCaseData: Case[] = [
-  {
-    id: "1",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "2",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "3",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "4",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-  {
-    id: "5",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "6",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "7",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "8",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-  {
-    id: "9",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "10",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "11",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "12",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-];
-
-=======
->>>>>>> ca985c2f8e5af75cfb02243a00f421e73513e355
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   description: z.string().optional(),
@@ -249,15 +159,9 @@ export const CaseStudySubjectDetail = () => {
   };
 
   const filteredCases = cases.filter(
-<<<<<<< HEAD
-    (caseItem) =>
-      caseItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.description?.toLowerCase().includes(searchTerm.toLowerCase())
-=======
     (c) =>
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.scenario?.toLowerCase().includes(searchTerm.toLowerCase()),
->>>>>>> ca985c2f8e5af75cfb02243a00f421e73513e355
   );
 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {

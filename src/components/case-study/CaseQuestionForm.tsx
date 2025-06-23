@@ -38,17 +38,25 @@ interface RemirrorFields {
   answer: string;
   explanation: string;
 }
+interface Question {
+  questionId: string;
+  questionText: string;
+  answer: string;
+  explaination: string;
+  caseId: string;
+} 
 
 interface CaseQuestionFormProps {
   caseId: string;
   onFormSubmitted: () => void;
+  initialData: Question | null;
 }
 
-export const CaseQuestionForm = ({ caseId, onFormSubmitted }: CaseQuestionFormProps) => {
+export const CaseQuestionForm = ({ caseId, onFormSubmitted , initialData }: CaseQuestionFormProps) => {
   const [formData, setFormData] = useState<RemirrorFields>({
-    question: "",
-    answer: "",
-    explanation: "",
+    question: initialData?.questionText || "",
+    answer: initialData?.answer  || "",
+    explanation: initialData?.explaination || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +103,7 @@ export const CaseQuestionForm = ({ caseId, onFormSubmitted }: CaseQuestionFormPr
       formData.explanation.trim()
     );
   };
+  console.log("Form Data:", initialData, formData);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
