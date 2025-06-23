@@ -46,112 +46,18 @@ interface Subject {
   id: string;
   name: string;
   description: string;
+  exams_case_id: number;
   order_index: number;
   case_count?: number;
 }
-
-const DemoSubjectInfoData: Subject = {
-  id: "1",
-  name: "Subject Cardiology",
-  description: "Study of heart and blood vessels",
-  order_index: 1,
-  case_count: 5,
-};
-
 interface Case {
   id: string;
-  name: string;
-  description: string;
+  subject_id: number;
+  title: string;
+  scenario: string;
   order_index: number;
   question_count: number;
 }
-
-const DemoCaseData: Case[] = [
-  {
-    id: "1",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "2",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "3",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "4",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-  {
-    id: "1",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "2",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "3",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "4",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-  {
-    id: "1",
-    name: "Case Cardiology",
-    description: "Study of heart and blood vessels",
-    order_index: 1,
-    question_count: 5,
-  },
-  {
-    id: "2",
-    name: "case Neurology",
-    description: "Study of the nervous system",
-    order_index: 2,
-    question_count: 3,
-  },
-  {
-    id: "3",
-    name: "case Oncology",
-    description: "Study of cancer",
-    order_index: 3,
-    question_count: 4,
-  },
-  {
-    id: "4",
-    name: "case Pediatrics",
-    description: "Study of children’s health",
-    order_index: 4,
-    question_count: 2,
-  },
-];
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -159,7 +65,10 @@ const formSchema = z.object({
 });
 
 export const CaseStudySubjectDetail = () => {
-  const { examId ,subjectId } = useParams<{ examId : string ,subjectId: string }>();
+  const { examId, subjectId } = useParams<{
+    examId: string;
+    subjectId: string;
+  }>();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
@@ -170,7 +79,8 @@ export const CaseStudySubjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] = useState(false);
+  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =
+    useState(false);
 
   const { toast } = useToast();
 
@@ -184,11 +94,8 @@ export const CaseStudySubjectDetail = () => {
 
   useEffect(() => {
     if (subjectId) {
-      // fetchSubject();
-      // fetchCases();
-      setSubjectInfo(DemoSubjectInfoData); // For demo purposes, replace with actual fetch
-      setCases(DemoCaseData);
-
+      fetchSubject();
+      fetchCases();
     }
   }, [subjectId]);
 
@@ -201,54 +108,60 @@ export const CaseStudySubjectDetail = () => {
     }
   }, [subjectInfo, form]);
 
-  // const fetchSubject = async () => {
-  //   try {
-  //     const { data, error } = await supabase
-  //       .from("subjects")
-  //       .select("*")
-  //       .eq("subjectId", subjectId)
-  //       .single();
+  const fetchSubject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("*")
+        .eq("id", subjectId)
+        .single();
 
-  //     if (error) throw error;
-  //     setSubjectInfo(data);
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to load subject info",
-  //       variant: "destructive",
-  //     });
-  //     navigate("/case-study-exams");
-  //   }
-  // };
+      if (error) throw error;
+      setSubjectInfo(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load subject info",
+        variant: "destructive",
+      });
+      navigate("/case-study-exams");
+    }
+  };
 
- 
+  const fetchCases = async () => {
+    try {
+      setLoading(true);
+      let caseWithQuestions = [];
+      const { data, error } = await supabase
+        .from("cases")
+        .select("*, case_questions(*)")
+        .eq("subject_id", subjectId)
+        .order("order_index", { ascending: true });
 
-  // const fetchCases = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const { data, error } = await supabase
-  //       .from("cases")
-  //       .select("*")
-  //       .eq("subject_id", subjectId)
-  //       .order("order_index", { ascending: true });
+      if (error) throw error;
+      if (data.length > 0) {
+        caseWithQuestions = data.map((c) => ({
+          ...c,
+          question_count: c.case_questions?.length || 0,
+        }));
+      }
 
-  //     if (error) throw error;
-  //     setCases(data);
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to load cases",
-  //       variant: "destructive",
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+      setCases(caseWithQuestions);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load cases",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredCases = cases.filter(
     (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {
@@ -262,7 +175,7 @@ export const CaseStudySubjectDetail = () => {
           name: values.name,
           description: values.description || null,
         })
-        .eq("subjectId", subjectId);
+        .eq("id", subjectId);
 
       if (error) throw error;
 
@@ -283,13 +196,17 @@ export const CaseStudySubjectDetail = () => {
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">
       <div className="flex flex-col md:flex-row  items-start md:items-center mb-6">
-        <Button  
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          onClick={() => navigate(-1)} className="mr-2">
+          onClick={() => navigate(-1)}
+          className="mr-2"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">{subjectInfo?.name}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
+          {subjectInfo?.name}
+        </h1>
         <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
           <PenSquare className="mr-2 h-4 w-4" /> Edit Subject
         </Button>
@@ -317,7 +234,10 @@ export const CaseStudySubjectDetail = () => {
           </div>
 
           {/* disabled={loading} */}
-          <Button onClick={() => setIsCreateSubjectModalOpen(true)}  className="px-4 md:px-6 py-2 md:py-3"> 
+          <Button
+            onClick={() => setIsCreateSubjectModalOpen(true)}
+            className="px-4 md:px-6 py-2 md:py-3"
+          >
             <Plus className="h-2 w-2 mr-2" /> Add Case
           </Button>
         </div>
@@ -327,16 +247,18 @@ export const CaseStudySubjectDetail = () => {
             <Card
               key={c.id}
               className="cursor-pointer transition-shadow hover:shadow-lg"
-              onClick={() => navigate(`/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`)}
+              onClick={() =>
+                navigate(
+                  `/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`,
+                )
+              }
             >
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{c.name}</CardTitle>
+                  <CardTitle className="text-lg">{c.title}</CardTitle>
                 </div>
-                {c.description && (
-                  <CardDescription>{c.description}</CardDescription>
-                )}
+                {c.scenario && <CardDescription>{c.scenario}</CardDescription>}
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-1 text-sm text-muted-foreground">
@@ -422,14 +344,13 @@ export const CaseStudySubjectDetail = () => {
       </Dialog>
 
       {isAdmin && (
-              <CreateCaseStudyCaseModal
-                open={isCreateSubjectModalOpen}
-                onOpenChange={setIsCreateSubjectModalOpen}
-                subjectId={subjectId!}
-                // onSuccess={fetchSubject}
-              />
-            )}
+        <CreateCaseStudyCaseModal
+          open={isCreateSubjectModalOpen}
+          onOpenChange={setIsCreateSubjectModalOpen}
+          subjectId={subjectId!}
+          // onSuccess={fetchSubject}
+        />
+      )}
     </div>
   );
 };
-
