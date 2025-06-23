@@ -40,7 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
-import { CreateCaseStudyCaseModal } from "@/components/case-study-admin/CreateCaseStudyCaseModal";
+import { CreateCaseStudyCaseModal } from "@/components/case-study/CreateCaseStudyCaseModal";
 
 interface Subject {
   id: string;

@@ -12,7 +12,7 @@ import { Plus, ArrowLeft, BookOpen, FileText } from "lucide-react";
 import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreateCaseStudySubjectModal } from "@/components/case-study-admin/CreateCaseStudySubjectModal";
+import { CreateCaseStudySubjectModal } from "@/components/case-study/CreateCaseStudySubjectModal";
 
 interface CaseStudyExamInfo {
   id: string;

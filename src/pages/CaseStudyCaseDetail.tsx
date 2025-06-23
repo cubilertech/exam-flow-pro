@@ -31,7 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { CaseQuestionForm } from "@/components/case-study-admin/CaseQuestionForm";
+import { CaseQuestionForm } from "@/components/case-study/CaseQuestionForm";
 import {
   AlertDialog,
   AlertDialogAction,

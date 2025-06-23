@@ -12,7 +12,7 @@ import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { CreateCaseStudyExamModal } from "@/components/case-study-admin/CreateCaseStudyExamModal";
+import { CreateCaseStudyExamModal } from "@/components/case-study/CreateCaseStudyExamModal";
 
 interface CaseStudyExam {
   id: string;
