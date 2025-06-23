@@ -1,42 +1,50 @@
-
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Plus, ArrowLeft, BookOpen, FileText } from "lucide-react";
-import { useAppSelector } from '@/lib/hooks';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { CreateCaseStudySubjectModal } from '@/components/case-study/CreateCaseStudySubjectModal';
+import { useAppSelector } from "@/lib/hooks";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { CreateCaseStudySubjectModal } from "@/components/case-study/CreateCaseStudySubjectModal";
 
-
-const DemoSubjectData : Subject[] = [
-  {  id: '1',
-    name: 'Cardiology', 
-    description: 'Study of heart and blood vessels',
+const DemoSubjectData: Subject[] = [
+  {
+    id: "1",
+    name: "Cardiology",
+    description: "Study of heart and blood vessels",
     order_index: 1,
-    case_count: 5
+    case_count: 5,
   },
-  { id: '2',
-    name: 'Neurology', 
-    description: 'Study of the nervous system',
+  {
+    id: "2",
+    name: "Neurology",
+    description: "Study of the nervous system",
     order_index: 2,
-    case_count: 3
+    case_count: 3,
   },
-  { id: '3',
-    name: 'Oncology', 
-    description: 'Study of cancer',
+  {
+    id: "3",
+    name: "Oncology",
+    description: "Study of cancer",
     order_index: 3,
-    case_count: 4
+    case_count: 4,
   },
-  { id: '4',
-    name: 'Pediatrics', 
-    description: 'Study of children’s health',
+  {
+    id: "4",
+    name: "Pediatrics",
+    description: "Study of children’s health",
     order_index: 4,
-    case_count: 2
-  }
-]
-  
+    case_count: 2,
+  },
+];
+
 interface Subject {
   id: string;
   name: string;
@@ -69,79 +77,64 @@ const CaseStudyExamDetail = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
-  
+
   const [examInfo, setExamInfo] = useState<CaseStudyExamInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] = useState(false);
+  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =
+    useState(false);
 
   useEffect(() => {
-    // if (examId) {
-    //   fetchExamData();
-    // }         
-
-    setSubjects(DemoSubjectData);
-    setExamInfo(DemoExamInfoData);
-
-    setLoading(false); // ← fix
+    if (examId) {
+      fetchExamData();
+    }
   }, [examId]);
 
   const fetchExamData = async () => {
     if (!examId) return;
-    
+
     try {
-      // setLoading(true);
-      
-      // Fetch exam info
-      // const { data: examData, error: examError } = await supabase *******************
-      //   .from('case_study_exams')
-      //   .select('*')
-      //   .eq('id', examId)
-      //   .single();
+      setLoading(true);
+      const { data: examData, error: examError } = await supabase
+        .from("exams_case")
+        .select("*")
+        .eq("id", examId)
+        .single();
 
-      const examData = {
-        id: 'demo-exam',
-        name: 'Demo Case Study Exam',
-        description: 'This is a demo exam for case study subjects'
-      };
-
-      // if (examError) throw examError; ******************
       setExamInfo(examData);
 
       // Fetch subjects
-      // const { data: subjectsData, error: subjectsError } = await supabase *******************
-      //   .from('case_study_subjects')
-      //   .select('*')
-      //   .eq('exam_id', examId)
-      //   .order('order_index', { ascending: true });
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from("subjects")
+        .select("*")
+        .eq("exams_case_id", examId)
+        .order("order_index", { ascending: true });
 
-      // if (subjectsError) throw subjectsError; ****************
+      if (subjectsError) throw subjectsError;
 
       // For each subject, get case count************************
-      // const subjectsWithCaseCount = await Promise.all(
-      //   (subjectsData || []).map(async (subject) => {
-      //     const { count: caseCount } = await supabase
-      //       .from('case_studies')
-      //       .select('*', { count: 'exact', head: true })
-      //       .eq('subject_id', subject.id);
+      const subjectsWithCaseCount = await Promise.all(
+        (subjectsData || []).map(async (subject) => {
+          const { count: caseCount } = await supabase
+            .from("cases")
+            .select("*", { count: "exact", head: true })
+            .eq("subject_id", subject.id);
 
-      //     return {
-      //       ...subject,
-      //       case_count: caseCount || 0
-      //     };
-      //   })
-      // );
+          return {
+            ...subject,
+            case_count: caseCount || 0,
+          };
+        }),
+      );
 
-      // setSubjects(subjectsWithCaseCount); **************
+      setSubjects(subjectsWithCaseCount);
     } catch (error) {
-      console.error('Error fetching exam data:', error);
-      toast.error('Failed to load exam data');
+      console.error("Error fetching exam data:", error);
+      toast.error("Failed to load exam data");
     } finally {
       setLoading(false);
     }
   };
-
-
 
   const handleSubjectClick = (subject: Subject) => {
     navigate(`/case-study-exams/${examId}/subjects/${subject.id}`);
@@ -167,7 +160,7 @@ const CaseStudyExamDetail = () => {
           <h3 className="text-lg font-medium text-muted-foreground mb-2">
             Exam not found
           </h3>
-          <Button onClick={() => navigate('/case-study-exams')}>
+          <Button onClick={() => navigate("/case-study-exams")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Exams
           </Button>
@@ -178,18 +171,17 @@ const CaseStudyExamDetail = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      
       {/* <div className="flex flex-col md:flex-row items-start md:items-center space-x-4"> */}
       <div className="flex flex-col md:flex-row items-start md:items-center space-x-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          onClick={() => navigate('/case-study-exams')}
+          onClick={() => navigate("/case-study-exams")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <div className='mt-2 md:mt-0'>
+        <div className="mt-2 md:mt-0">
           <h1 className="text-3xl font-bold tracking-tight">{examInfo.name}</h1>
           {examInfo.description && (
             <p className="text-muted-foreground">{examInfo.description}</p>
@@ -209,8 +201,8 @@ const CaseStudyExamDetail = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {subjects.map((subject) => (
-          <Card 
-            key={subject.id} 
+          <Card
+            key={subject.id}
             className="cursor-pointer transition-shadow hover:shadow-lg"
             onClick={() => handleSubjectClick(subject)}
           >
@@ -240,10 +232,9 @@ const CaseStudyExamDetail = () => {
             No subjects available
           </h3>
           <p className="text-sm text-muted-foreground">
-            {isAdmin 
-              ? "Add your first subject to get started" 
-              : "Check back later for new subjects"
-            }
+            {isAdmin
+              ? "Add your first subject to get started"
+              : "Check back later for new subjects"}
           </p>
         </div>
       )}

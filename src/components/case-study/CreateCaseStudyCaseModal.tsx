@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CreateCaseModalProps {
   open: boolean;
@@ -21,8 +26,8 @@ export const CreateCaseStudyCaseModal = ({
   // onSuccess,
 }: CreateCaseModalProps) => {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    title: "",
+    scenario: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,38 +35,36 @@ export const CreateCaseStudyCaseModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      toast.error('Please enter a case name');
+    if (!formData.title.trim()) {
+      toast.error("Please enter a case name");
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase
-        .from('case_studies')
-        .insert({
-          subject_id: subjectId,
-          name: formData.name.trim(),
-          description: formData.description.trim() || null,
-        });
+      const { error } = await supabase.from("cases").insert({
+        subject_id: subjectId,
+        title: formData.title.trim(),
+        scenario: formData.scenario.trim() || null,
+      });
 
       if (error) throw error;
 
-      toast.success('Case created successfully');
-      setFormData({ name: '', description: '' });
+      toast.success("Case created successfully");
+      setFormData({ title: "", scenario: "" });
       onOpenChange(false);
       // onSuccess();
     } catch (error) {
-      console.error('Error creating case:', error);
-      toast.error('Failed to create case');
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '' });
+    setFormData({ title: "", scenario: "" });
     onOpenChange(false);
   };
 
@@ -76,9 +79,9 @@ export const CreateCaseStudyCaseModal = ({
             <Label htmlFor="name">Case Name *</Label>
             <Input
               id="name"
-              value={formData.name}
+              value={formData.title}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               placeholder="Enter case name"
               required
@@ -86,14 +89,14 @@ export const CreateCaseStudyCaseModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Scenario</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.scenario}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  description: e.target.value,
+                  scenario: e.target.value,
                 }))
               }
               placeholder="Enter case description (optional)"
@@ -106,7 +109,7 @@ export const CreateCaseStudyCaseModal = ({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Case'}
+              {isSubmitting ? "Creating..." : "Create Case"}
             </Button>
           </div>
         </form>

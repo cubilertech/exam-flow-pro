@@ -40,6 +40,7 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
 
     try {
       setIsSubmitting(true);
+<<<<<<< HEAD
       
       const { error } = await supabase
         .from('exams')
@@ -47,6 +48,13 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
           title: formData.title.trim(),
           description: formData.description.trim() || null
         });
+=======
+
+      const { error } = await supabase.from("exams_case").insert({
+        title: formData.name.trim(),
+        description: formData.description.trim() || null,
+      });
+>>>>>>> ca985c2f8e5af75cfb02243a00f421e73513e355
 
       if (error) throw error;
 
