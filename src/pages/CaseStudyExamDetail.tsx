@@ -73,7 +73,7 @@ const CaseStudyExamDetail = () => {
 
       if (subjectsError) throw subjectsError;
 
-      // For each subject, get case count************************
+      // For each subject, get case count
       const subjectsWithCaseCount = await Promise.all(
         (subjectsData || []).map(async (subject) => {
           const { count: caseCount } = await supabase
