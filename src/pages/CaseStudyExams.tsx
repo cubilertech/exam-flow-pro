@@ -124,7 +124,7 @@ const CaseStudyExams = () => {
                 </div>
               </div>
               {exam.description && (
-                <CardDescription>{exam.description}</CardDescription>
+                <CardDescription className="text-ellipsis overflow-hidden h-[8.5rem] line-clamp-6">{exam.description}</CardDescription>
               )}
             </CardHeader>
             <CardContent>

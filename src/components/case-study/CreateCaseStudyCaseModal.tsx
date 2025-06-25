@@ -16,14 +16,14 @@ interface CreateCaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   subjectId: string;
-  // onSuccess: () => void;
+  onSuccess: () => void;
 }
 
 export const CreateCaseStudyCaseModal = ({
   open,
   onOpenChange,
   subjectId,
-  // onSuccess,
+  onSuccess,
 }: CreateCaseModalProps) => {
   const [formData, setFormData] = useState({
     title: "",
@@ -54,7 +54,7 @@ export const CreateCaseStudyCaseModal = ({
       toast.success("Case created successfully");
       setFormData({ title: "", scenario: "" });
       onOpenChange(false);
-      // onSuccess();
+      onSuccess();
     } catch (error) {
       console.error("Error creating case:", error);
       toast.error("Failed to create case");
