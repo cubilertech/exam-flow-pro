@@ -353,7 +353,7 @@ export const CaseStudySubjectDetail = () => {
           open={isCreateSubjectModalOpen}
           onOpenChange={setIsCreateSubjectModalOpen}
           subjectId={subjectId!}
-          // onSuccess={fetchSubject}
+          onSuccess={fetchSubject}
         />
       )}
     </div>

@@ -621,7 +621,7 @@ const TakeExam = () => {
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
           <div className="flex space-x-1 sm:space-x-2">
-            <Badge
+            <Badge 
               variant={isCurrentQuestionFlagged ? "secondary" : "outline"}
               className="cursor-pointer hover:bg-secondary"
               onClick={() => handleFlagQuestion(currentQuestion.id)}

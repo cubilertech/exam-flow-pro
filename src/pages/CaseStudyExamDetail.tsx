@@ -164,7 +164,7 @@ const CaseStudyExamDetail = () => {
         {subjects.map((subject) => (
           <Card
             key={subject.id}
-            className="cursor-pointer transition-shadow hover:shadow-lg"
+            className="cursor-pointer transition-shadow hover:shadow-lg "
             onClick={() => handleSubjectClick(subject)}
           >
             <CardHeader>
@@ -173,7 +173,7 @@ const CaseStudyExamDetail = () => {
                 <CardTitle className="text-lg">{subject.name}</CardTitle>
               </div>
               {subject.description && (
-                <CardDescription>{subject.description}</CardDescription>
+                <CardDescription className="text-ellipsis overflow-hidden h-[8.5rem] line-clamp-6">{subject.description}</CardDescription>
               )}
             </CardHeader>
             <CardContent>
