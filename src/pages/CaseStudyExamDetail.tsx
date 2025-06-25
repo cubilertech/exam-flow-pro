@@ -1,13 +1,28 @@
-
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Plus, ArrowLeft, BookOpen, FileText } from "lucide-react";
-import { useAppSelector } from '@/lib/hooks';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { CreateSubjectModal } from '@/components/case-study/CreateSubjectModal';
+import { useAppSelector } from "@/lib/hooks";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { CreateCaseStudySubjectModal } from "@/components/case-study/CreateCaseStudySubjectModal";
+
+interface CaseStudyExamInfo {
+  id: string;
+  title: string;
+  description: string;
+  order_index: number;
+  created_at: string;
+  subject_count?: number;
+  is_subscribed?: boolean;
+}
 
 interface Subject {
   id: string;
@@ -17,22 +32,18 @@ interface Subject {
   case_count?: number;
 }
 
-interface ExamInfo {
-  id: string;
-  name: string;
-  description: string;
-}
 
 const CaseStudyExamDetail = () => {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
-  
-  const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
+
+  const [examInfo, setExamInfo] = useState<CaseStudyExamInfo | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] = useState(false);
+  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =
+    useState(false);
 
   useEffect(() => {
     if (examId) {
@@ -42,48 +53,45 @@ const CaseStudyExamDetail = () => {
 
   const fetchExamData = async () => {
     if (!examId) return;
-    
+
     try {
       setLoading(true);
-      
-      // Fetch exam info
       const { data: examData, error: examError } = await supabase
-        .from('case_study_exams')
-        .select('*')
-        .eq('id', examId)
+        .from("exams_case")
+        .select("*")
+        .eq("id", examId)
         .single();
 
-      if (examError) throw examError;
       setExamInfo(examData);
 
       // Fetch subjects
       const { data: subjectsData, error: subjectsError } = await supabase
-        .from('case_study_subjects')
-        .select('*')
-        .eq('exam_id', examId)
-        .order('order_index', { ascending: true });
+        .from("subjects")
+        .select("*")
+        .eq("exams_case_id", examId)
+        .order("order_index", { ascending: true });
 
       if (subjectsError) throw subjectsError;
 
-      // For each subject, get case count
+      // For each subject, get case count************************
       const subjectsWithCaseCount = await Promise.all(
         (subjectsData || []).map(async (subject) => {
           const { count: caseCount } = await supabase
-            .from('case_studies')
-            .select('*', { count: 'exact', head: true })
-            .eq('subject_id', subject.id);
+            .from("cases")
+            .select("*", { count: "exact", head: true })
+            .eq("subject_id", subject.id);
 
           return {
             ...subject,
-            case_count: caseCount || 0
+            case_count: caseCount || 0,
           };
-        })
+        }),
       );
 
       setSubjects(subjectsWithCaseCount);
     } catch (error) {
-      console.error('Error fetching exam data:', error);
-      toast.error('Failed to load exam data');
+      console.error("Error fetching exam data:", error);
+      toast.error("Failed to load exam data");
     } finally {
       setLoading(false);
     }
@@ -113,7 +121,7 @@ const CaseStudyExamDetail = () => {
           <h3 className="text-lg font-medium text-muted-foreground mb-2">
             Exam not found
           </h3>
-          <Button onClick={() => navigate('/case-study-exams')}>
+          <Button onClick={() => navigate("/case-study-exams")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Exams
           </Button>
@@ -124,17 +132,18 @@ const CaseStudyExamDetail = () => {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button 
-          variant="outline" 
+      {/* <div className="flex flex-col md:flex-row items-start md:items-center space-x-4"> */}
+      <div className="flex flex-col md:flex-row items-start md:items-center space-x-4">
+        <Button
+          variant="outline"
           size="sm"
-          onClick={() => navigate('/case-study-exams')}
+          onClick={() => navigate("/case-study-exams")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{examInfo.name}</h1>
+        <div className="mt-2 md:mt-0">
+          <h1 className="text-3xl font-bold tracking-tight">{examInfo.title}</h1>
           {examInfo.description && (
             <p className="text-muted-foreground">{examInfo.description}</p>
           )}
@@ -153,8 +162,8 @@ const CaseStudyExamDetail = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {subjects.map((subject) => (
-          <Card 
-            key={subject.id} 
+          <Card
+            key={subject.id}
             className="cursor-pointer transition-shadow hover:shadow-lg"
             onClick={() => handleSubjectClick(subject)}
           >
@@ -184,16 +193,15 @@ const CaseStudyExamDetail = () => {
             No subjects available
           </h3>
           <p className="text-sm text-muted-foreground">
-            {isAdmin 
-              ? "Add your first subject to get started" 
-              : "Check back later for new subjects"
-            }
+            {isAdmin
+              ? "Add your first subject to get started"
+              : "Check back later for new subjects"}
           </p>
         </div>
       )}
 
       {isAdmin && (
-        <CreateSubjectModal
+        <CreateCaseStudySubjectModal
           open={isCreateSubjectModalOpen}
           onOpenChange={setIsCreateSubjectModalOpen}
           examId={examId!}

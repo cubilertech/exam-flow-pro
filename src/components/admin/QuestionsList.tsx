@@ -94,7 +94,7 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
         const err = error as Error;
         toast({
           title: "Error",
-          description: error.message || "Failed to delete question",
+          description: error?.details || error?.message || "Failed to delete question",
           variant: "destructive",
         });
       } finally {
@@ -195,7 +195,7 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
             onClick={() => setSearchTerm("")}
             className="mt-2"
           >
-            Clear search
+            Clear search 
           </Button>
         </div>
       )}

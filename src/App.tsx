@@ -23,6 +23,10 @@ import CaseStudyExamDetail from "./pages/CaseStudyExamDetail";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { StudentRoute } from "./components/auth/StudentRoute";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
+import {CaseStudySubjectDetail} from "./pages/CaseStudySubjectDetail";
+import { CaseStudyCaseDetail } from "./pages/CaseStudyCaseDetail";
+// import { CaseSenerioShow } from "./pages/CaseSenerioShow";
+import { CaseStudyTakeExam } from "./pages/CaseStudyTakeExam";
 
 function App() {
   return (
@@ -43,6 +47,9 @@ function App() {
               <Route path="/questions/:id" element={<AdminRoute><MainLayout><QuestionBankDetail/></MainLayout></AdminRoute>}/>
               <Route path="/case-study-exams" element={<PrivateRoute><MainLayout><CaseStudyExams/></MainLayout></PrivateRoute>}/>
               <Route path="/case-study-exams/:examId" element={<PrivateRoute><MainLayout><CaseStudyExamDetail/></MainLayout></PrivateRoute>}/>
+              <Route path="/case-study-exams/:examId/subjects/:subjectId" element={<PrivateRoute><MainLayout><CaseStudySubjectDetail/></MainLayout></PrivateRoute>}/>
+              <Route path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId" element={<PrivateRoute><MainLayout><CaseStudyCaseDetail/></MainLayout></PrivateRoute>}/>
+              <Route path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId/ExamId/:ExamId" element={<PrivateRoute><MainLayout><CaseStudyTakeExam/></MainLayout></PrivateRoute>}/>
               <Route path="*" element={<NotFound/>}/>
             </Routes>
           </AuthProvider>

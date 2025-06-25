@@ -12,56 +12,59 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface CreateCaseStudyExamModalProps {
+interface CreateCaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  subjectId: string;
+  // onSuccess: () => void;
 }
 
-interface FormData {
-  title: string;
-  description: string;
-}
-
-export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: CreateCaseStudyExamModalProps) => {
-  const [formData, setFormData] = useState<FormData>({
-    title: '',
-    description: ''
+export const CreateCaseStudyCaseModal = ({
+  open,
+  onOpenChange,
+  subjectId,
+  // onSuccess,
+}: CreateCaseModalProps) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    scenario: "",
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim()) {
-      toast.error('Please enter an exam title');
+      toast.error("Please enter a case name");
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase.from("exams_case").insert({
+      const { error } = await supabase.from("cases").insert({
+        subject_id: subjectId,
         title: formData.title.trim(),
-        description: formData.description.trim() || null,
+        scenario: formData.scenario.trim() || null,
       });
 
       if (error) throw error;
 
-      toast.success('Case study exam created successfully');
-      setFormData({ title: '', description: '' });
+      toast.success("Case created successfully");
+      setFormData({ title: "", scenario: "" });
       onOpenChange(false);
-      onSuccess();
+      // onSuccess();
     } catch (error) {
-      console.error("Error creating case study exam:", error);
-      toast.error("Failed to create case study exam");
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ title: '', description: '' });
+    setFormData({ title: "", scenario: "" });
     onOpenChange(false);
   };
 
@@ -69,32 +72,34 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Case Study Exam</DialogTitle>
+          <DialogTitle>Create Case</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Exam Name *</Label>
+            <Label htmlFor="name">Case Name *</Label>
             <Input
-              id="title"
+              id="name"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Enter exam title"
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+              placeholder="Enter case name"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Scenario</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.scenario}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  description: e.target.value,
+                  scenario: e.target.value,
                 }))
               }
-              placeholder="Enter exam description (optional)"
+              placeholder="Enter case description (optional)"
               rows={3}
             />
           </div>
@@ -104,7 +109,7 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Exam"}
+              {isSubmitting ? "Creating..." : "Create Case"}
             </Button>
           </div>
         </form>
