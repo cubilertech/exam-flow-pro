@@ -59,6 +59,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
+// import { CaseStudyTakeExam } from "./CaseStudyTakeExam";
+import {CaseSenerioShow} from "./CaseSenerioShow";
 
 interface Case {
   id: string;
@@ -251,7 +253,7 @@ export const CaseStudyCaseDetail = () => {
 
   const handleDragEnd = (event: any) => {
     console.log("Drag Ended", event);
-    if (event.target.closest("[data-drag-disabled]")) {
+    if (event.target && event.target.closest && event.target.closest("[data-no-drag]")) {
       return;
     }
     const { active, over } = event;
@@ -330,6 +332,7 @@ export const CaseStudyCaseDetail = () => {
   };
 
   return (
+    isAdmin ? (
     <div className="container py-4 md:py-8 px-4 md:px-8">
       <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
         <Button
@@ -505,5 +508,9 @@ export const CaseStudyCaseDetail = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    ) : (
+     <CaseSenerioShow />
+    //  <CaseDetailForStudent caseId={caseId}/>
+    )
   );
 };

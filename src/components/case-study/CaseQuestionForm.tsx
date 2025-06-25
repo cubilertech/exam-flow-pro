@@ -33,7 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface RemirrorFields {
   question_text: string;
   correct_answer: string;
-  explanation: string;
+
 }
 interface Question {
   id: string;
@@ -56,7 +56,6 @@ export const CaseQuestionForm = ({
   const [formData, setFormData] = useState<RemirrorFields>({
     question_text: initialData?.question_text || "",
     correct_answer: initialData?.correct_answer || "",
-    explanation: initialData?.explanation || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,11 +85,11 @@ export const CaseQuestionForm = ({
     stringHandler: htmlToProsemirrorNode,
   });
 
-  const explanationEditor = useRemirror({
-    extensions,
-    content: formData.explanation,
-    stringHandler: htmlToProsemirrorNode,
-  });
+  // const explanationEditor = useRemirror({
+  //   extensions,
+  //   content: formData.explanation,
+  //   stringHandler: htmlToProsemirrorNode,
+  // });
 
   const handleRemirrorChange = (key: keyof RemirrorFields, html: string) => {
     setFormData((prev) => ({ ...prev, [key]: JSON.stringify(html) }));
@@ -99,8 +98,8 @@ export const CaseQuestionForm = ({
   const validateForm = () => {
     return (
       formData.question_text.trim() &&
-      formData.correct_answer.trim() &&
-      formData.explanation.trim()
+      formData.correct_answer.trim() 
+      // formData.explanation.trim()
     );
   };
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,7 +125,7 @@ export const CaseQuestionForm = ({
           .update({
             question_text: formData.question_text,
             correct_answer: formData.correct_answer,
-            explanation: formData.explanation,
+            explanation: null
           })
           .eq("id", initialData.id);
       } else {
@@ -135,7 +134,7 @@ export const CaseQuestionForm = ({
           case_id: caseId,
           question_text: formData.question_text,
           correct_answer: formData.correct_answer,
-          explanation: formData.explanation,
+          explanation: null, //  formData.explanation
         });
       }
 
@@ -143,7 +142,7 @@ export const CaseQuestionForm = ({
       setFormData({
         question_text: "",
         correct_answer: "",
-        explanation: "",
+       
       });
 
       toast({
@@ -167,7 +166,7 @@ export const CaseQuestionForm = ({
   };
 
   const handleCancel = () => {
-    setFormData({ question_text: "", correct_answer: "", explanation: "" });
+    setFormData({ question_text: "", correct_answer: "" });
     setShowErrors(false);
     onFormSubmitted(); // Call the callback to reset the form state
   };
@@ -240,7 +239,7 @@ export const CaseQuestionForm = ({
       </div>
 
       {/* Explanation using Remirror */}
-      <div>
+      {/* <div>
         <h3 className="font-semibold text-lg mb-2">Explanation *</h3>
         <ThemeProvider>
           <Remirror
@@ -265,7 +264,7 @@ export const CaseQuestionForm = ({
             </Toolbar>
           </Remirror>
         </ThemeProvider>
-      </div>
+      </div> */}
 
       {/* Buttons for submit/cancel */}
       <div className="flex justify-end space-x-2">
