@@ -280,7 +280,7 @@ interface CaseQuestionFormProps {
   subjectId: string;
   // onFormSubmitted: () => void;
   onsuccess : ()=> void;
-  initialData: Case | null;
+  initialData?: Case | null;
 }
 
 function normalizeHTML(input: string) {
