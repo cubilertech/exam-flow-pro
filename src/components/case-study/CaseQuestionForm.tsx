@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface RemirrorFields {
@@ -50,16 +50,27 @@ interface CaseQuestionFormProps {
 
 export const CaseQuestionForm = ({
   caseId,
-  onFormSubmitted,
+  onFormSubmitted, 
   initialData,
 }: CaseQuestionFormProps) => {
   const [formData, setFormData] = useState<RemirrorFields>({
-    question_text: initialData?.question_text || "",
-    correct_answer: initialData?.correct_answer || "",
+    question_text: normalizeHTML(initialData?.question_text) || "",
+    correct_answer: normalizeHTML(initialData?.correct_answer) || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const  {toast} = useToast();
+
+
+  function normalizeHTML(input: string) {
+  try {
+    const maybeParsed = JSON.parse(input);
+    return typeof maybeParsed === "string" ? maybeParsed : input;
+  } catch {
+    return input;
+  }
+}
 
   const extensions = () => [
     new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
@@ -85,23 +96,40 @@ export const CaseQuestionForm = ({
     stringHandler: htmlToProsemirrorNode,
   });
 
-  // const explanationEditor = useRemirror({
-  //   extensions,
-  //   content: formData.explanation,
-  //   stringHandler: htmlToProsemirrorNode,
-  // });
-
   const handleRemirrorChange = (key: keyof RemirrorFields, html: string) => {
     setFormData((prev) => ({ ...prev, [key]: JSON.stringify(html) }));
   };
 
-  const validateForm = () => {
-    return (
-      formData.question_text.trim() &&
-      formData.correct_answer.trim() 
-      // formData.explanation.trim()
-    );
-  };
+  const getStrippedTextLength = (html: string) => {
+  try {
+    const parsed = JSON.parse(html) as string;
+    const text = parsed
+      .replace(/<[^>]+>/g, "")   // Remove HTML tags
+      .replace(/&nbsp;/g, "")    // Remove &nbsp;
+      .replace(/\s+/g, "")       // Remove all spaces
+      .trim();
+    return text.length;
+  } catch {
+    return 0;
+  }
+};
+
+const validateForm = () => {
+  const hasQuestion = formData.question_text.trim();
+  const answerLength = getStrippedTextLength(formData.correct_answer);
+
+  return hasQuestion && answerLength >= 2;
+};
+
+  // const validateForm = () => {
+  //   return (
+  //     formData.question_text.trim() &&
+  //     formData.correct_answer.trim() 
+      
+  //   );
+  // };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

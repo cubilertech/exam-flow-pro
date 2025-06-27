@@ -49,7 +49,7 @@ function App() {
               <Route path="/case-study-exams/:examId" element={<PrivateRoute><MainLayout><CaseStudyExamDetail/></MainLayout></PrivateRoute>}/>
               <Route path="/case-study-exams/:examId/subjects/:subjectId" element={<PrivateRoute><MainLayout><CaseStudySubjectDetail/></MainLayout></PrivateRoute>}/>
               <Route path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId" element={<PrivateRoute><MainLayout><CaseStudyCaseDetail/></MainLayout></PrivateRoute>}/>
-              <Route path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId/ExamId/:ExamId" element={<PrivateRoute><MainLayout><CaseStudyTakeExam/></MainLayout></PrivateRoute>}/>
+              <Route path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId/testId/:testId" element={<PrivateRoute><MainLayout><CaseStudyTakeExam/></MainLayout></PrivateRoute>}/>
               <Route path="*" element={<NotFound/>}/>
             </Routes>
           </AuthProvider>

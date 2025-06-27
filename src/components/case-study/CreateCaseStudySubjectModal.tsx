@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface CreateSubjectModalProps {
   open: boolean;
@@ -29,13 +30,30 @@ export const CreateCaseStudySubjectModal = ({
     name: "",
     description: "",
   });
+
+  const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Subject name is required.";
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      toast.error("Please enter a subject name");
+    if (!validateForm()) {
+      toast.error("Please fix the highlighted errors before submitting.");
       return;
     }
 
@@ -45,13 +63,14 @@ export const CreateCaseStudySubjectModal = ({
       const { error } = await supabase.from("subjects").insert({
         exams_case_id: examId,
         name: formData.name.trim(),
-        description: formData.description.trim() || null,
+        description: formData.description.trim(),
       });
 
       if (error) throw error;
 
       toast.success("Subject created successfully");
       setFormData({ name: "", description: "" });
+      setErrors({});
       onOpenChange(false);
       onSuccess();
     } catch (error) {
@@ -64,6 +83,7 @@ export const CreateCaseStudySubjectModal = ({
 
   const handleClose = () => {
     setFormData({ name: "", description: "" });
+    setErrors({});
     onOpenChange(false);
   };
 
@@ -73,6 +93,7 @@ export const CreateCaseStudySubjectModal = ({
         <DialogHeader>
           <DialogTitle>Create Subject</DialogTitle>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Subject Name *</Label>
@@ -83,12 +104,13 @@ export const CreateCaseStudySubjectModal = ({
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
               placeholder="Enter subject name"
-              required
+              className={cn(errors.name && "border-red-500")}
             />
+            {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -98,9 +120,13 @@ export const CreateCaseStudySubjectModal = ({
                   description: e.target.value,
                 }))
               }
-              placeholder="Enter subject description (optional)"
+              placeholder="Enter subject description"
               rows={3}
+              className={cn(errors.description && "border-red-500")}
             />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

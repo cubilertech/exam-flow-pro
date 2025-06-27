@@ -1,65 +1,5 @@
-// import { supabase } from "@/integrations/supabase/client";
-// import React, { useEffect } from "react";
-// import { useNavigate, useParams } from "react-router-dom";
-
-// // interface CaseSenerioShowProps {
-// //   caseId: string;
-// // }
-
-// interface Case {
-//   id: string;
-//   title: string;
-//   subject_id: number;
-//   scenario: string;
-//   order_index: number;
-//   question_count: number;
-// }
-
-// export const CaseSenerioShow = () => {
-//   const { caseId } = useParams<{ caseId: string }>();
-//   const [caseInfo, setCaseInfo] = React.useState<Case>(null);
-//   const navigate = useNavigate();
-//   useEffect(() => {
-//     if (caseId) {
-//       fetchCaseDetail(caseId);
-//     }
-//   }, [caseId]);
-//   const fetchCaseDetail = async (caseId: string) => {
-//     const { data, error } = await supabase
-//       .from("cases")
-//       .select("*")
-//       .eq("id", caseId)
-//       .order("order_index", { ascending: true })
-//       .single();
-
-//     if (data) {
-//       setCaseInfo(data);
-//     }
-//   };
-
-//   console.log("caseInfo", caseInfo);
-
-//     if (!caseInfo) {
-//         return <div>Loading...</div>;
-//     }
-//   return (
-//     <>
-//       <div>{caseInfo.title}</div>
-//       <div>{caseInfo.scenario}</div>
-//         <div className="flex justify-end">
-//             <button
-//             className="btn btn-primary"
-//             onClick={() => navigate(`/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/takeExam`)}
-//             >
-//             Start Exam
-//             </button>
-//             </div>
-//     </>
-//   );
-// };
-
 import { supabase } from "@/integrations/supabase/client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,12 +28,12 @@ export const CaseSenerioShow = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [resultData, setResultData] = React.useState<any>(null);
-  const [error, setError] = React.useState<any>(null);
+  const [error, setError] = useState<any>(null);
+  const [disabledExam, setDisabledExam] = useState<boolean>(true);
 
   useEffect(() => {
-    if (caseId) {
-      fetchCaseDetail(caseId);
-    }
+    fetchCaseDetail(caseId);
+    fetchQuestion(caseId);
   }, [caseId]);
 
   const fetchCaseDetail = async (caseId: string) => {
@@ -109,13 +49,46 @@ export const CaseSenerioShow = () => {
       if (data) {
         setCaseInfo(data);
       }
-      if (error) {
-        console.error("Error fetching case:", error);
-      }
+      if (error) throw error;
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error Fetching the Case :", error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchQuestion = async (caseId: string) => {
+    setLoading(true);
+    try {
+      if (!caseId) return;
+      const { data, error } = await supabase
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+
+      if (data.length === 0) {
+        console.log("No Fetched Questions: ");
+        setDisabledExam(true);
+      }
+      if (data.length > 0) {
+        setDisabledExam(false);
+        console.log("Fetched Questions:", data.length);
+        //  setQuestions(data);
+      }
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error Fetching the Questions :", error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -142,7 +115,7 @@ export const CaseSenerioShow = () => {
 
       setResultData(data);
       setError(error);
-      window.location.href = `/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/ExamId/${data.id}`; // Assuming data.id is the exam ID
+      window.location.href = `/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/testId/${data.id}`; // Assuming data.id is the exam ID
       // navigate(
       //   `/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/ExamId/${data.id}` // Assuming data.id is the exam ID
       // );
@@ -177,10 +150,6 @@ export const CaseSenerioShow = () => {
       // }
 
       if (error) throw error;
-
-      // Reset editor and show success
-
-      // console.log("Submitted:", resultData);
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast({
@@ -191,29 +160,40 @@ export const CaseSenerioShow = () => {
     }
   };
 
-  // console.log("caseInfo", caseInfo);
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+  //       <div className="max-w-4xl mx-auto">
+  //         <div className="mb-6">
+  //           <Skeleton className="h-8 w-32 mb-4" />
+  //         </div>
+  //         <Card className="shadow-xl border-0">
+  //           <CardHeader className="pb-6">
+  //             <Skeleton className="h-8 w-3/4 mb-2" />
+  //             <Skeleton className="h-4 w-32" />
+  //           </CardHeader>
+  //           <CardContent className="space-y-4">
+  //             <Skeleton className="h-4 w-full" />
+  //             <Skeleton className="h-4 w-full" />
+  //             <Skeleton className="h-4 w-3/4" />
+  //             <div className="pt-6">
+  //               <Skeleton className="h-12 w-32 ml-auto" />
+  //             </div>
+  //           </CardContent>
+  //         </Card>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <Skeleton className="h-8 w-32 mb-4" />
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Case details...</p>
           </div>
-          <Card className="shadow-xl border-0">
-            <CardHeader className="pb-6">
-              <Skeleton className="h-8 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <div className="pt-6">
-                <Skeleton className="h-12 w-32 ml-auto" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     );
@@ -245,7 +225,7 @@ export const CaseSenerioShow = () => {
     <div className="min-h-screen ">
       <div className="container py-4 md:py-8 px-4 md:px-8 ">
         {/* Header */}
-        <div className="">
+        <div>
           <Button
             variant="outline"
             size="sm"
@@ -264,14 +244,7 @@ export const CaseSenerioShow = () => {
                 <CardTitle className="text-2xl font-bold leading-tight">
                   {caseInfo.title}
                 </CardTitle>
-                <div className="flex flex-wrap gap-3">
-                  {/* {caseInfo.question_count > 0 && (
-                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {caseInfo.question_count} Questions
-                    </Badge>
-                  )} */}
-                </div>
+                <div className="flex flex-wrap gap-3"></div>
               </div>
             </div>
           </CardHeader>
@@ -294,8 +267,10 @@ export const CaseSenerioShow = () => {
             <div className="flex justify-end pt-6 border-t border-gray-200">
               <Button
                 size="lg"
-                onClick={() =>  handleStartExam()}
-                className="bg-primary text-white px-8 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                onClick={() => handleStartExam()}
+                disabled={disabledExam}
+                className={`bg-primary text-white px-8 py-3 text-lg font-semibold shadow-lg  ${disabledExam  ? "cursor-not-allowed bg-yellow-500" : "cursor-pointer " } hover:shadow-xl transition-all duration-200 transform hover:scale-105`}
+              //  className={`px-8 py-3 text-lg font-semibold shadow-lg transition-all duration-200 transform hover:scale-105${disabledExam   ? "cursor-not-allowed bg-yellow-500 text-white": "bg-primary text-white hover:shadow-xl cursor-pointer"   }  disabled:opacity-50 disabled:pointer-events-none`}
               >
                 <PlayCircle className="w-5 h-5 mr-2" />
                 Start Exam
