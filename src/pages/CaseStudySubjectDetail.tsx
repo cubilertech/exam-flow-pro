@@ -442,7 +442,7 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting} >
+          <Button type="submit" disabled={isSubmitting} className="mb-2 md:mb-0" >
             {isSubmitting ? "Updating..." : "Update Subject"}
           </Button>
         </DialogFooter>

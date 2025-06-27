@@ -42,7 +42,7 @@ const CaseStudyExams = () => {
         .from("exams_case")
         .select("*, subjects(*)")
         .order("created_at", { ascending: false });
-        console.log("Fetched exams data:", examsData);
+        // console.log("Fetched exams data:", examsData);
 
       if (examsData.length > 0)
         examsWithSubjectCount = examsData.map((exam) => ({

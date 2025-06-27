@@ -27,6 +27,7 @@ import {CaseStudySubjectDetail} from "./pages/CaseStudySubjectDetail";
 import { CaseStudyCaseDetail } from "./pages/CaseStudyCaseDetail";
 // import { CaseSenerioShow } from "./pages/CaseSenerioShow";
 import { CaseStudyTakeExam } from "./pages/CaseStudyTakeExam";
+import "./App.css";
 
 function App() {
   return (
