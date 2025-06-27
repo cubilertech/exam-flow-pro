@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "../ui/alert";
+import { AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CreateCaseStudyExamModalProps {
   open: boolean;
@@ -23,18 +26,31 @@ interface FormData {
   description: string;
 }
 
-export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: CreateCaseStudyExamModalProps) => {
+export const CreateCaseStudyExamModal = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}: CreateCaseStudyExamModalProps) => {
   const [formData, setFormData] = useState<FormData>({
-    title: '',
-    description: ''
+    title: "",
+    description: "",
   });
+  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    if (!formData.title.trim()) newErrors.title = "Exam title is required.";
+    if (!formData.description.trim()) newErrors.description = "Description is required.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim()) {
-      toast.error('Please enter an exam title');
+
+    if (!validateForm()) {
       return;
     }
 
@@ -43,25 +59,35 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
 
       const { error } = await supabase.from("exams_case").insert({
         title: formData.title.trim(),
-        description: formData.description.trim() || null,
+        description: formData.description.trim(),
       });
 
       if (error) throw error;
 
-      toast.success('Case study exam created successfully');
-      setFormData({ title: '', description: '' });
+      toast({
+        title: "Success",
+        description: "Exam created successfully",
+      });
+
+      setFormData({ title: "", description: "" });
+      setErrors({});
       onOpenChange(false);
       onSuccess();
     } catch (error) {
       console.error("Error creating case study exam:", error);
-      toast.error("Failed to create case study exam");
+      toast({
+        title: "Error",
+        description: "Failed to create case study exam",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({ title: '', description: '' });
+    setFormData({ title: "", description: "" });
+    setErrors({});
     onOpenChange(false);
   };
 
@@ -72,31 +98,44 @@ export const CreateCaseStudyExamModal = ({ open, onOpenChange, onSuccess }: Crea
           <DialogTitle>Create Case Study Exam</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {(errors.title || errors.description) && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Please fix the highlighted errors before submitting.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="name">Exam Name *</Label>
+            <Label htmlFor="title">Exam Name *</Label>
             <Input
               id="title"
               value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
               placeholder="Enter exam title"
-              required
+              className={cn(errors.title && "border-red-500")}
             />
+            {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
               }
-              placeholder="Enter exam description (optional)"
+              placeholder="Enter exam description"
               rows={3}
+              className={cn(errors.description && "border-red-500")}
             />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

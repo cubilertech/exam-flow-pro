@@ -8,7 +8,7 @@ import {
   Search,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -41,8 +41,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
 import { CreateCaseStudyCaseModal } from "@/components/case-study/CreateCaseStudyCaseModal";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
 
-interface Subject {
+interface SubjectInfo {
   id: string;
   name: string;
   description: string;
@@ -61,7 +68,10 @@ interface Case {
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  description: z.string().optional(),
+  description: z
+    .string()
+    .min(5, { message: "Description must be at least 5 characters" })
+    // .or(z.literal("")), // allows empty string
 });
 
 export const CaseStudySubjectDetail = () => {
@@ -73,24 +83,27 @@ export const CaseStudySubjectDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
 
-  const [subjectInfo, setSubjectInfo] = useState<Subject | null>(null);
+  const [subjectInfo, setSubjectInfo] = useState<SubjectInfo | null>(null);
   const [cases, setCases] = useState<Case[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =
-    useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =    useState(false);
 
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
-  });
+  resolver: zodResolver(formSchema),
+  defaultValues: {
+    name: "",
+    description: "",
+  },
+});
+
+  // console.log("examId", examId);
+  // console.log("subjectId", subjectId);
 
   useEffect(() => {
     if (subjectId) {
@@ -110,6 +123,7 @@ export const CaseStudySubjectDetail = () => {
 
   const fetchSubject = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("subjects")
         .select("*")
@@ -125,6 +139,8 @@ export const CaseStudySubjectDetail = () => {
         variant: "destructive",
       });
       navigate("/case-study-exams");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -158,53 +174,140 @@ export const CaseStudySubjectDetail = () => {
     }
   };
 
-  const filteredCases = cases.filter(
-    (c) =>
+  const filteredCases = cases.filter((c) => {
+    const matchesSearch =
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch && (isAdmin || c.question_count > 0);
+  });
 
- 
-  const onEditSubject = async (values: z.infer<typeof formSchema>) => {
-    if (!subjectId) return;
-    try {
-      setIsSubmitting(true);
+const onEditSubject = async (values: z.infer<typeof formSchema>) => {
+  if (!subjectId) return;
+  try {
+    setIsSubmitting(true);
 
-      const { error } = await supabase
-        .from("subjects")
-        .update({
-          name: values.name,
-          description: values.description || null,
-        })
-        .eq("id", subjectId);
+    const { error } = await supabase
+      .from("subjects")
+      .update({
+        name: values.name.trim(),
+        description: values.description?.trim() || null,
+      })
+      .eq("id", subjectId);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast({ title: "Updated", description: "Subject updated successfully" });
-      fetchSubject();
-      setEditDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update subject",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast({ title: "Updated", description: "Subject updated successfully" });
+    fetchSubject();
+    setEditDialogOpen(false);
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to update subject",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+  const handleFormSubmitted = () => {
+    setSheetOpen(false);
+    fetchCases();
   };
+
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Subject details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">
+      <ol className="flex items-center whitespace-nowrap text-sm md:text-base ">
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  text-gray-500 hover:text-gray-800 hover:font-semibold focus:outline-none focus:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-500 dark:focus:text-blue-500"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(-2);
+            }}
+          >
+            Home
+          </Link>
+          <svg
+            className="shrink-0 mx-2 size-4 text-gray-400 dark:text-neutral-600"
+            xmlns="http://www.w3.org/2000/svg"
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </li>
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  text-gray-500 hover:text-gray-800 hover:font-semibold focus:outline-none focus:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-500 dark:focus:text-blue-500"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(-1);
+            }}
+          >
+            Exam
+          </Link>
+          <svg
+            className="shrink-0 mx-2 size-4 text-gray-400 dark:text-neutral-600"
+            xmlns="http://www.w3.org/2000/svg"
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </li>
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
+            to="#"
+            // onClick={(e) => {
+            //   e.preventDefault();
+            //   navigate(0);
+            // }}
+          >
+            Subject
+          </Link>
+        </li>
+      </ol>
+
       <div className="flex flex-col md:flex-row  items-start md:items-center mb-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mr-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {subjectInfo?.name}
         </h1>
@@ -219,7 +322,9 @@ export const CaseStudySubjectDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Details</CardTitle>
-            <CardDescription>{subjectInfo.description}</CardDescription>
+            <CardDescription className="h-32 overflow-y-auto">
+              {subjectInfo.description}
+            </CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -239,7 +344,11 @@ export const CaseStudySubjectDetail = () => {
           {/* disabled={loading} */}
           {isAdmin && (
             <Button
-              onClick={() => setIsCreateSubjectModalOpen(true)}
+              // onClick={() => {
+              //   setCurrentQuestion(null);
+              //   setSheetOpen(true);
+              // }}
+              onClick={() => setSheetOpen(true)}
               className="px-4 md:px-6 py-2 md:py-3"
             >
               <Plus className="h-2 w-2 mr-2" /> Add Case
@@ -261,9 +370,19 @@ export const CaseStudySubjectDetail = () => {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{c.title}</CardTitle>
+                  <CardTitle className="text-lg">
+                    {normalizeHTML(c.title)}
+                  </CardTitle>
                 </div>
-                {c.scenario && <CardDescription>{c.scenario}</CardDescription>}
+                {c.scenario && (
+                  <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: normalizeHTML(c.scenario),
+                      }}
+                    ></div>
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-1 text-sm text-muted-foreground">
@@ -274,88 +393,91 @@ export const CaseStudySubjectDetail = () => {
             </Card>
           ))}
         </div>
-
-          {filteredCases.length === 0 && (
-            <div className="text-center py-12 ">
-              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                No Subject available
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {isAdmin
-                  ? "Add your first subject to get started"
-                  : "Check back later for new subjects"}
-              </p>
-            </div>
-          )}
       </div>
 
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Subject</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onEditSubject)}
-              className="space-y-4"
-            >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter subject name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter description (optional)"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter className="pt-4">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setEditDialogOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Subject"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+   <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Edit Subject</DialogTitle>
+    </DialogHeader>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onEditSubject)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter subject name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter description "
+                  className="resize-none"
+                  {...field}
+                  // required
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter className="pt-4">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setEditDialogOpen(false)}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} >
+            {isSubmitting ? "Updating..." : "Update Subject"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  </DialogContent>
+</Dialog>
 
-      {isAdmin && (
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full md:max-w-3xl overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle>Add New Case</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <CreateCaseStudyCaseForm
+              subjectId={subjectId || ""}
+              // initialData={currentQuestion}
+              onsuccess={handleFormSubmitted}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* {isAdmin && (
         <CreateCaseStudyCaseModal
           open={isCreateSubjectModalOpen}
           onOpenChange={setIsCreateSubjectModalOpen}
           subjectId={subjectId!}
           onSuccess={fetchSubject}
         />
-      )}
+      )} */}
     </div>
   );
 };

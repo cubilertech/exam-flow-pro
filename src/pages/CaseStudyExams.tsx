@@ -109,7 +109,7 @@ const CaseStudyExams = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {exams.map((exam) => (
           <Card
             key={exam.id}
@@ -124,7 +124,7 @@ const CaseStudyExams = () => {
                 </div>
               </div>
               {exam.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[8.5rem] line-clamp-6">{exam.description}</CardDescription>
+                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">{exam.description}</CardDescription>
               )}
             </CardHeader>
             <CardContent>
@@ -143,19 +143,7 @@ const CaseStudyExams = () => {
         ))}
       </div>
 
-      {exams.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
-            No case study exams available
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {isAdmin
-              ? "Create your first case study exam to get started"
-              : "Check back later for new case study exams"}
-          </p>
-        </div>
-      )}
+    
 
       {isAdmin && (
         <CreateCaseStudyExamModal
