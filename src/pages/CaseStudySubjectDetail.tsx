@@ -6,6 +6,7 @@ import {
   PenSquare,
   Plus,
   Search,
+  Trash,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -48,6 +49,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface SubjectInfo {
   id: string;
@@ -56,6 +58,7 @@ interface SubjectInfo {
   exams_case_id: number;
   order_index: number;
   case_count?: number;
+  is_deleted_subject? : boolean; 
 }
 interface Case {
   id: string;
@@ -70,8 +73,8 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   description: z
     .string()
-    .min(5, { message: "Description must be at least 5 characters" })
-    // .or(z.literal("")), // allows empty string
+    .min(5, { message: "Description must be at least 5 characters" }),
+  // .or(z.literal("")), // allows empty string
 });
 
 export const CaseStudySubjectDetail = () => {
@@ -84,23 +87,26 @@ export const CaseStudySubjectDetail = () => {
   const isAdmin = user?.isAdmin || false;
 
   const [subjectInfo, setSubjectInfo] = useState<SubjectInfo | null>(null);
-  const [cases, setCases] = useState<Case[]>([]);
+  const [cases, setCases] = useState<Case[]>(null);
+  const [caseCount, setCaseCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [subjectToDelete , setSubjectToDelete] = useState<SubjectInfo | null>(null);
+  const [isDeleting,setIsDeleting] = useState(false)
   // const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =    useState(false);
 
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
-  resolver: zodResolver(formSchema),
-  defaultValues: {
-    name: "",
-    description: "",
-  },
-});
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
 
   // console.log("examId", examId);
   // console.log("subjectId", subjectId);
@@ -128,17 +134,19 @@ export const CaseStudySubjectDetail = () => {
         .from("subjects")
         .select("*")
         .eq("id", subjectId)
-        .single();
+        .eq("is_deleted_subject", false)
+        .maybeSingle(); // no error if 0 rows
 
       if (error) throw error;
       setSubjectInfo(data);
     } catch (error) {
+      console.error("load subject info" , error)
       toast({
         title: "Error",
         description: "Failed to load subject info",
         variant: "destructive",
       });
-      navigate("/case-study-exams");
+      navigate(-1);
     } finally {
       setLoading(false);
     }
@@ -152,6 +160,7 @@ export const CaseStudySubjectDetail = () => {
         .from("cases")
         .select("*, case_questions(*)")
         .eq("subject_id", subjectId)
+        .eq("is_deleted_case", false)
         .order("order_index", { ascending: true });
 
       if (error) throw error;
@@ -161,9 +170,10 @@ export const CaseStudySubjectDetail = () => {
           question_count: c.case_questions?.length || 0,
         }));
       }
-
+      setCaseCount(caseWithQuestions.length);
       setCases(caseWithQuestions);
     } catch (error) {
+      console.error("Failed to load cases" ,error)
       toast({
         title: "Error",
         description: "Failed to load cases",
@@ -174,46 +184,108 @@ export const CaseStudySubjectDetail = () => {
     }
   };
 
-  const filteredCases = cases.filter((c) => {
-    const matchesSearch =
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch && (isAdmin || c.question_count > 0);
-  });
-
-const onEditSubject = async (values: z.infer<typeof formSchema>) => {
-  if (!subjectId) return;
-  try {
-    setIsSubmitting(true);
-
-    const { error } = await supabase
-      .from("subjects")
-      .update({
-        name: values.name.trim(),
-        description: values.description?.trim() || null,
+  const filteredCases = cases
+    ? cases.filter((c) => {
+        const matchesSearch =
+          c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch && (isAdmin || c.question_count > 0);
       })
-      .eq("id", subjectId);
+    : [];
 
-    if (error) throw error;
+  const onEditSubject = async (values: z.infer<typeof formSchema>) => {
+    if (!subjectId) return;
+    try {
+      setIsSubmitting(true);
 
-    toast({ title: "Updated", description: "Subject updated successfully" });
-    fetchSubject();
-    setEditDialogOpen(false);
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to update subject",
-      variant: "destructive",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      const { error } = await supabase
+        .from("subjects")
+        .update({
+          name: values.name.trim(),
+          description: values.description?.trim() || null,
+        })
+        .eq("id", subjectId);
 
+      if (error) throw error;
+
+      toast({ title: "Updated", description: "Subject updated successfully" });
+      fetchSubject();
+      setEditDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update subject",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleFormSubmitted = () => {
     setSheetOpen(false);
     fetchCases();
+  };
+
+   const confirmDeleteImmediate = async (subjectId: string)  => {
+      try {
+        setIsDeleting(true);
+        const { error: deleteError } = await supabase
+          .from("subjects")
+          .update({
+            is_deleted_subject: true,
+          })
+          .eq("id", subjectId);
+        if (deleteError) throw deleteError;
+        // navigate(`/case-study-exams/:${examId}/subjects`);
+          navigate(-1);
+        fetchSubject();
+        // const updated = questions.filter((q) => q.id !== questionToDelete.id);
+        // setQuestions(updated);
+        toast({ title: "Deleted", description: "Subject Deleted." });
+      } catch(error) {
+        console.error("Failed to delete Subject", error)
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete Subject",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeleting(false);
+        setSubjectToDelete(null);
+      }
+    };
+
+    
+  const confirmDelete = async () => {
+  if (!subjectToDelete?.id) return;
+  await confirmDeleteImmediate(subjectToDelete.id);
+};
+
+
+   const handleDeleteSubject = async (subject: SubjectInfo) => {
+    try {
+      const { count, error } = await supabase
+        .from("cases")
+        .select("*", { count: "exact", head: true })
+        .eq("subject_id", subject.id);
+  
+      if (error) throw error;
+  
+      if (count === 0) {
+        // No subjects → delete immediately
+        await confirmDeleteImmediate(subject.id);
+      } else {
+        // Has subjects → show confirmation dialog
+        setSubjectToDelete(subject);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Could not check for Case before deleting.",
+        variant: "destructive",
+      });
+    }
   };
 
   function normalizeHTML(input: string) {
@@ -312,17 +384,27 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
           {subjectInfo?.name}
         </h1>
         {isAdmin && (
-          <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-            <PenSquare className="mr-2 h-4 w-4" /> Edit Subject
-          </Button>
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(true)}
+              className="mr-2"
+            >
+              <PenSquare className="h-4 w-4" />
+            </Button>
+            <Button variant="delete" onClick={() => handleDeleteSubject(subjectInfo)}>
+              <Trash className=" h-4 w-4" />
+            </Button>
+          </div>
         )}
+
       </div>
 
       {subjectInfo?.description && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Details</CardTitle>
-            <CardDescription className="h-32 overflow-y-auto">
+            <CardDescription className="max-h-32 overflow-y-auto">
               {subjectInfo.description}
             </CardDescription>
           </CardHeader>
@@ -341,13 +423,8 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
             />
           </div>
 
-          {/* disabled={loading} */}
           {isAdmin && (
             <Button
-              // onClick={() => {
-              //   setCurrentQuestion(null);
-              //   setSheetOpen(true);
-              // }}
               onClick={() => setSheetOpen(true)}
               className="px-4 md:px-6 py-2 md:py-3"
             >
@@ -356,6 +433,19 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
           )}
         </div>
 
+        {caseCount === 0 && cases && (
+          <div className="text-center py-12">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">
+              No Case available
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin
+                ? "Add your first case to get started"
+                : "Check back later for new subjects"}
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map((c) => (
             <Card
@@ -395,62 +485,68 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
         </div>
       </div>
 
-   <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-  <DialogContent className="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle>Edit Subject</DialogTitle>
-    </DialogHeader>
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onEditSubject)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter subject name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter description "
-                  className="resize-none"
-                  {...field}
-                  // required
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <DialogFooter className="pt-4">
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => setEditDialogOpen(false)}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting} className="mb-2 md:mb-0" >
-            {isSubmitting ? "Updating..." : "Update Subject"}
-          </Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  </DialogContent>
-</Dialog>
-
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Subject</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onEditSubject)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter subject name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter description "
+                        className="resize-none"
+                        {...field}
+                        // required
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mb-2 md:mb-0"
+                >
+                  {isSubmitting ? "Updating..." : "Update Subject"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent
@@ -469,6 +565,30 @@ const onEditSubject = async (values: z.infer<typeof formSchema>) => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog
+              open={!!subjectToDelete}
+              onOpenChange={(open) => !open && setSubjectToDelete(null)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete subject? Related Data also Deleted.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
       {/* {isAdmin && (
         <CreateCaseStudyCaseModal

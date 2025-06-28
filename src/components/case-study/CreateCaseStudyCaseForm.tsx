@@ -102,7 +102,6 @@ export const CreateCaseStudyCaseForm = ({
   });
 
   const handleRemirrorChange = (key: keyof RemirrorFields, html: string) => {
-    // setFormData((prev) => ({ ...prev, [key]: (html) }));
     setFormData((prev) => ({ ...prev, [key]: JSON.stringify(html) }));
   };
 
@@ -124,7 +123,7 @@ export const CreateCaseStudyCaseForm = ({
   const validateForm = () => {
     const hasTitle = formData.title.trim();
     const scenarioLength = getStrippedTextLength(formData.scenario);
-    return hasTitle && scenarioLength >= 2;
+    return hasTitle && scenarioLength >= 1;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

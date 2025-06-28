@@ -68,7 +68,7 @@ export const CreateCaseStudyExamModal = ({
         title: "Success",
         description: "Exam created successfully",
       });
-
+      console.log("HandleSubmit")
       setFormData({ title: "", description: "" });
       setErrors({});
       onOpenChange(false);

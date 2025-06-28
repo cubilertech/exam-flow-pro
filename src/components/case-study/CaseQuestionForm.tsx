@@ -33,7 +33,6 @@ import { supabase } from "@/integrations/supabase/client";
 interface RemirrorFields {
   question_text: string;
   correct_answer: string;
-
 }
 interface Question {
   id: string;
@@ -50,7 +49,7 @@ interface CaseQuestionFormProps {
 
 export const CaseQuestionForm = ({
   caseId,
-  onFormSubmitted, 
+  onFormSubmitted,
   initialData,
 }: CaseQuestionFormProps) => {
   const [formData, setFormData] = useState<RemirrorFields>({
@@ -60,17 +59,16 @@ export const CaseQuestionForm = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const  {toast} = useToast();
-
+  const { toast } = useToast();
 
   function normalizeHTML(input: string) {
-  try {
-    const maybeParsed = JSON.parse(input);
-    return typeof maybeParsed === "string" ? maybeParsed : input;
-  } catch {
-    return input;
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
   }
-}
 
   const extensions = () => [
     new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
@@ -101,34 +99,33 @@ export const CaseQuestionForm = ({
   };
 
   const getStrippedTextLength = (html: string) => {
-  try {
-    const parsed = JSON.parse(html) as string;
-    const text = parsed
-      .replace(/<[^>]+>/g, "")   // Remove HTML tags
-      .replace(/&nbsp;/g, "")    // Remove &nbsp;
-      .replace(/\s+/g, "")       // Remove all spaces
-      .trim();
-    return text.length;
-  } catch {
-    return 0;
-  }
-};
+    try {
+      const parsed = JSON.parse(html) as string;
+      const text = parsed
+        .replace(/<[^>]+>/g, "") // Remove HTML tags
+        .replace(/&nbsp;/g, "") // Remove &nbsp;
+        .replace(/\s+/g, "") // Remove all spaces
+        .trim();
+      return text.length;
+    } catch {
+      return 0;
+    }
+  };
 
-const validateForm = () => {
-  const hasQuestion = formData.question_text.trim();
-  const answerLength = getStrippedTextLength(formData.correct_answer);
+  const validateForm = () => {
+    const hasQuestion = formData.question_text.trim();
+    const answerLength = getStrippedTextLength(formData.correct_answer);
 
-  return hasQuestion && answerLength >= 2;
-};
+    return hasQuestion && answerLength >= 2;
+  };
 
   // const validateForm = () => {
   //   return (
   //     formData.question_text.trim() &&
-  //     formData.correct_answer.trim() 
-      
+  //     formData.correct_answer.trim()
+
   //   );
   // };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,16 +150,35 @@ const validateForm = () => {
           .update({
             question_text: formData.question_text,
             correct_answer: formData.correct_answer,
-            explanation: null
+            explanation: null,
           })
           .eq("id", initialData.id);
       } else {
         // Create new question
+        // await supabase.from("case_questions").insert({
+        //   case_id: caseId,
+        //   question_text: formData.question_text,
+        //   correct_answer: formData.correct_answer,
+        //   explanation: null, //  formData.explanation
+        // });
+
+        // Get the current number of questions for this case
+        const { count, error: countError } = await supabase
+          .from("case_questions")
+          .select("*", { count: "exact", head: true })
+          .eq("case_id", caseId);
+
+        if (countError) {
+          throw countError;
+        }
+
+        // Create new question with correct order_index
         await supabase.from("case_questions").insert({
           case_id: caseId,
           question_text: formData.question_text,
           correct_answer: formData.correct_answer,
-          explanation: null, //  formData.explanation
+          explanation: null, // formData.explanation
+          order_index: count ?? 0, // Set order_index to the next available index
         });
       }
 
@@ -170,7 +186,6 @@ const validateForm = () => {
       setFormData({
         question_text: "",
         correct_answer: "",
-       
       });
 
       toast({
@@ -265,34 +280,6 @@ const validateForm = () => {
           </Remirror>
         </ThemeProvider>
       </div>
-
-      {/* Explanation using Remirror */}
-      {/* <div>
-        <h3 className="font-semibold text-lg mb-2">Explanation *</h3>
-        <ThemeProvider>
-          <Remirror
-            manager={explanationEditor.manager}
-            initialContent={explanationEditor.state}
-            onChange={({ helpers }) =>
-              handleRemirrorChange("explanation", helpers.getHTML())
-            }
-            autoRender="end"
-            i18nFormat={i18nFormat}
-          >
-            <Toolbar>
-              <Box sx={{ display: "flex" }}>
-                <ToggleBoldButton />
-                <HeadingLevelButtonGroup />
-                <ToggleCodeButton />
-                <TextAlignmentButtonGroup />
-                <IndentationButtonGroup />
-                <UploadImageButton />
-                <TableDropdown />
-              </Box>
-            </Toolbar>
-          </Remirror>
-        </ThemeProvider>
-      </div> */}
 
       {/* Buttons for submit/cancel */}
       <div className="flex justify-end space-x-2">

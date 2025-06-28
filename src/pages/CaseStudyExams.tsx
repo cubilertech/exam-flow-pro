@@ -41,8 +41,12 @@ const CaseStudyExams = () => {
       const { data: examsData, error: examsError } = await supabase
         .from("exams_case")
         .select("*, subjects(*)")
+        .eq("is_deleted_exam", false)
+        .eq("subjects.is_deleted_subject", false) // only include non-deleted subjects
         .order("created_at", { ascending: false });
         // console.log("Fetched exams data:", examsData);
+
+         if (examsError) throw examsError;
 
       if (examsData.length > 0)
         examsWithSubjectCount = examsData.map((exam) => ({
@@ -52,7 +56,7 @@ const CaseStudyExams = () => {
 
       setExams(examsWithSubjectCount || []);
       
-      if (examsError) throw examsError;
+     
     } catch (error) {
       console.error("Error fetching case study exams:", error);
       toast.error("Failed to load case study exams");

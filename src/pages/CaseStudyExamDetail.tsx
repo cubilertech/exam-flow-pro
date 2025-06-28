@@ -9,7 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, ArrowLeft, BookOpen, FileText, PenSquare } from "lucide-react";
+import {
+  Plus,
+  ArrowLeft,
+  BookOpen,
+  FileText,
+  PenSquare,
+  Trash,
+} from "lucide-react";
 import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -34,6 +41,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { NumberDomain } from "recharts/types/util/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CaseStudyExamInfo {
   id: string;
@@ -42,6 +59,7 @@ interface CaseStudyExamInfo {
   order_index: number;
   created_at: string;
   subject_count?: number;
+  is_deleted_exam: boolean;
   is_subscribed?: boolean;
 }
 
@@ -74,6 +92,10 @@ const CaseStudyExamDetail = () => {
     useState(false);
   const [subjectCount, setSubjectCount] = useState<Number>(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<CaseStudyExamInfo | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -100,13 +122,13 @@ const CaseStudyExamDetail = () => {
   }, [examInfo, form]);
 
   const fetchExam = async () => {
-    if (!examId) return;
     try {
       setLoading(true);
       const { data: examData, error: examError } = await supabase
         .from("exams_case")
         .select("*")
         .eq("id", examId)
+        .eq("is_deleted_exam", false)
         .single();
 
       setExamInfo(examData);
@@ -123,8 +145,6 @@ const CaseStudyExamDetail = () => {
   };
 
   const fetchSubjects = async () => {
-    if (!examId) return;
-
     try {
       setLoading(true);
       // Fetch subjects
@@ -132,6 +152,7 @@ const CaseStudyExamDetail = () => {
         .from("subjects")
         .select("*")
         .eq("exams_case_id", examId)
+        .eq("is_deleted_subject", false)
         .order("order_index", { ascending: true });
 
       if (subjectsError) throw subjectsError;
@@ -144,6 +165,7 @@ const CaseStudyExamDetail = () => {
           const { count: caseCount } = await supabase
             .from("cases")
             .select("*", { count: "exact", head: true })
+             .eq("is_deleted_case", false)
             .eq("subject_id", subject.id);
 
           return {
@@ -196,6 +218,65 @@ const CaseStudyExamDetail = () => {
     }
   };
 
+ const handleDeleteExam = async (exam: CaseStudyExamInfo) => {
+  try {
+    const { count, error } = await supabase
+      .from("subjects")
+      .select("*", { count: "exact", head: true })
+      .eq("exams_case_id", exam.id);
+
+    if (error) throw error;
+
+    if (count === 0) {
+      // No subjects → delete immediately
+      await confirmDeleteImmediate(exam.id);
+    } else {
+      // Has subjects → show confirmation dialog
+      setExamToDelete(exam);
+    }
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: "Could not check for subjects before deleting.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+  const confirmDeleteImmediate = async (examId: string)  => {
+    try {
+      setIsDeleting(true);
+      const { error: deleteError } = await supabase
+        .from("exams_case")
+        .update({
+          is_deleted_exam: true,
+        })
+        .eq("id", examId);
+      if (deleteError) throw deleteError;
+      navigate("/case-study-exams");
+      fetchExam();
+      // const updated = questions.filter((q) => q.id !== questionToDelete.id);
+      // setQuestions(updated);
+      toast({ title: "Deleted", description: "Question removed." });
+    } catch(error) {
+      console.error("Failed to delete question", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete question",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setExamToDelete(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+  if (!examToDelete?.id) return;
+  await confirmDeleteImmediate(examToDelete.id);
+};
+
   const handleSubjectClick = (subject: Subject) => {
     navigate(`/case-study-exams/${examId}/subjects/${subject.id}`);
   };
@@ -221,7 +302,7 @@ const CaseStudyExamDetail = () => {
             Exam not found
           </h3>
           <Button onClick={() => navigate("/case-study-exams")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mt-3 mr-2 h-4 w-4" />
             Back to Exams
           </Button>
         </div>
@@ -268,7 +349,6 @@ const CaseStudyExamDetail = () => {
             // }}
           >
             Exam
-            
           </Link>
         </li>
       </ol>
@@ -278,9 +358,18 @@ const CaseStudyExamDetail = () => {
           {examInfo?.title}
         </h1>
         {isAdmin && (
-          <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-            <PenSquare className="mr-2 h-4 w-4" /> Edit Exam
-          </Button>
+          <div>
+            <Button
+              variant="outline"
+              className="mr-2"
+              onClick={() => setEditDialogOpen(true)}
+            >
+              <PenSquare className=" h-4 w-4" />
+            </Button>
+            <Button variant="delete" onClick={() => handleDeleteExam(examInfo)}>
+              <Trash className=" h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
 
@@ -288,7 +377,7 @@ const CaseStudyExamDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Details</CardTitle>
-            <CardDescription className="h-32 overflow-y-auto">
+            <CardDescription className="max-h-32 overflow-y-auto">
               {examInfo.description}
             </CardDescription>
           </CardHeader>
@@ -350,7 +439,7 @@ const CaseStudyExamDetail = () => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Subject</DialogTitle>
+            <DialogTitle>Edit Exam</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
@@ -396,7 +485,11 @@ const CaseStudyExamDetail = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting} className="mb-2 md:mb-0">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="mb-2 md:mb-0"
+                >
                   {isSubmitting ? "Updating..." : "Update Subject"}
                 </Button>
               </DialogFooter>
@@ -404,6 +497,30 @@ const CaseStudyExamDetail = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!examToDelete}
+        onOpenChange={(open) => !open && setExamToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Exam.? Related Data also Deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {isAdmin && (
         <CreateCaseStudySubjectModal
