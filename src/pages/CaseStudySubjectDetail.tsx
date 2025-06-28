@@ -319,7 +319,7 @@ export const CaseStudySubjectDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-2);
+              navigate(`/case-study-exams`);
             }}
           >
             Home
@@ -345,7 +345,7 @@ export const CaseStudySubjectDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-1);
+              navigate(`/case-study-exams/${examId}`);
             }}
           >
             Exam
@@ -442,7 +442,7 @@ export const CaseStudySubjectDetail = () => {
             <p className="text-sm text-muted-foreground">
               {isAdmin
                 ? "Add your first case to get started"
-                : "Check back later for new subjects"}
+                : "Check back later for new Cases"}
             </p>
           </div>
         )}

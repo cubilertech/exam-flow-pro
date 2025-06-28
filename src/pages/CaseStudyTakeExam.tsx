@@ -219,14 +219,14 @@ export const CaseStudyTakeExam = () => {
         
         toast({
           title: "Success",
-          description: "Question bank created successfully",
+          description: "Answer submitted successfully",
         });
       }
       if (currentQuestionIndex < totalQuestions) {
          setCurrentQuestionIndex(currentQuestionIndex + 1);
      }
      if (currentQuestionIndex === totalQuestions) {
-      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`)
+      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);     
         // (/case-study-exams/:examId/subjects/:subjectId/cases/:caseId)
      }
     } catch (error) {
@@ -283,25 +283,25 @@ export const CaseStudyTakeExam = () => {
     return Object.keys(savedAnswers).length;
   };
 
-  const getStrippedTextLength = (html: string) => {
-  try {
-    const parsed = JSON.parse(html) as string;
-    const text = parsed
-      .replace(/<[^>]+>/g, "")   // Remove HTML tags
-      .replace(/&nbsp;/g, "")    // Remove &nbsp;
-      .replace(/\s+/g, "")       // Remove all spaces
-      .trim();
-    return text.length;
-  } catch {
-    return 0;
-  }
-};
-  const validateForm = () => {
+//   const getStrippedTextLength = (html: string) => {
+//   try {
+//     const parsed = JSON.parse(html) as string;
+//     const text = parsed
+//       .replace(/<[^>]+>/g, "")   // Remove HTML tags
+//       .replace(/&nbsp;/g, "")    // Remove &nbsp;
+//       .replace(/\s+/g, "")       // Remove all spaces
+//       .trim();
+//     return text.length;
+//   } catch {
+//     return 0;
+//   }
+// };
+//   const validateForm = () => {
   
-  const answerLength = getStrippedTextLength(formData.correct_answer);
+//   const answerLength = getStrippedTextLength(formData.correct_answer);
 
-  return answerLength >= 2;
-};
+//   return answerLength >= 2;
+// };
 
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">

@@ -119,14 +119,6 @@ export const CaseQuestionForm = ({
     return hasQuestion && answerLength >= 2;
   };
 
-  // const validateForm = () => {
-  //   return (
-  //     formData.question_text.trim() &&
-  //     formData.correct_answer.trim()
-
-  //   );
-  // };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -154,14 +146,7 @@ export const CaseQuestionForm = ({
           })
           .eq("id", initialData.id);
       } else {
-        // Create new question
-        // await supabase.from("case_questions").insert({
-        //   case_id: caseId,
-        //   question_text: formData.question_text,
-        //   correct_answer: formData.correct_answer,
-        //   explanation: null, //  formData.explanation
-        // });
-
+        
         // Get the current number of questions for this case
         const { count, error: countError } = await supabase
           .from("case_questions")

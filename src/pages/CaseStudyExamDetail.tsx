@@ -131,6 +131,8 @@ const CaseStudyExamDetail = () => {
         .eq("is_deleted_exam", false)
         .single();
 
+        if(examError) throw examError
+
       setExamInfo(examData);
     } catch (error) {
       console.error("Error fetching exam data:", error);
@@ -144,49 +146,136 @@ const CaseStudyExamDetail = () => {
     }
   };
 
-  const fetchSubjects = async () => {
-    try {
-      setLoading(true);
-      // Fetch subjects
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from("subjects")
-        .select("*")
-        .eq("exams_case_id", examId)
-        .eq("is_deleted_subject", false)
-        .order("order_index", { ascending: true });
+  // ***************************************this one
+  // const fetchSubjects = async () => {
+  //   try {
+  //     setLoading(true);
+  //     // Fetch subjects
+  //     const { data: subjectsData, error: subjectsError } = await supabase
+  //       .from("subjects")
+  //       .select("*")
+  //       .eq("exams_case_id", examId)
+  //       .eq("is_deleted_subject", false)
+  //       .order("order_index", { ascending: true });
 
-      if (subjectsError) throw subjectsError;
+  //     if (subjectsError) throw subjectsError;
 
-      setSubjectCount(subjectsData.length);
+  //     setSubjectCount(subjectsData.length);
 
-      // For each subject, get case count
-      const subjectsWithCaseCount = await Promise.all(
-        (subjectsData || []).map(async (subject) => {
-          const { count: caseCount } = await supabase
-            .from("cases")
-            .select("*", { count: "exact", head: true })
-             .eq("is_deleted_case", false)
-            .eq("subject_id", subject.id);
+  //     // For each subject, get case count
+  //     const subjectsWithCaseCount = await Promise.all(
+  //       (subjectsData || []).map(async (subject) => {
+  //         const { count: caseCount } = await supabase
+  //           .from("cases")
+  //           .select("*", { count: "exact", head: true })
+  //            .eq("is_deleted_case", false)
+  //           .eq("subject_id", subject.id);
 
-          return {
-            ...subject,
-            case_count: caseCount || 0,
-          };
-        })
-      );
-      // console.log(subjectsWithCaseCount,)
-      setSubjects(subjectsWithCaseCount);
-    } catch (error) {
-      console.error("Error fetching exam data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load Subject data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  //         return {
+  //           ...subject,
+  //           case_count: caseCount || 0,
+  //         };
+  //       })
+  //     );
+  //     // console.log(subjectsWithCaseCount,)
+  //     setSubjects(subjectsWithCaseCount);
+  //   } catch (error) {
+  //     console.error("Error fetching exam data:", error);
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to load Subject data",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+// ****************************************** this one
+
+
+
+
+const fetchSubjects = async () => {
+  try {
+    setLoading(true);
+
+    const { data: subjectsData, error: subjectsError } = await supabase
+      .from("subjects")
+      .select("*")
+      .eq("exams_case_id", examId)
+      .eq("is_deleted_subject", false)
+      .order("order_index", { ascending: true });
+
+    if (subjectsError) throw subjectsError;
+
+    // Track all processed subjects
+    const processedSubjects: Subject[] = [];
+
+    for (const subject of subjectsData || []) {
+      // Fetch all non-deleted cases under this subject
+      const { data: cases, error: casesError } = await supabase
+        .from("cases")
+        .select("id")
+        .eq("is_deleted_case", false)
+        .eq("subject_id", subject.id);
+
+      if (casesError) throw casesError;
+
+      let caseCount = 0;
+
+      if (cases && cases.length > 0) {
+        if (isAdmin) {
+          // Admin: count all non-deleted cases
+          caseCount = cases.length;
+        } else {
+          // User: check for questions under each case
+          let visibleCaseCount = 0;
+
+          for (const caseItem of cases) {
+            const { count: questionCount, error: questionError } =
+              await supabase
+                .from("case_questions")
+                .select("*", { count: "exact", head: true })
+                
+                .eq("case_id", caseItem.id);
+                console.log("Case Count for user" , questionCount);
+
+            if (questionError) throw questionError;
+
+            if ((questionCount || 0) > 0) {
+              visibleCaseCount++;
+            }
+          }
+
+          caseCount = visibleCaseCount;
+        }
+      }
+
+      // For users: only include subject if it has visible case count
+      if (isAdmin || caseCount > 0) {
+        processedSubjects.push({
+          ...subject,
+          case_count: caseCount,
+        });
+      }
     }
-  };
+
+    setSubjectCount(processedSubjects.length);
+    setSubjects(processedSubjects);
+  } catch (error) {
+    console.error("Error fetching subject data:", error);
+    toast({
+      title: "Error",
+      description: "Failed to load Subject data",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const onEditExam = async (values: z.infer<typeof formSchema>) => {
     if (!examId) return;
@@ -258,12 +347,12 @@ const CaseStudyExamDetail = () => {
       fetchExam();
       // const updated = questions.filter((q) => q.id !== questionToDelete.id);
       // setQuestions(updated);
-      toast({ title: "Deleted", description: "Question removed." });
+      toast({ title: "Deleted", description: "Exam Deleted." });
     } catch(error) {
-      console.error("Failed to delete question", error)
+      console.error("Failed to delete Exam", error)
       toast({
         title: "Error",
-        description: "Failed to delete question",
+        description: "Failed to delete Exam",
         variant: "destructive",
       });
     } finally {
@@ -293,12 +382,12 @@ const CaseStudyExamDetail = () => {
       </div>
     );
   }
-
+  // console.log("examId" , examId)
   if (!examInfo) {
     return (
       <div className="container mx-auto py-6">
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+          <h3 className="text-lg font-medium text-muted-foreground mb-4">
             Exam not found
           </h3>
           <Button onClick={() => navigate("/case-study-exams")}>
@@ -311,6 +400,7 @@ const CaseStudyExamDetail = () => {
   }
 
   return (
+    
     <div className="container mx-auto py-6 space-y-6">
       <ol className="flex items-center whitespace-nowrap text-sm md:text-base ">
         <li className="inline-flex items-center">
@@ -319,7 +409,7 @@ const CaseStudyExamDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-1);
+              navigate(`/case-study-exams`);
             }}
           >
             Home
@@ -467,7 +557,7 @@ const CaseStudyExamDetail = () => {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter description (optional)"
+                        placeholder="Enter description"
                         className="resize-none"
                         {...field}
                       />

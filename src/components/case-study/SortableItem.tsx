@@ -63,9 +63,7 @@ export const SortableItem = ({
           data-no-drag
         >
           <div className="flex">
-            {/* <div className=" text-black  flex items-center justify-center text-sm font-semibold mr-4 flex-shrink-0">
-              
-            </div> */}
+            
             <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
               
                 <div className="flex flex-row text-sm md:text-base pt-1 md:pt-0">

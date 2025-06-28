@@ -21,7 +21,11 @@ interface Case {
 }
 
 export const CaseSenerioShow = () => {
-  const { caseId } = useParams<{ caseId: string }>();
+  const { examId, subjectId, caseId } = useParams<{
+    examId: string;
+    subjectId: string;
+    caseId: string;
+  }>();
   const { user } = useAppSelector((state) => state.auth);
   const [caseInfo, setCaseInfo] = React.useState<Case | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -92,6 +96,15 @@ export const CaseSenerioShow = () => {
     }
   };
 
+  function normalizeHTML(input: string) {
+  try {
+    const maybeParsed = JSON.parse(input);
+    return typeof maybeParsed === "string" ? maybeParsed : input;
+  } catch {
+    return input;
+  }
+}
+
   const handleStartExam = async () => {
     try {
       const payload = {
@@ -115,39 +128,7 @@ export const CaseSenerioShow = () => {
 
       setResultData(data);
       setError(error);
-      window.location.href = `/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/testId/${data.id}`; // Assuming data.id is the exam ID
-      // navigate(
-      //   `/case-study-exams/${caseInfo.subject_id}/subjects/${caseInfo.subject_id}/cases/${caseId}/ExamId/${data.id}` // Assuming data.id is the exam ID
-      // );
-      // let resultData, resultError;
-
-      // if (!resultData) {
-      //   console.log("Insert" , resultData)
-      //   // First time: INSERT
-      //   const { data, error } = await supabase
-      //     .from("user_case_progress")
-      //     .insert({
-      //       ...payload,
-      //       created_at: new Date().toISOString(),
-      //     })
-      //     .select()
-      //     .single();
-      //     console.log("Data:", data, "Error:", error);
-
-      //   setResultData(data);
-      //   setError(error);
-
-      // } else {
-      //   // Already exists: UPDATE
-      //   console.log("Update")
-      //   const { data, error } = await supabase
-      //     .from("user_case_progress")
-      //     .update(payload)
-      //     .eq("id", resultData.id);
-
-      //   setResultData(data);
-      //   setError(error);
-      // }
+      window.location.href = `/case-study-exams/${examId}/subjects/${subjectId}/cases/${caseId}/testId/${data.id}`; // Assuming data.id is the exam ID
 
       if (error) throw error;
     } catch (error) {
@@ -160,31 +141,7 @@ export const CaseSenerioShow = () => {
     }
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-  //       <div className="max-w-4xl mx-auto">
-  //         <div className="mb-6">
-  //           <Skeleton className="h-8 w-32 mb-4" />
-  //         </div>
-  //         <Card className="shadow-xl border-0">
-  //           <CardHeader className="pb-6">
-  //             <Skeleton className="h-8 w-3/4 mb-2" />
-  //             <Skeleton className="h-4 w-32" />
-  //           </CardHeader>
-  //           <CardContent className="space-y-4">
-  //             <Skeleton className="h-4 w-full" />
-  //             <Skeleton className="h-4 w-full" />
-  //             <Skeleton className="h-4 w-3/4" />
-  //             <div className="pt-6">
-  //               <Skeleton className="h-12 w-32 ml-auto" />
-  //             </div>
-  //           </CardContent>
-  //         </Card>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+
 
   if (loading) {
     return (
@@ -258,7 +215,7 @@ export const CaseSenerioShow = () => {
               </h3>
               <div className="bg-gray-50 rounded-lg p-6 ">
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
-                  {caseInfo.scenario}
+                   <span dangerouslySetInnerHTML={{__html : normalizeHTML(caseInfo.scenario)}}/>
                 </p>
               </div>
             </div>

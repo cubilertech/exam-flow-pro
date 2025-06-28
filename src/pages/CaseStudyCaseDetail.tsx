@@ -264,6 +264,8 @@ export const CaseStudyCaseDetail = () => {
         .order("order_index", { ascending: true })
         .maybeSingle();
 
+        if(error) throw error
+
       if (data) {
         setCaseInfo(data);
       }
@@ -287,6 +289,9 @@ export const CaseStudyCaseDetail = () => {
         .select("*")
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
+
+
+         if(error) throw error
 
       if (data.length === 0) {
         setAvailbleQuestions([]);
@@ -553,7 +558,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-3);
+              navigate(`/case-study-exams`);
             }}
           >
             Home
@@ -579,7 +584,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-2);
+              navigate(`/case-study-exams/${examId}`);
             }}
           >
             Exam
@@ -605,7 +610,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-1);
+              navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
             }}
           >
             Subject
@@ -689,7 +694,7 @@ export const CaseStudyCaseDetail = () => {
               setCurrentQuestion(null);
               setSheetOpen(true);
             }}
-            className="px-3 md:px-6 py-2 md:py-3"
+            className="px-3  md:px-6 py-2 md:py-3"
           >
             <Plus className="h-4 w-4 mr-2" /> Add Question
           </Button>
