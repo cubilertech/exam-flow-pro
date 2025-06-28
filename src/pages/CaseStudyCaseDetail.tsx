@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, PenSquare, Plus, Search, Edit, Trash2, GripVertical } from "lucide-react";
+import {
+  PenSquare,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Trash,
+  BookOpen,
+  Bold,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import * as z from "zod";
@@ -28,8 +37,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { useAppSelector } from "@/lib/hooks";
 import {
   Sheet,
@@ -62,20 +69,22 @@ import {
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
-// import { CaseStudyTakeExam } from "./CaseStudyTakeExam";
+
 import { CaseSenerioShow } from "./CaseSenerioShow";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
+import { useToast } from "@/hooks/use-toast";
+import { SortableItem } from "@/components/case-study/SortableItem";
 
-interface Case {
+interface CaseInfo {
   id: string;
   title: string;
   subject_id: number;
   scenario: string;
   order_index: number;
   question_count: number;
+  is_deleted_case: boolean;
 }
 
 interface Question {
@@ -92,143 +101,93 @@ const formSchema = z.object({
   scenario: z.string().optional(),
 });
 
-const SortableItem = ({
-  selectedQuestion,
-  onDelete,
-  onEdit,
-}: {
-  selectedQuestion: Question;
-  onDelete: (question: Question) => void;
-  onEdit: (question: Question) => void;
-}) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: selectedQuestion.id });
-  const customListeners = {
-    ...listeners,
-    onPointerDown: (event: React.PointerEvent) => {
-      const isNoDrag = (event.target as HTMLElement)?.closest("[data-no-drag]");
-      if (isNoDrag) {
-        return; // Block drag
-      }
-      listeners?.onPointerDown?.(event); // Call original
-    },
-  };
+// const SortableItem = ({
+//   selectedQuestion,
+//   onDelete,
+//   onEdit,
+// }: {
+//   selectedQuestion: Question;
+//   onDelete: (question: Question) => void;
+//   onEdit: (question: Question) => void;
+// }) => {
+//   const { attributes, listeners, setNodeRef, transform, transition } =
+//     useSortable({ id: selectedQuestion.id });
+//   const customListeners = {
+//     ...listeners,
+//     onPointerDown: (event: React.PointerEvent) => {
+//       const isNoDrag = (event.target as HTMLElement)?.closest("[data-no-drag]");
+//       if (isNoDrag) {
+//         return; // Block drag
+//       }
+//       listeners?.onPointerDown?.(event); // Call original
+//     },
+//   };
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+//   const style = {
+//     transform: CSS.Transform.toString(transform),
+//     transition,
+//   };
 
-  function normalizeHTML(input: string) {
-    try {
-      const maybeParsed = JSON.parse(input);
-      return typeof maybeParsed === "string" ? maybeParsed : input;
-    } catch {
-      return input;
-    }
-  }
+//   function normalizeHTML(input: string) {
+//     try {
+//       const maybeParsed = JSON.parse(input);
+//       return typeof maybeParsed === "string" ? maybeParsed : input;
+//     } catch {
+//       return input;
+//     }
+//   }
 
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
-      {/* <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-200 cursor-move w-full"> */}
-      {/* <div className="bg-slate-500 flex">
-        <div className="w-8 h-full cursor-move bg-gray-400 text-center">
-          ..
-          <br />
-          .. <br />
-          ..
-        </div>
+//   return (
+//     <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
+//       <div className="flex min-h-full">
+//         {/* Drag Handle */}
+//         <div className="w-12 cursor-move bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center rounded-l-lg border-r">
+//           <GripVertical className="w-4 h-4 text-gray-400" />
+//         </div>
 
-        <CardHeader
-          className="pb-3 p-4 bg-blue-400 flex-1 drag-container group"
-          data-no-drag
-        >
-          <div className="flex">
-            <div className="w-3 h-3 ">{selectedQuestion.order_index + 1}</div>
+//         {/* Question Content */}
+//         <CardHeader
+//           className="pb-3 p-4 bg-gray-100 flex-1 group rounded-r-lg"
+//           data-no-drag
+//         >
+//           <div className="flex">
+//             <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4 flex-shrink-0">
+//               {selectedQuestion.order_index + 1}
+//             </div>
+//             <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
+//               <h3
+//                 className="text-sm md:text-base"
+//                 dangerouslySetInnerHTML={{
+//                   __html: normalizeHTML(selectedQuestion.question_text),
+//                 }}
+//               ></h3>
 
-            <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
-              <h3
-                className="text-base md:text-lg font-semibold text-gray-900 leading-tight"
-                dangerouslySetInnerHTML={{
-                  __html: normalizeHTML(selectedQuestion.question_text),
-                }}
-              ></h3>
-              <div
-                className="flex gap-2 flex-shrink-0 button-container 
-                    opacity-100 pointer-events-auto
-                    md:opacity-0 md:pointer-events-none 
-                    md:group-hover:opacity-100 md:group-hover:pointer-events-auto 
-                    transition-opacity duration-200"
-              >
-                <Button
-                  data-no-drag
-                  variant="outline"
-                  size="sm"
-                  className="text-primary border-primary hover:bg-blue-50 hover:border-blue-300"
-                  onClick={() => onEdit(selectedQuestion)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  data-no-drag
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
-                  onClick={() => onDelete(selectedQuestion)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </div> */}
-       <div className="flex min-h-full">
-        {/* Drag Handle */}
-        <div className="w-12 cursor-move bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center rounded-l-lg border-r">
-          <GripVertical className="w-4 h-4 text-gray-400" />
-        </div>
-
-        {/* Question Content */}
-        <CardHeader className="pb-3 p-4 bg-gray-100 flex-1 group rounded-r-lg" data-no-drag>
-          <div className="flex">
-            <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4 flex-shrink-0">
-              {selectedQuestion.order_index + 1}
-            </div>
-            <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
-              <h3
-                className="text-sm md:text-base"
-                dangerouslySetInnerHTML={{
-                  __html: normalizeHTML(selectedQuestion.question_text),
-                }}
-              ></h3>
-              
-              <div className="flex gap-2 flex-shrink-0 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                  onClick={() => onEdit(selectedQuestion)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
-                  onClick={() => onDelete(selectedQuestion)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </div>
-      {/* </Card> */}
-    </div>
-  );
-};
+//               <div className="flex gap-2 flex-shrink-0 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
+//                 <Button
+//                   variant="outline"
+//                   size="sm"
+//                   className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+//                   onClick={() => onEdit(selectedQuestion)}
+//                 >
+//                   <Edit className="w-4 h-4" />
+//                 </Button>
+//                 <Button
+//                   variant="outline"
+//                   size="sm"
+//                   className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
+//                   onClick={() => onDelete(selectedQuestion)}
+//                 >
+//                   <Trash2 className="w-4 h-4" />
+//                 </Button>
+//               </div>
+//             </div>
+//           </div>
+//         </CardHeader>
+//       </div>
+//       {/* </Card> */}
+//     </div>
+//   );
+// };
 
 export const CaseStudyCaseDetail = () => {
   const { examId, subjectId, caseId } = useParams<{
@@ -239,23 +198,23 @@ export const CaseStudyCaseDetail = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
-
-  const [caseInfo, setCaseInfo] = useState<Case | null>(null);
+  const [caseInfo, setCaseInfo] = useState<CaseInfo | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [availbleQuestions, setAvailbleQuestions] = useState<Question[] | null>(null);
   const [questionOrder, setQuestionOrder] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(
-    null
-  );
-  console.log("question order ", questionOrder);
-  const [isDeleting, setIsDeleting] = useState(false);
-
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [loading,setLoading] = useState(true);
+  const [caseToDelete, setCaseToDelete] = useState<CaseInfo | null>(null);
+  const [isDeletingCase, setIsDeletingCase] = useState(false);
   const { toast } = useToast();
 
+  // console.log("question order ", questionOrder);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -264,9 +223,12 @@ export const CaseStudyCaseDetail = () => {
     },
   });
 
+  console.log("ava", availbleQuestions);
+  console.log("Ques", questions);
+
   useEffect(() => {
     if (caseId) {
-      fetchCaseDetail();
+      fetchCaseInfo();
       fetchQuestions(caseId);
     }
   }, [caseId]);
@@ -282,37 +244,45 @@ export const CaseStudyCaseDetail = () => {
 
   useEffect(() => {
     const ordered = questions
-      .filter(
-        (q) =>
-          q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          q.explanation.toLowerCase().includes(searchTerm.toLowerCase())
+      .filter((q) =>
+        q.question_text.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .map((q) => q.id);
 
     setQuestionOrder(ordered);
   }, [questions, searchTerm]);
 
-  const fetchCaseDetail = async () => {
-    if (!caseId) return ;
-    try { 
+  const fetchCaseInfo = async () => {
+    setLoading(true);
+    if (!caseId) return;
+    try {
       const { data, error } = await supabase
         .from("cases")
         .select("*")
         .eq("id", caseId)
+        .eq("is_deleted_case", false)
         .order("order_index", { ascending: true })
-        .single();
-  
+        .maybeSingle();
+
+        if(error) throw error
+
       if (data) {
         setCaseInfo(data);
       }
     } catch (error) {
-
-      console.error("Error in Fetching Case")
-      
+      console.error("Error in Fetching Case");
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }finally{
+      setLoading(false);
     }
   };
 
   const fetchQuestions = async (caseId: string) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from("case_questions")
@@ -320,11 +290,17 @@ export const CaseStudyCaseDetail = () => {
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
 
+
+         if(error) throw error
+
       if (data.length === 0) {
-        console.log("No Fetched Questions: ");
+        setAvailbleQuestions([]);
+        console.log("Fetched Questions:", data);
       }
+
       if (data.length > 0) {
         console.log("Fetched Questions:", data);
+        setQuestionCount(data.length);
         setQuestions(data);
       }
     } catch (error) {
@@ -334,6 +310,8 @@ export const CaseStudyCaseDetail = () => {
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
+    }finally{
+      setLoading(false)
     }
   };
 
@@ -391,90 +369,65 @@ export const CaseStudyCaseDetail = () => {
   //   }
   // };
 
-
   const handleDragEnd = async (event) => {
-  if (
-    event.target &&
-    "closest" in event.target &&
-    (event.target as HTMLElement).closest("[data-no-drag]")
-  ) {
-    return;
-  }
+    if (
+      event.target &&
+      "closest" in event.target &&
+      (event.target as HTMLElement).closest("[data-no-drag]")
+    ) {
+      return;
+    }
 
-  const { active, over } = event;
-  if (!over || active.id === over.id) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const oldIndex = questionOrder.indexOf(active.id as string);
-  const newIndex = questionOrder.indexOf(over.id as string);
-  const newOrder = arrayMove(questionOrder, oldIndex, newIndex);
-  setQuestionOrder(newOrder);
+    const oldIndex = questionOrder.indexOf(active.id as string);
+    const newIndex = questionOrder.indexOf(over.id as string);
+    const newOrder = arrayMove(questionOrder, oldIndex, newIndex);
+    setQuestionOrder(newOrder);
 
-  const updates = newOrder.map((id, index) => ({
-    id,
-    order_index: index,
-  }));
+    const updates = newOrder.map((id, index) => ({
+      id,
+      order_index: index,
+    }));
 
-  const updatedQuestions = questions.map((q) => {
-    const updated = updates.find((u) => u.id === q.id);
-    return updated ? { ...q, order_index: updated.order_index } : q;
-  })
-  .sort((a, b) => a.order_index - b.order_index); // 🔧 sort ascending
+    const updatedQuestions = questions
+      .map((q) => {
+        const updated = updates.find((u) => u.id === q.id);
+        return updated ? { ...q, order_index: updated.order_index } : q;
+      })
+      .sort((a, b) => a.order_index - b.order_index); // 🔧 sort ascending
 
-  console.log('updatedQuestions: ', updatedQuestions)
-  setQuestions(updatedQuestions.sort()); // optimistic update
+    console.log("updatedQuestions: ", updatedQuestions);
+    setQuestions(updatedQuestions.sort()); // optimistic update
 
-  try {
-    await Promise.all(
-      updates.map((update) =>
-        supabase
-          .from("case_questions")
-          .update({ order_index: update.order_index })
-          .eq("id", update.id)
-      )
-    );
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to update order in database",
-      variant: "destructive",
-    });
-  }
-};
+    try {
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("case_questions")
+            .update({ order_index: update.order_index })
+            .eq("id", update.id)
+        )
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update order in database",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDeleteQuestion = (question: Question) => {
     setQuestionToDelete(question);
   };
 
-  const confirmDelete = async () => {
-    if (!questionToDelete) return;
-    try {
-      setIsDeleting(true);
-      const { error: deleteError } = await supabase
-        .from("case_questions")
-        .delete()
-        .eq("id", questionToDelete.id);
-      if (deleteError) throw deleteError;
-      const updated = questions.filter((q) => q.id !== questionToDelete.id);
-      setQuestions(updated);
-      toast({ title: "Deleted", description: "Question removed." });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete question",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-      setQuestionToDelete(null);
-    }
-  };
-
-  const handleEditCase = ()=>{
+  const handleEditCase = () => {
     setEditSheetOpen(false);
-    fetchCaseDetail();
-    console.log("Editing Case",);
-
-  }
+    fetchCaseInfo();
+    console.log("Editing Case");
+  };
 
   const handleEditQuestion = (question: Question) => {
     setSheetOpen(true);
@@ -482,38 +435,119 @@ export const CaseStudyCaseDetail = () => {
     console.log("Editing", question);
   };
 
-  const onEditCase = async (values: z.infer<typeof formSchema>) => {
-    console.log("Edit Case")
-    if (!caseId) return;
-    try {
-      const { error, data } = await supabase
-        .from("cases")
-        .update({
-          title: values.title,
-          scenario: values.scenario || null,
-        })
-        .eq("id", caseId);
-      if (error) throw error;
-      await fetchCaseDetail();
-      toast({ title: "Updated", description: "Case updated successfully" });
-      setSheetOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update Case",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-      setEditSheetOpen(false);
-    }
-  };
+  // const onEditCase = async (values: z.infer<typeof formSchema>) => {
+  //   console.log("Edit Case")
+  //   if (!caseId) return;
+  //   try {
+  //     const { error, data } = await supabase
+  //       .from("cases")
+  //       .update({
+  //         title: values.title,
+  //         scenario: values.scenario || null,
+  //       })
+  //       .eq("id", caseId);
+  //     if (error) throw error;
+  //     await fetchCaseDetail();
+  //     toast({ title: "Updated", description: "Case updated successfully" });
+  //     setSheetOpen(false);
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update Case",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //     setEditSheetOpen(false);
+  //   }
+  // };
 
   const handleFormSubmitted = () => {
     setSheetOpen(false);
     setCurrentQuestion(null);
     fetchQuestions(caseId);
   };
+
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
+  }
+
+  const confirmDeleteImmediate = async (caseId: string) => {
+    try {
+      setIsDeletingCase(true);
+      const { error: deleteError } = await supabase
+        .from("cases")
+        .update({
+          is_deleted_case: true,
+        })
+        .eq("id", caseId);
+      if (deleteError) throw deleteError;
+
+      navigate(-1);
+      await fetchCaseInfo();
+
+      toast({ title: "Deleted", description: "Case Deleted Sucessfully. " });
+    } catch (error) {
+      console.error("Failed to delete Case", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete Case",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingCase(false);
+      setCaseToDelete(null);
+      setLoading(false)
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!caseToDelete?.id) return;
+    await confirmDeleteImmediate(caseToDelete.id);
+  };
+
+  const handleDeleteCase = async (deletedCase: CaseInfo) => {
+    setLoading(true);
+    try {
+      const { count, error } = await supabase
+        .from("case_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("case_id", deletedCase.id);
+
+      if (error) throw error;
+
+      if (count === 0) {
+        await confirmDeleteImmediate(deletedCase.id);
+      } else {
+        setCaseToDelete(deletedCase);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Could not check for Case before deleting.",
+        variant: "destructive",
+      });
+    }finally {
+      setLoading(false);
+    }
+  };
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Case details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return isAdmin ? (
     <div className="container py-4 md:py-8 px-4 md:px-8">
@@ -524,7 +558,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-3);
+              navigate(`/case-study-exams`);
             }}
           >
             Home
@@ -550,7 +584,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-2);
+              navigate(`/case-study-exams/${examId}`);
             }}
           >
             Exam
@@ -576,7 +610,7 @@ export const CaseStudyCaseDetail = () => {
             to="#"
             onClick={(e) => {
               e.preventDefault();
-              navigate(-1);
+              navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
             }}
           >
             Subject
@@ -600,30 +634,45 @@ export const CaseStudyCaseDetail = () => {
           <Link
             className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
             to="#"
-            // onClick={(e) => {
-            //   e.preventDefault();
-            //   navigate(0);
-            // }}
           >
             Case
           </Link>
         </li>
       </ol>
+
       <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {caseInfo?.title}
         </h1>
-        <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
+        {/* <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
           <PenSquare className="mr-2 h-4 w-4" /> Edit Case
-        </Button>
+        </Button> */}
+        {isAdmin && (
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => setEditSheetOpen(true)}
+              className="mr-2"
+            >
+              <PenSquare className="h-4 w-4" />
+            </Button>
+            <Button variant="delete" onClick={() => handleDeleteCase(caseInfo)}>
+              <Trash className=" h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {caseInfo?.scenario && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Explanation</CardTitle>
-            <CardDescription className="h-32 overflow-y-auto">
-              {caseInfo.scenario}
+            <CardDescription className="max-h-32 overflow-y-auto">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: normalizeHTML(caseInfo.scenario),
+                }}
+              />
             </CardDescription>
           </CardHeader>
         </Card>
@@ -645,11 +694,24 @@ export const CaseStudyCaseDetail = () => {
               setCurrentQuestion(null);
               setSheetOpen(true);
             }}
-            className="px-3 md:px-6 py-2 md:py-3"
+            className="px-3  md:px-6 py-2 md:py-3"
           >
             <Plus className="h-4 w-4 mr-2" /> Add Question
           </Button>
         </div>
+        {questionCount === 0 && availbleQuestions && (
+          <div className="text-center py-12">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">
+              No Question available
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin
+                ? "Add your first case to get started"
+                : "Check back later for new subjects"}
+            </p>
+          </div>
+        )}
 
         <DndContext
           sensors={sensors}
@@ -661,7 +723,7 @@ export const CaseStudyCaseDetail = () => {
             strategy={verticalListSortingStrategy}
           >
             <div className="flex flex-col gap-y-3">
-              {filteredQuestions.map((question , index) => (
+              {filteredQuestions.map((question, index) => (
                 <SortableItem
                   key={question.id}
                   selectedQuestion={question}
@@ -674,28 +736,69 @@ export const CaseStudyCaseDetail = () => {
         </DndContext>
       </div>
 
-       <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
+      <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
         <SheetContent
           side="right"
           className="w-full md:max-w-3xl overflow-y-auto"
         >
           <SheetHeader>
-            <SheetTitle>
-               Edit Case
-            </SheetTitle>
+            <SheetTitle>Edit Case</SheetTitle>
           </SheetHeader>
           <div className="py-4">
             <CreateCaseStudyCaseForm
               subjectId={subjectId || ""}
               initialData={caseInfo}
               onsuccess={handleEditCase}
-              // onFormSubmitted={handleEditCase}
             />
           </div>
         </SheetContent>
       </Sheet>
 
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full md:max-w-3xl overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle>
+              {currentQuestion ? "Edit Question" : "Add New Question"}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <CaseQuestionForm
+              caseId={caseId || ""}
+              initialData={currentQuestion}
+              onFormSubmitted={handleFormSubmitted}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
+      <AlertDialog
+        open={!!caseToDelete}
+        onOpenChange={(open) => !open && setCaseToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Case.? Related Data also Deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCase}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeletingCase}
+            >
+              {isDeletingCase ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -754,56 +857,8 @@ export const CaseStudyCaseDetail = () => {
           </Form>
         </DialogContent>
       </Dialog> */}
-
-
-
-
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          side="right"
-          className="w-full md:max-w-3xl overflow-y-auto"
-        >
-          <SheetHeader>
-            <SheetTitle>
-              {currentQuestion ? "Edit Question" : "Add New Question"}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="py-4">
-            <CaseQuestionForm
-              caseId={caseId || ""}
-              initialData={currentQuestion}
-              onFormSubmitted={handleFormSubmitted}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      <AlertDialog
-        open={!!questionToDelete}
-        onOpenChange={(open) => !open && setQuestionToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete question "{questionToDelete?.id}"?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-500 hover:bg-red-600"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   ) : (
     <CaseSenerioShow />
-    //  <CaseDetailForStudent caseId={caseId}/>
   );
 };
