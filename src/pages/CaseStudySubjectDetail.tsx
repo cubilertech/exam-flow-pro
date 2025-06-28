@@ -49,7 +49,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SubjectInfo {
   id: string;
@@ -58,7 +67,7 @@ interface SubjectInfo {
   exams_case_id: number;
   order_index: number;
   case_count?: number;
-  is_deleted_subject? : boolean; 
+  is_deleted_subject?: boolean;
 }
 interface Case {
   id: string;
@@ -94,8 +103,10 @@ export const CaseStudySubjectDetail = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [subjectToDelete , setSubjectToDelete] = useState<SubjectInfo | null>(null);
-  const [isDeleting,setIsDeleting] = useState(false)
+  const [subjectToDelete, setSubjectToDelete] = useState<SubjectInfo | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
   // const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =    useState(false);
 
   const { toast } = useToast();
@@ -140,7 +151,7 @@ export const CaseStudySubjectDetail = () => {
       if (error) throw error;
       setSubjectInfo(data);
     } catch (error) {
-      console.error("load subject info" , error)
+      console.error("load subject info", error);
       toast({
         title: "Error",
         description: "Failed to load subject info",
@@ -173,7 +184,7 @@ export const CaseStudySubjectDetail = () => {
       setCaseCount(caseWithQuestions.length);
       setCases(caseWithQuestions);
     } catch (error) {
-      console.error("Failed to load cases" ,error)
+      console.error("Failed to load cases", error);
       toast({
         title: "Error",
         description: "Failed to load cases",
@@ -227,51 +238,49 @@ export const CaseStudySubjectDetail = () => {
     fetchCases();
   };
 
-   const confirmDeleteImmediate = async (subjectId: string)  => {
-      try {
-        setIsDeleting(true);
-        const { error: deleteError } = await supabase
-          .from("subjects")
-          .update({
-            is_deleted_subject: true,
-          })
-          .eq("id", subjectId);
-        if (deleteError) throw deleteError;
-        // navigate(`/case-study-exams/:${examId}/subjects`);
-          navigate(-1);
-        fetchSubject();
-        // const updated = questions.filter((q) => q.id !== questionToDelete.id);
-        // setQuestions(updated);
-        toast({ title: "Deleted", description: "Subject Deleted." });
-      } catch(error) {
-        console.error("Failed to delete Subject", error)
-        toast({
-          title: "Error",
-          description: error.message || "Failed to delete Subject",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDeleting(false);
-        setSubjectToDelete(null);
-      }
-    };
+  const confirmDeleteImmediate = async (subjectId: string) => {
+    try {
+      setIsDeleting(true);
+      const { error: deleteError } = await supabase
+        .from("subjects")
+        .update({
+          is_deleted_subject: true,
+        })
+        .eq("id", subjectId);
+      if (deleteError) throw deleteError;
+      // navigate(`/case-study-exams/:${examId}/subjects`);
+      navigate(-1);
+      fetchSubject();
+      // const updated = questions.filter((q) => q.id !== questionToDelete.id);
+      // setQuestions(updated);
+      toast({ title: "Deleted", description: "Subject Deleted." });
+    } catch (error) {
+      console.error("Failed to delete Subject", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete Subject",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setSubjectToDelete(null);
+    }
+  };
 
-    
   const confirmDelete = async () => {
-  if (!subjectToDelete?.id) return;
-  await confirmDeleteImmediate(subjectToDelete.id);
-};
+    if (!subjectToDelete?.id) return;
+    await confirmDeleteImmediate(subjectToDelete.id);
+  };
 
-
-   const handleDeleteSubject = async (subject: SubjectInfo) => {
+  const handleDeleteSubject = async (subject: SubjectInfo) => {
     try {
       const { count, error } = await supabase
         .from("cases")
         .select("*", { count: "exact", head: true })
         .eq("subject_id", subject.id);
-  
+
       if (error) throw error;
-  
+
       if (count === 0) {
         // No subjects → delete immediately
         await confirmDeleteImmediate(subject.id);
@@ -392,12 +401,14 @@ export const CaseStudySubjectDetail = () => {
             >
               <PenSquare className="h-4 w-4" />
             </Button>
-            <Button variant="delete" onClick={() => handleDeleteSubject(subjectInfo)}>
+            <Button
+              variant="delete"
+              onClick={() => handleDeleteSubject(subjectInfo)}
+            >
               <Trash className=" h-4 w-4" />
             </Button>
           </div>
         )}
-
       </div>
 
       {subjectInfo?.description && (
@@ -559,7 +570,6 @@ export const CaseStudySubjectDetail = () => {
           <div className="py-4">
             <CreateCaseStudyCaseForm
               subjectId={subjectId || ""}
-              // initialData={currentQuestion}
               onsuccess={handleFormSubmitted}
             />
           </div>
@@ -567,28 +577,29 @@ export const CaseStudySubjectDetail = () => {
       </Sheet>
 
       <AlertDialog
-              open={!!subjectToDelete}
-              onOpenChange={(open) => !open && setSubjectToDelete(null)}
+        open={!!subjectToDelete}
+        onOpenChange={(open) => !open && setSubjectToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete subject? Related Data also
+              Deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeleting}
             >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete subject? Related Data also Deleted.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmDelete}
-                    className="bg-red-500 hover:bg-red-600"
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* {isAdmin && (
         <CreateCaseStudyCaseModal
