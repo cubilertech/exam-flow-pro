@@ -260,7 +260,9 @@ export const CaseStudyCaseDetail = () => {
       .sort((a, b) => a.order_index - b.order_index); // 🔧 sort ascending
 
     console.log("updatedQuestions: ", updatedQuestions);
-    setQuestions(updatedQuestions.sort()); // optimistic update
+    // setQuestions(updatedQuestions.sort()); // optimistic update
+
+    setQuestions(updatedQuestions.sort((a, b) => a.order_index - b.order_index));
 
     try {
       await Promise.all(
@@ -280,9 +282,71 @@ export const CaseStudyCaseDetail = () => {
     }
   };
 
-  const handleDeleteQuestion = (question: Question) => {
-    setQuestionToDelete(question);
-  };
+//   const handleDeleteQuestion = async (question: Question) => {
+//   try {
+//     await supabase
+//       .from("case_questions")
+//       .delete()
+//       .eq("id", question.id);
+
+//     // setQuestions((prev) => prev.filter((q) => q.id !== question.id));
+
+//     toast({ title: "Deleted", description: "Question deleted" });
+
+//     if (caseId) await fetchQuestions(caseId); // will update questions + order
+
+//   } catch (error) {
+//     toast({
+//       title: "Error",
+//       description: "Failed to delete question",
+//       variant: "destructive",
+//     });
+//   }
+// };
+
+
+const handleDeleteQuestion = async (question: Question) => {
+  try {
+    await supabase
+      .from("case_questions")
+      .delete()
+      .eq("id", question.id);
+
+    toast({ title: "Deleted", description: "Question deleted" });
+
+    if (caseId) {
+      // ✅ Reorder remaining questions in DB
+      const { data: remaining, error } = await supabase
+        .from("case_questions")
+        .select("id")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+
+      // Normalize order_index
+      await Promise.all(
+        remaining.map((q, index) =>
+          supabase
+            .from("case_questions")
+            .update({ order_index: index })
+            .eq("id", q.id)
+        )
+      );
+
+      // ✅ Finally refetch updated list
+      await fetchQuestions(caseId);
+    }
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to delete question",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const handleEditCase = () => {
     setEditSheetOpen(false);
@@ -373,6 +437,7 @@ export const CaseStudyCaseDetail = () => {
   };
 
   const handleDeleteCase = async (deletedCase: CaseInfo) => {
+    console.log("delete click")
     setLoading(true);
     try {
       const { count, error } = await supabase
