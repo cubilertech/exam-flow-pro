@@ -29,89 +29,42 @@ const CaseStudyExams = () => {
   const [exams, setExams] = useState<CaseStudyExam[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const {toast} = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchExams();
   }, []);
 
-// ************************************** this
-  // const fetchExams = async () => {
-  //   try {
-  //     setLoading(true);
-  //     let examsWithSubjectCount = [];
-  //     const { data: examsData, error: examsError } = await supabase
-  //       .from("exams_case")
-  //       .select("*, subjects(*)")
-  //       .eq("is_deleted_exam", false)
-  //       .eq("subjects.is_deleted_subject", false) // only include non-deleted subjects
-  //       .order("created_at", { ascending: false });
-  //       // console.log("Fetched exams data:", examsData);
-
-  //        if (examsError) throw examsError;
-
-  //     if (examsData.length > 0)
-  //       examsWithSubjectCount = examsData.map((exam) => ({
-  //         ...exam,
-  //         subjectCount: exam.subjects?.length || 0,
-  //       }));
-
-  //     setExams(examsWithSubjectCount || []);
-      
-     
-  //   } catch (error) {
-  //     console.error("Error fetching case study exams:", error);
-  //     toast.error("Failed to load case study exams");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
-
   const fetchExams = async () => {
-  try {
-    setLoading(true);
-    let examsWithSubjectCount: any[] = [];
+    try {
+      setLoading(true);
+      const examsWithSubjectCount: any[] = [];
 
-    // Step 1: Fetch all non-deleted exams
-    const { data: examsData, error: examsError } = await supabase
-      .from("exams_case")
-      .select("*")
-      .eq("is_deleted_exam", false)
-      .order("created_at", { ascending: false });
+      // Step 1: Fetch all non-deleted exams with non-deleted subjects and cases
+      const { data: examsData, error: examsError } = await supabase
+        .from("exams_case")
+        .select(`*,subjects(*,cases(id))`)
+        .eq("is_deleted_exam", false)
+        .eq("subjects.is_deleted_subject", false)
+        .eq("subjects.cases.is_deleted_case", false)
+        .order("created_at", { ascending: false });
 
-    if (examsError) throw examsError;
+      if (examsError) throw examsError;
 
-    // Step 2: Loop through each exam and calculate subject count
-    for (const exam of examsData || []) {
-      // Step 3: Fetch subjects for this exam
-      const { data: subjects, error: subjectsError } = await supabase
-        .from("subjects")
-        .select("*")
-        .eq("is_deleted_subject", false)
-        .eq("exams_case_id", exam.id);
+      // Step 2: Loop through exams to calculate subjectCount
+      for (const exam of examsData || []) {
+        const subjects = exam.subjects || [];
+        let subjectCount = 0;
 
-      if (subjectsError) throw subjectsError;
+        for (const subject of subjects) {
+          const cases = subject.cases || [];
 
-      let subjectCount = 0;
-
-      for (const subject of subjects || []) {
-        // Step 4: Fetch non-deleted cases for the subject
-        const { data: cases, error: casesError } = await supabase
-          .from("cases")
-          .select("id")
-          .eq("is_deleted_case", false)
-          .eq("subject_id", subject.id);
-
-        if (casesError) throw casesError;
-
-        let caseCount = 0;
-
-        if (cases && cases.length > 0) {
           if (isAdmin) {
-            caseCount = cases.length;
+            if (isAdmin) {
+              subjectCount++; // count all subjects, even if they have 0 cases
+            }
           } else {
+            // Only count subject if at least one case has questions
             let visibleCaseCount = 0;
 
             for (const caseItem of cases) {
@@ -128,42 +81,37 @@ const CaseStudyExams = () => {
               }
             }
 
-            caseCount = visibleCaseCount;
+            if (visibleCaseCount > 0) {
+              subjectCount++;
+            }
           }
         }
 
-        // Step 5: Only count this subject if it has valid cases
-        if (isAdmin || caseCount > 0) {
-          subjectCount++;
-        }
+        examsWithSubjectCount.push({
+          ...exam,
+          subjectCount,
+        });
       }
+      const filteredExams = isAdmin
+        ? examsWithSubjectCount
+        : examsWithSubjectCount.filter((exam) => exam.subjectCount > 0);
 
-      examsWithSubjectCount.push({
-        ...exam,
-        subjectCount,
+      setExams(filteredExams);
+    } catch (error) {
+      console.error("Error fetching case study exams:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load case study exams",
+        variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-
-    setExams(examsWithSubjectCount);
-  } catch (error) {
-    console.error("Error fetching case study exams:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load case study exams",
-      variant: "destructive",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleExamClick = (exam: CaseStudyExam) => {
     // if (isAdmin) {
-      navigate(`/case-study-exams/${exam.id}`);
-    // } else {
-    //   console.log("Exam clicked:", exam); ******************* for subscription logic
-    //   toast.error("Please subscribe to this exam to access it");
-    // }
+    navigate(`/case-study-exams/${exam.id}`);
   };
 
   if (loading) {
@@ -220,7 +168,9 @@ const CaseStudyExams = () => {
                 </div>
               </div>
               {exam.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">{exam.description}</CardDescription>
+                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">
+                  {exam.description}
+                </CardDescription>
               )}
             </CardHeader>
             <CardContent>
@@ -238,8 +188,6 @@ const CaseStudyExams = () => {
           </Card>
         ))}
       </div>
-
-    
 
       {isAdmin && (
         <CreateCaseStudyExamModal

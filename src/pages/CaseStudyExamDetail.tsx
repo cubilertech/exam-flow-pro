@@ -194,66 +194,54 @@ const CaseStudyExamDetail = () => {
 
 // ****************************************** this one
 
-
-
-
 const fetchSubjects = async () => {
   try {
     setLoading(true);
 
+    const processedSubjects: Subject[] = [];
+
+    // Step 1: Fetch all non-deleted subjects with non-deleted cases
     const { data: subjectsData, error: subjectsError } = await supabase
       .from("subjects")
-      .select("*")
+      .select(`*, cases(id)`)
       .eq("exams_case_id", examId)
       .eq("is_deleted_subject", false)
+      .eq("cases.is_deleted_case", false)
       .order("order_index", { ascending: true });
 
     if (subjectsError) throw subjectsError;
 
-    // Track all processed subjects
-    const processedSubjects: Subject[] = [];
-
+    // Step 2: Process each subject to calculate case_count
     for (const subject of subjectsData || []) {
-      // Fetch all non-deleted cases under this subject
-      const { data: cases, error: casesError } = await supabase
-        .from("cases")
-        .select("id")
-        .eq("is_deleted_case", false)
-        .eq("subject_id", subject.id);
-
-      if (casesError) throw casesError;
-
+      const cases = subject.cases || [];
       let caseCount = 0;
 
-      if (cases && cases.length > 0) {
-        if (isAdmin) {
-          // Admin: count all non-deleted cases
-          caseCount = cases.length;
-        } else {
-          // User: check for questions under each case
-          let visibleCaseCount = 0;
+      if (isAdmin) {
+        // ✅ Admins see all non-deleted cases
+        caseCount = cases.length;
+      } else {
+        // ❌ Users: Only count cases that have at least one question
+        let visibleCaseCount = 0;
 
-          for (const caseItem of cases) {
-            const { count: questionCount, error: questionError } =
-              await supabase
-                .from("case_questions")
-                .select("*", { count: "exact", head: true })
-                
-                .eq("case_id", caseItem.id);
-                console.log("Case Count for user" , questionCount);
+        for (const caseItem of cases) {
+          const { count: questionCount, error: questionError } = await supabase
+            .from("case_questions")
+            .select("*", { count: "exact", head: true })
+            .eq("case_id", caseItem.id);
 
-            if (questionError) throw questionError;
+          if (questionError) throw questionError;
 
-            if ((questionCount || 0) > 0) {
-              visibleCaseCount++;
-            }
+          if ((questionCount || 0) > 0) {
+            visibleCaseCount++;
           }
-
-          caseCount = visibleCaseCount;
         }
+
+        caseCount = visibleCaseCount;
       }
 
-      // For users: only include subject if it has visible case count
+      // ✅ Only push subject if:
+      // - Admin: always include
+      // - User: only if it has at least one valid case
       if (isAdmin || caseCount > 0) {
         processedSubjects.push({
           ...subject,
@@ -275,6 +263,7 @@ const fetchSubjects = async () => {
     setLoading(false);
   }
 };
+
 
 
   const onEditExam = async (values: z.infer<typeof formSchema>) => {
