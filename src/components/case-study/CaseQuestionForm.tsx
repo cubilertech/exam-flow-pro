@@ -102,9 +102,9 @@ export const CaseQuestionForm = ({
     try {
       const parsed = JSON.parse(html) as string;
       const text = parsed
-        .replace(/<[^>]+>/g, "") // Remove HTML tags
-        .replace(/&nbsp;/g, "") // Remove &nbsp;
-        .replace(/\s+/g, "") // Remove all spaces
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, "")
+        .replace(/\s+/g, "") 
         .trim();
       return text.length;
     } catch {
@@ -163,7 +163,7 @@ export const CaseQuestionForm = ({
           question_text: formData.question_text,
           correct_answer: formData.correct_answer,
           explanation: null, // formData.explanation
-          order_index: count ?? 0, // Set order_index to the next available index
+          order_index: count ?? 0, 
         });
       }
 
