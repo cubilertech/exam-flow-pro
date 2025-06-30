@@ -3,11 +3,8 @@ import {
   PenSquare,
   Plus,
   Search,
-  Edit,
-  Trash2,
   Trash,
   BookOpen,
-  Bold,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -66,7 +63,6 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
-  useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -101,93 +97,6 @@ const formSchema = z.object({
   scenario: z.string().optional(),
 });
 
-// const SortableItem = ({
-//   selectedQuestion,
-//   onDelete,
-//   onEdit,
-// }: {
-//   selectedQuestion: Question;
-//   onDelete: (question: Question) => void;
-//   onEdit: (question: Question) => void;
-// }) => {
-//   const { attributes, listeners, setNodeRef, transform, transition } =
-//     useSortable({ id: selectedQuestion.id });
-//   const customListeners = {
-//     ...listeners,
-//     onPointerDown: (event: React.PointerEvent) => {
-//       const isNoDrag = (event.target as HTMLElement)?.closest("[data-no-drag]");
-//       if (isNoDrag) {
-//         return; // Block drag
-//       }
-//       listeners?.onPointerDown?.(event); // Call original
-//     },
-//   };
-
-//   const style = {
-//     transform: CSS.Transform.toString(transform),
-//     transition,
-//   };
-
-//   function normalizeHTML(input: string) {
-//     try {
-//       const maybeParsed = JSON.parse(input);
-//       return typeof maybeParsed === "string" ? maybeParsed : input;
-//     } catch {
-//       return input;
-//     }
-//   }
-
-//   return (
-//     <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
-//       <div className="flex min-h-full">
-//         {/* Drag Handle */}
-//         <div className="w-12 cursor-move bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center rounded-l-lg border-r">
-//           <GripVertical className="w-4 h-4 text-gray-400" />
-//         </div>
-
-//         {/* Question Content */}
-//         <CardHeader
-//           className="pb-3 p-4 bg-gray-100 flex-1 group rounded-r-lg"
-//           data-no-drag
-//         >
-//           <div className="flex">
-//             <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4 flex-shrink-0">
-//               {selectedQuestion.order_index + 1}
-//             </div>
-//             <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
-//               <h3
-//                 className="text-sm md:text-base"
-//                 dangerouslySetInnerHTML={{
-//                   __html: normalizeHTML(selectedQuestion.question_text),
-//                 }}
-//               ></h3>
-
-//               <div className="flex gap-2 flex-shrink-0 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
-//                 <Button
-//                   variant="outline"
-//                   size="sm"
-//                   className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-//                   onClick={() => onEdit(selectedQuestion)}
-//                 >
-//                   <Edit className="w-4 h-4" />
-//                 </Button>
-//                 <Button
-//                   variant="outline"
-//                   size="sm"
-//                   className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
-//                   onClick={() => onDelete(selectedQuestion)}
-//                 >
-//                   <Trash2 className="w-4 h-4" />
-//                 </Button>
-//               </div>
-//             </div>
-//           </div>
-//         </CardHeader>
-//       </div>
-//       {/* </Card> */}
-//     </div>
-//   );
-// };
 
 export const CaseStudyCaseDetail = () => {
   const { examId, subjectId, caseId } = useParams<{
@@ -320,54 +229,6 @@ export const CaseStudyCaseDetail = () => {
     .filter((q): q is Question => !!q);
 
   const sensors = useSensors(useSensor(PointerSensor));
-
-  // const handleDragEnd = async (event: any) => {
-  //   if (
-  //     event.target &&
-  //     event.target.closest &&
-  //     event.target.closest("[data-no-drag]")
-  //   ) {
-  //     return;
-  //   }
-
-  //   const { active, over } = event;
-  //   if (active.id !== over?.id) {
-  //     const oldIndex = questionOrder.indexOf(active.id);
-  //     const newIndex = questionOrder.indexOf(over.id);
-  //     const newOrder = arrayMove(questionOrder, oldIndex, newIndex);
-  //     setQuestionOrder(newOrder);
-
-  //     try {
-  //       const updates = newOrder.map((id, index) => {
-  //         return {
-  //           id,
-  //           order_index: index,
-  //         };
-  //       });
-
-  //       for (const update of updates) {
-  //         const { error } = await supabase
-  //           .from("case_questions")
-  //           .update({ order_index: update.order_index })
-  //           .eq("id", update.id);
-  //         if (error) throw error;
-  //       }
-
-  //       const updatedQuestions = questions.map((q) => {
-  //         const found = updates.find((u) => u.id === q.id);
-  //         return found ? { ...q, order_index: found.order_index } : q;
-  //       });
-
-  //       setQuestions(updatedQuestions); // 👈 this reflects updated index in UI
-  //     } catch (error) {
-  //       toast({
-  //         title: "Error",
-  //         description: "Failed to update order in database",
-  //         variant: "destructive",
-  //       });
-  //     }
-  //   }
-  // };
 
   const handleDragEnd = async (event) => {
     if (
@@ -666,7 +527,7 @@ export const CaseStudyCaseDetail = () => {
       {caseInfo?.scenario && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Explanation</CardTitle>
+            <CardTitle>Scenario</CardTitle>
             <CardDescription className="max-h-32 overflow-y-auto">
               <div
                 dangerouslySetInnerHTML={{

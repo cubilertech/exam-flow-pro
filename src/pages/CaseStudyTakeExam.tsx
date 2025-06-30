@@ -39,7 +39,6 @@ import {
   removeAnswer,
   saveAnswer,
 } from "@/features/caseAnswers/caseAnswersSlice";
-// import { setError } from "@/features/study/studySlice";
 
 import { Progress } from "@/components/ui/progress";
 
@@ -66,12 +65,10 @@ export const CaseStudyTakeExam = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [questions, setQuestions] = React.useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(1);
-  // const navigate = useNavigate();
   const [answerHtml, setAnswerHtml] = useState<string>("");
   const [showAnswer, setShowAnswer] = useState(false);
   const dispatch = useAppDispatch();
   const [resultData, setResultData] = useState<any>(null);
-  // const [error, setError] = useState<any>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const savedAnswers = useAppSelector((state) => state.caseAnswers.answers);
   const [isAnswerValid, setIsAnswerValid] = useState(false);
@@ -96,11 +93,10 @@ export const CaseStudyTakeExam = () => {
     stringHandler: htmlToProsemirrorNode,
   });
 
-  // console.log("questions:", questions);
+
 
   useEffect(() => {
     if (caseId) {
-      // fetchCaseDetail(caseId);
       fetchQuestions(caseId);
     }
   }, [caseId]);
@@ -108,19 +104,6 @@ export const CaseStudyTakeExam = () => {
   useEffect(() => {
     setShowAnswer(false);
   }, [currentQuestionIndex]);
-
-  // const fetchCaseDetail = async (caseId: string) => {
-  //   const { data, error } = await supabase
-  //     .from("cases")
-  //     .select("*")
-  //     .eq("id", caseId)
-  //     .order("order_index", { ascending: true })
-  //     .single();
-
-  //   if (data) {
-  //     setCaseInfo(data);
-  //   }
-  // };
 
   const fetchQuestions = async (caseId: string) => {
     try {
@@ -176,22 +159,6 @@ export const CaseStudyTakeExam = () => {
       return input;
     }
   }
-
-  // const handlePrevQuestion = () => {
-  //   if (currentQuestionIndex > 1) {
-  //     setCurrentQuestionIndex(currentQuestionIndex - 1);
-  //   }
-  // };
-
-  // const handleNextQuestion = () => {
-  //   if (currentQuestionIndex < totalQuestions) {
-  //     setCurrentQuestionIndex(currentQuestionIndex + 1);
-  //   }
-  // };
-
-  // console.log("caseId is:", caseId, typeof caseId);
-  // console.log("Questions:", questions);
-  // console.log("Answer HTML:", answerHtml);
 
   //  Function to handle exam submission
   const handleSubmitAnswer = async () => {
@@ -391,14 +358,6 @@ export const CaseStudyTakeExam = () => {
                     {showAnswer ? "Processing " : "Proceed Answer"}
                   </Button>
 
-                  {/* <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSubmitAnswer()}
-                    className="flex items-center mt-4"
-                  >
-                    {isSubmitted ? "Processing" : "Proceed Answer"}
-                  </Button> */}
                 </div>
               )}
 
@@ -427,44 +386,7 @@ export const CaseStudyTakeExam = () => {
                 </div>
               )}
             </CardDescription>
-          </div>
-
-          {/* Navigation Buttons */}
-
-          {/* <div className="flex justify-between mt-6">
-            <Button
-              onClick={handlePrevQuestion}
-              disabled={currentQuestionIndex === 1}
-              variant="outline"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {currentQuestionIndex} of {totalQuestions}
-              </span>
-            </div>
-            <Button
-              onClick={() => handleNextQuestion()}
-              disabled={currentQuestionIndex === totalQuestions}
-            >
-              Next
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-             {currentQuestionIndex === totalQuestions  ? (
-              <Button onClick={() => "handleFinishExam()"} variant="default">
-                Finish Exam
-              </Button>
-            ) : (
-              //  handleNextQuestion
-              <Button onClick={() => handleNextQuestion()}>
-                Next
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            )} 
-          </div> */}
+          </div>         
         </div>
       )}
     </div>
