@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +49,12 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const usersData = await getAllUsers();
-      setUsers(usersData);
+      // Map the data to ensure status is included
+      const mappedUsers = usersData.map((user: any) => ({
+        ...user,
+        status: user.status || 'active'
+      }));
+      setUsers(mappedUsers);
     } catch (error) {
       toast({
         title: "Error",
@@ -98,7 +102,7 @@ const UserManagement = () => {
   };
 
   const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.country?.toLowerCase().includes(searchTerm.toLowerCase())
   );

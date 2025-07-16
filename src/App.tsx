@@ -16,7 +16,6 @@ import { MainLayout } from './layouts/MainLayout';
 // Pages
 import Index from './pages/Index';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Admin from './pages/Admin';
 import Categories from './pages/Categories';
 import QuestionBank from './pages/QuestionBank';
@@ -28,10 +27,10 @@ import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import CaseStudyExams from './pages/CaseStudyExams';
 import CaseStudyExamDetail from './pages/CaseStudyExamDetail';
-import CaseStudySubjectDetail from './pages/CaseStudySubjectDetail';
-import CaseStudyCaseDetail from './pages/CaseStudyCaseDetail';
-import CaseStudyTakeExam from './pages/CaseStudyTakeExam';
-import CaseSenerioShow from './pages/CaseSenerioShow';
+import { CaseStudySubjectDetail } from './pages/CaseStudySubjectDetail';
+import { CaseStudyCaseDetail } from './pages/CaseStudyCaseDetail';
+import { CaseStudyTakeExam } from './pages/CaseStudyTakeExam';
+import { CaseSenerioShow } from './pages/CaseSenerioShow';
 import NotFound from './pages/NotFound';
 import Agreement from './pages/Agreement';
 
@@ -49,7 +48,6 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
                     <Route path="/agreement" element={<Agreement />} />
                     
                     {/* Admin Routes */}

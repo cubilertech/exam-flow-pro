@@ -1,3 +1,4 @@
+
 import {
   BookOpen,
   Briefcase,
@@ -13,9 +14,20 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/hooks";
-import { MainNavItem, SidebarNavItem } from "@/types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { NavLink } from "react-router-dom";
+
+interface MainNavItem {
+  title: string;
+  url: string;
+  icon: any;
+}
+
+interface SidebarNavItem {
+  title: string;
+  url: string;
+  icon: any;
+}
 
 interface DashboardConfig {
   mainNav: MainNavItem[];
