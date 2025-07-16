@@ -1,247 +1,393 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Question } from '@/types/case-study';
+
+import React, { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Button } from '@/components/ui/button';
-import { Checkbox } from "@/components/ui/checkbox"
+} from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
+  BoldExtension,
+  CodeExtension,
+  HeadingExtension,
+  BlockquoteExtension,
+  NodeFormattingExtension,
+  BulletListExtension,
+  TableExtension,
+} from "remirror/extensions";
+import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
+import { htmlToProsemirrorNode } from "remirror";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+  ToggleCodeButton,
+  ToggleBoldButton,
+  HeadingLevelButtonGroup,
+  IndentationButtonGroup,
+  TextAlignmentButtonGroup,
+  Toolbar,
+} from "@remirror/react-ui";
+import { Box } from "@mui/material";
+import { UploadImageButton } from "../components/remirror-extensions/UploadImageButton";
+import { TableDropdown } from "../components/remirror-extensions/TableButton";
+import { imageExtension, reactComponentExtension } from "@/lib/image-extension";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useToast } from "@/hooks/use-toast";
+import {
+  removeAnswer,
+  saveAnswer,
+} from "@/features/caseAnswers/caseAnswersSlice";
 
-const formSchema = z.object({
-  answer: z.string().min(2, {
-    message: "Answer must be at least 2 characters.",
-  }),
-})
+import { Progress } from "@/components/ui/progress";
 
-const CaseStudyTakeExam = () => {
-  const { caseId } = useParams<{ caseId: string }>();
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<string[]>([]);
+interface Case {
+  id: string;
+  title: string;
+  subject_id: string; // Changed from number to string
+  scenario: string;
+  order_index: number;
+  question_count: number;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  case_id: string; // Changed from number to string
+  correct_answer: string;
+  explanation: string;
+  order_index: number;
+}
+
+export const CaseStudyTakeExam = () => {
+  const { examId, subjectId, caseId , testId } = useParams<{examId: string; subjectId: string;caseId: string; testId : string}>();
+  const { user } = useAppSelector((state) => state.auth);
+  const [questions, setQuestions] = React.useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(1);
+  const [answerHtml, setAnswerHtml] = useState<string>("");
+  const [showAnswer, setShowAnswer] = useState(false);
+  const dispatch = useAppDispatch();
+  const [resultData, setResultData] = useState<any>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const savedAnswers = useAppSelector((state) => state.caseAnswers.answers);
+  const [isAnswerValid, setIsAnswerValid] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const extensions = () => [
+    new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
+    new CodeExtension(),
+    new BoldExtension({}),
+    new BlockquoteExtension(),
+    new NodeFormattingExtension({}),
+    new BulletListExtension({}),
+    new TableExtension(),
+    imageExtension(),
+    reactComponentExtension(),
+  ];
+
+  const { manager, state, getContext } = useRemirror({
+    extensions,
+    content: "",
+    stringHandler: htmlToProsemirrorNode,
+  });
+
   useEffect(() => {
-    const fetchQuestions = async () => {
-      if (!caseId) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('case_questions')
-          .select('*')
-          .eq('case_id', caseId)
-          .order('order_index');
-
-        if (error) throw error;
-        
-        setQuestions(data as Question[]);
-        setUserAnswers(new Array(data.length).fill('')); // Initialize userAnswers with empty strings
-      } catch (error) {
-        console.error('Error fetching questions:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchQuestions();
+    if (caseId) {
+      fetchQuestions(caseId);
+    }
   }, [caseId]);
 
-  const handleAnswerChange = (index: number, answer: string) => {
-    const newAnswers = [...userAnswers];
-    newAnswers[index] = answer;
-    setUserAnswers(newAnswers);
-  };
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [currentQuestionIndex]);
 
-  const goToNextQuestion = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const goToPreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-
-  const submitExam = async () => {
-    // Basic validation to ensure all questions are answered
-    if (userAnswers.some(answer => answer === '')) {
-      toast({
-        title: "Error",
-        description: "Please answer all questions before submitting.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Prepare the answers array
-    const answers = questions.map((question, index) => ({
-      questionId: question.id,
-      questionText: question.question_text,
-      correctAnswer: question.correct_answer,
-      userAnswer: userAnswers[index],
-      isCorrect: userAnswers[index] === question.correct_answer,
-      explanation: question.explanation,
-      caseId: question.case_id,
-      categoryId: question.categoryId,
-      tags: question.tags,
-      difficulty: question.difficulty
-    }));
-
-    // Calculate the score
-    const correctCount = answers.filter(answer => answer.isCorrect).length;
-    const incorrectCount = answers.length - correctCount;
-    const score = (correctCount / questions.length) * 100;
-
+  const fetchQuestions = async (caseId: string) => {
     try {
-      setLoading(true);
-
-      // Save the exam results to the database
+      
       const { data, error } = await supabase
-        .from('exam_results')
-        .insert([
-          {
-            score: score,
-            correct_count: correctCount,
-            incorrect_count: incorrectCount,
-            time_taken: 0, // You might want to track time taken
-            completed_at: new Date().toISOString(),
-            answers: answers,
-            user_exam_id: caseId, // Assuming caseId is the exam ID
-            user_id: supabase.auth.user()?.id,
-          }
-        ])
-        .select()
-
-      if (error) {
-        throw error;
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+  
+      if (data.length > 0) {
+        setQuestions(data);
       }
-
-      toast({
-        title: "Success",
-        description: "Exam submitted successfully!",
-      });
-
-      // Redirect to the exam results page
-      navigate(`/exam-results/${data[0].id}`);
+      if (error) throw error;
     } catch (error) {
-      console.error("Error submitting exam:", error);
+      console.error("Error submitting answer:", error);  
+    }
+  };
+
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentQuestionIndex - 1];
+
+  // Handler for answer changes
+
+  const onAnswerChange = (updatedHtml: string) => {
+    const isEmpty = manager.view.state.doc.textContent.trim() === "";
+
+    setIsAnswerValid(!isEmpty);
+
+    setAnswerHtml(JSON.stringify(updatedHtml));
+
+    if (currentQuestion?.id) {
+      if (isEmpty) {
+        console.log("Answer cleared — removing from Redux");
+        dispatch(removeAnswer({ questionId: currentQuestion.id }));
+      } else {
+        console.log("Answer saved to Redux:", updatedHtml);
+        dispatch(
+          saveAnswer({
+            questionId: currentQuestion.id,
+            answerHtml: JSON.stringify(updatedHtml),
+          })
+        );
+      }
+    }
+  };
+
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
+  }
+
+  //  Function to handle exam submission
+  const handleSubmitAnswer = async () => {
+    setIsSubmitted(true);
+    try {
+      const payload = {
+        user_id: user.id,
+        case_id: caseId,
+        current_question_index: currentQuestionIndex,
+        completed: true,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (testId) {
+        // Already exists: UPDATE
+        console.log("Update");
+        const { data, error } = await supabase
+          .from("user_case_progress")
+          .update(payload)
+          .eq("id", testId);
+
+        if (error) throw error;
+        setResultData(data);
+        
+        toast({
+          title: "Success",
+          description: "Answer submitted successfully",
+        });
+      }
+      if (currentQuestionIndex < totalQuestions) {
+         setCurrentQuestionIndex(currentQuestionIndex + 1);
+     }
+     if (currentQuestionIndex === totalQuestions) {
+      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);     
+        // (/case-study-exams/:examId/subjects/:subjectId/cases/:caseId)
+     }
+    } catch (error) {
+      console.error("Error submitting answer:", error);
       toast({
         title: "Error",
-        description: "Failed to submit exam.",
+        description: error.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitted(false);
     }
   };
 
-  if (loading) {
-    return <div>Loading questions...</div>;
-  }
+  // If you want to submit all answers in Redux at once later (e.g., at "Finish Exam"), you can do:********
+  //   const handleFinishExam = async () => {
+  //   storeCurrentAnswerToRedux();
 
-  if (!questions || questions.length === 0) {
-    return <div>No questions found for this case.</div>;
-  }
+  //   for (const [questionId, user_answer] of Object.entries(savedAnswers)) {
+  //     await supabase.from("user_case_answers").insert({
+  //       user_id: user.id,
+  //       case_question_id: questionId,
+  //       user_answer,
+  //       created_at: new Date().toISOString(),
+  //       answered_at: new Date().toISOString(),
+  //     });
+  //   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  //   toast.success("All answers submitted.");
+  //   navigate("/some/summary/page");
+  // };
+
+  useEffect(() => {
+    const saved = savedAnswers[currentQuestion?.id];
+    const savedAnswerHtml = saved ? JSON.parse(saved) : "";
+    // Ensure Remirror is initialized
+    if (
+      getContext()?.commands &&
+      typeof getContext().commands.setContent === "function"
+    ) {
+      if (savedAnswerHtml) {
+        getContext().commands.setContent(savedAnswerHtml);
+        setAnswerHtml(saved);
+      } else {
+        getContext().commands.setContent("");
+        setAnswerHtml("");
+      }
+    }
+  }, [currentQuestionIndex]);
+
+  // console.log("Saved Answers:", savedAnswers);
+
+  const getCompletedQuestionCount = () => {
+    return Object.keys(savedAnswers).length;
+  };
+
+//   const getStrippedTextLength = (html: string) => {
+//   try {
+//     const parsed = JSON.parse(html) as string;
+//     const text = parsed
+//       .replace(/<[^>]+>/g, "")   // Remove HTML tags
+//       .replace(/&nbsp;/g, "")    // Remove &nbsp;
+//       .replace(/\s+/g, "")       // Remove all spaces
+//       .trim();
+//     return text.length;
+//   } catch {
+//     return 0;
+//   }
+// };
+//   const validateForm = () => {
+  
+//   const answerLength = getStrippedTextLength(formData.correct_answer);
+
+//   return answerLength >= 2;
+// };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative bg-white shadow-lg sm:rounded-3xl p-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Question {currentQuestionIndex + 1} of {questions.length}</CardTitle>
-              <CardDescription>{currentQuestion.question_text}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="answer">Your Answer</Label>
-                  <Input
-                    id="answer"
-                    placeholder="Enter your answer"
-                    value={userAnswers[currentQuestionIndex]}
-                    onChange={(e) => handleAnswerChange(currentQuestionIndex, e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="flex justify-between mt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={goToPreviousQuestion}
-              disabled={currentQuestionIndex === 0}
+    <div className="container py-4 md:py-8 px-4 md:px-8">
+      {/* Question Navigation and Display */}
+      {totalQuestions > 0 && (
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xl sm:text-2xl font-bold">
+              Question {currentQuestionIndex} of {totalQuestions}
+            </span>
+
+            {/* <Button
+              onClick={() => "handleFinishExam()"}
+              variant="default"
+              className="py-2 px-4 sm:py-3 sm:px-6"
             >
-              Previous
-            </Button>
-            <Button
-              type="button"
-              onClick={goToNextQuestion}
-              disabled={currentQuestionIndex === questions.length - 1}
-            >
-              Next
-            </Button>
+              Finish Exam
+            </Button> */}
           </div>
-          {currentQuestionIndex === questions.length - 1 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="mt-4 w-full">Submit Exam</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. Are you sure you want to submit the exam?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={submitExam}>Submit</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="mb-4">
+            <Progress
+              value={(getCompletedQuestionCount() / totalQuestions) * 100}
+              className="h-2"
+            />
+            <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+              <span>
+                Completed: {getCompletedQuestionCount()}/{totalQuestions}
+              </span>
+              <span>
+                {Math.round(
+                  (getCompletedQuestionCount() / totalQuestions) * 100
+                )}
+                %
+              </span>
+            </div>
+          </div>
+          <div className="bg-white shadow-md rounded-lg border border-gray-200">
+            <CardDescription className="p-4 rounded-md">
+              <h3 className="font-semibold text-lg mb-2">
+                Question {currentQuestionIndex}{" "}
+              </h3>
+              <div
+                className="bg-gray-50 p-4 rounded-md mb-4 h-36 overflow-y-auto"
+                dangerouslySetInnerHTML={{
+                  __html: normalizeHTML(currentQuestion?.question_text),
+                }}
+              />
+
+              {/* Correct Answer */}
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Answer </h3>
+                <ThemeProvider>
+                  <Remirror
+                    manager={manager}
+                    initialContent={state}
+                    onChange={({ helpers }) =>
+                      onAnswerChange(helpers.getHTML())
+                    }
+                    autoRender="end"
+                    editable={!showAnswer} // ✅ Disable editing after Proceed
+                  >
+                    <Toolbar>
+                      <Box sx={{ display: "flex" }}>
+                        <ToggleBoldButton />
+                        <HeadingLevelButtonGroup />
+                        <ToggleCodeButton />
+                        <TextAlignmentButtonGroup />
+                        <IndentationButtonGroup />
+                        <UploadImageButton />
+                        <TableDropdown />
+                      </Box>
+                    </Toolbar>
+                  </Remirror>
+                </ThemeProvider>
+              </div>
+
+              {currentQuestion && (
+                <div className="flex justify-end items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAnswer(true)}
+                    disabled={!isAnswerValid}
+                    className={`flex items-center mt-4 ${showAnswer ? "hidden" : ""}`}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {showAnswer ? "Processing " : "Proceed Answer"}
+                  </Button>
+
+                </div>
+              )}
+
+              {/* Content */}
+
+              {showAnswer && currentQuestion?.correct_answer && (
+                <div className="mt-0  p-4  rounded-md">
+                  <h4 className=" font-medium text-sm mb-2">Correct Answer:</h4>
+                  <div
+                    className="text-sm prose prose-sm max-w-none bg-secondary p-2 rounded-sm min-h-16"
+                    dangerouslySetInnerHTML={{
+                      __html: normalizeHTML(currentQuestion.correct_answer),
+                    }}
+                  />
+                  <div className="flex justify-end">
+                 <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSubmitAnswer()}
+                    className="flex items-center mt-4"
+                  >
+                    {isSubmitted ? "Submitting" : "Submit Answer"}
+                  </Button>
+
+                  </div>
+                </div>
+              )}
+            </CardDescription>
+          </div>         
         </div>
-      </div>
+      )}
     </div>
   );
 };
-
-export default CaseStudyTakeExam;
