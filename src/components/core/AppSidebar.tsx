@@ -1,43 +1,40 @@
-
-import { Home, HelpCircle, FileText, BookOpen } from "lucide-react";
-import { useLocation, Link } from "react-router-dom";
-import { useAppSelector } from "@/lib/hooks";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+  BookOpen,
+  Briefcase,
+  Calendar,
+  CheckSquare,
+  Database,
+  LayoutDashboard,
+  ListChecks,
+  MessagesSquare,
+  Settings,
+  User,
+  Users,
+} from "lucide-react";
+
+import { useAppSelector } from "@/lib/hooks";
+import { MainNavItem, SidebarNavItem } from "@/types";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { NavLink } from "react-router-dom";
+
+interface DashboardConfig {
+  mainNav: MainNavItem[];
+  sidebarNav: SidebarNavItem[];
+}
 
 export function AppSidebar() {
-  const location = useLocation();
-  const { user } = useAppSelector((state) => state.auth);
-  const isAdmin = user?.isAdmin || false;
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
-  // Define menu items based on role
-  const studentMenuItems = [
-    {
-      title: "My Exams",
-      url: "/my-exams",
-      icon: FileText,
-    },
-    {
-      title: "Case Study Exams",
-      url: "/case-study-exams",
-      icon: BookOpen,
-    },
-  ];
-
-  // Admin-only menu items
-  const adminMenuItems = [
+  const adminItems = [
     {
       title: "Question Banks",
       url: "/questions",
-      icon: HelpCircle,
+      icon: Database,
+    },
+    {
+      title: "User Management",
+      url: "/users",
+      icon: Users,
     },
     {
       title: "Case Study Exams",
@@ -46,34 +43,50 @@ export function AppSidebar() {
     },
   ];
 
-  // Use the appropriate menu items based on user role
-  const menuItems = isAdmin ? adminMenuItems : studentMenuItems;
+  const studentItems = [
+    {
+      title: "My Exams",
+      url: "/my-exams",
+      icon: BookOpen,
+    },
+    {
+      title: "Case Study Exams",
+      url: "/case-study-exams",
+      icon: BookOpen,
+    },
+  ];
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="mt-12">
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
+    <div className="w-60 flex-shrink-0 border-r bg-secondary">
+      <div className="flex h-full max-h-screen flex-col gap-2 py-4">
+        <div className="px-3 py-2 text-center">
+          <h2 className="font-bold text-2xl">Dashboard</h2>
+          <span className="text-xs">Manage your account</span>
+        </div>
+        <div className="relative px-3 py-2">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger>
+                {user?.isAdmin ? "Admin" : "Student"} Dashboard
+              </AccordionTrigger>
+              <AccordionContent>
+                <nav className="grid gap-1">
+                  {(user?.isAdmin ? adminItems : studentItems).map((item) => (
+                    <NavLink
+                      key={item.title}
+                      to={item.url}
+                      className="flex items-center space-x-2 rounded-md p-2 text-sm font-medium hover:underline"
+                    >
+                      <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+                    </NavLink>
+                  ))}
+                </nav>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
+    </div>
   );
 }

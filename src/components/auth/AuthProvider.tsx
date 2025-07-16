@@ -37,6 +37,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               
               const profile = profileData || { username: user.email?.split('@')[0] || 'user' };
               
+              // Check if user is blocked or suspended
+              if (profile.status === 'blocked' || profile.status === 'suspended') {
+                console.log('User is blocked or suspended, signing out');
+                await supabase.auth.signOut();
+                dispatch(logout());
+                navigate('/login');
+                return;
+              }
+              
               const { data: adminData } = await supabase
                 .from('admin_users')
                 .select('*')
@@ -51,6 +60,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 gender: 'gender' in profile ? profile.gender || '' : '',
                 phone: 'phone_number' in profile ? profile.phone_number || '' : '',
                 city: 'city' in profile ? profile.city || '' : '',
+                status: 'status' in profile ? profile.status || 'active' : 'active',
                 isAdmin: Boolean(adminData)
               }));
 
@@ -94,6 +104,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           const profile = profileData || { username: user.email?.split('@')[0] || 'user' };
           
+          // Check if user is blocked or suspended
+          if (profile.status === 'blocked' || profile.status === 'suspended') {
+            console.log('User is blocked or suspended, signing out');
+            await supabase.auth.signOut();
+            dispatch(logout());
+            navigate('/login');
+            return;
+          }
+          
           // Check if the user is an admin
           const { data: adminData } = await supabase
             .from('admin_users')
@@ -110,6 +129,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             gender: 'gender' in profile ? profile.gender || '' : '',
             phone: 'phone_number' in profile ? profile.phone_number || '' : '',
             city: 'city' in profile ? profile.city || '' : '',
+            status: 'status' in profile ? profile.status || 'active' : 'active',
             isAdmin: Boolean(adminData)
           }));
         }

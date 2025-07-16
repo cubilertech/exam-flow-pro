@@ -1,3 +1,4 @@
+
 import { User } from '@/features/auth/authSlice';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,8 +8,8 @@ interface UserProfile {
   gender?: string;
   phone_number?: string;
   city?: string;
+  status?: 'active' | 'blocked' | 'suspended';
 }
-
 
 // Check if a user is an admin
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
@@ -37,7 +38,7 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('username, country, gender, phone_number, city')
+      .select('username, country, gender, phone_number, city, status')
       .eq('id', userId)
       .maybeSingle();
     
@@ -52,6 +53,7 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
       gender: data.gender || '',
       phone: data.phone_number || '',
       city: data.city || '',
+      status: data.status || 'active',
     } : null;
   } catch (error) {
     const err = error as Error;
@@ -60,8 +62,8 @@ export const fetchUserProfile = async (userId: string): Promise<Partial<User> | 
   }
 };
 
-// Sign up a new user
-export const signUp = async (
+// Admin creates a new user
+export const createUserByAdmin = async (
   email: string,
   password: string,
   userData: {
@@ -86,16 +88,16 @@ export const signUp = async (
     });
     
     if (authError) {
-      console.error('Auth error during signup:', authError);
+      console.error('Auth error during user creation:', authError);
       throw authError;
     }
     
     if (!authData.user) {
       console.error('No user returned from auth');
-      throw new Error('User registration failed');
+      throw new Error('User creation failed');
     }
     
-    console.log('User created successfully:', authData.user.id);
+    console.log('User created successfully by admin:', authData.user.id);
     
     // 2. Insert the user profile data
     const { error: profileError } = await supabase
@@ -108,6 +110,7 @@ export const signUp = async (
         gender: userData.gender,
         phone_number: userData.phone,
         city: userData.city,
+        status: 'active',
       });
     
     if (profileError) {
@@ -117,10 +120,16 @@ export const signUp = async (
     
     console.log('Profile created successfully');
     
-    // 3. Check if the user is an admin
-    const isAdmin = await checkIsAdmin(authData.user.id);
+    // 3. Log the admin action
+    await logAdminAction('create_user', authData.user.id, null, {
+      email,
+      username: userData.username,
+      country: userData.country,
+      gender: userData.gender,
+      phone: userData.phone,
+      city: userData.city,
+    });
     
-    // Return user data
     return {
       id: authData.user.id,
       email: authData.user.email || '',
@@ -129,16 +138,181 @@ export const signUp = async (
       gender: userData.gender,
       phone: userData.phone,
       city: userData.city,
-      isAdmin,
+      isAdmin: false,
+      status: 'active' as const,
     };
   } catch (error) {
     const err = error as Error;
-    console.error('Sign up error:', err);
+    console.error('Create user error:', err);
     throw error;
   }
 };
 
-// Sign in an existing user
+// Update user status (block/unblock)
+export const updateUserStatus = async (userId: string, newStatus: 'active' | 'blocked' | 'suspended') => {
+  try {
+    // Get current user data for audit log
+    const { data: currentUser, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError) {
+      console.error('Error fetching current user:', fetchError);
+      throw fetchError;
+    }
+    
+    // Update user status
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ status: newStatus })
+      .eq('id', userId);
+    
+    if (updateError) {
+      console.error('Error updating user status:', updateError);
+      throw updateError;
+    }
+    
+    // Log the admin action
+    await logAdminAction('update_status', userId, 
+      { status: currentUser.status }, 
+      { status: newStatus }
+    );
+    
+    console.log(`User ${userId} status updated to ${newStatus}`);
+    return true;
+  } catch (error) {
+    const err = error as Error;
+    console.error('Update user status error:', err);
+    throw error;
+  }
+};
+
+// Get all users (admin only)
+export const getAllUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching all users:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    const err = error as Error;
+    console.error('Get all users error:', err);
+    throw error;
+  }
+};
+
+// Update user profile (admin only)
+export const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
+  try {
+    // Get current user data for audit log
+    const { data: currentUser, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError) {
+      console.error('Error fetching current user:', fetchError);
+      throw fetchError;
+    }
+    
+    // Update user profile
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId);
+    
+    if (updateError) {
+      console.error('Error updating user profile:', updateError);
+      throw updateError;
+    }
+    
+    // Log the admin action
+    await logAdminAction('update_profile', userId, 
+      currentUser, 
+      updates
+    );
+    
+    console.log(`User ${userId} profile updated`);
+    return true;
+  } catch (error) {
+    const err = error as Error;
+    console.error('Update user profile error:', err);
+    throw error;
+  }
+};
+
+// Delete user (admin only)
+export const deleteUser = async (userId: string) => {
+  try {
+    // Get current user data for audit log
+    const { data: currentUser, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError) {
+      console.error('Error fetching current user:', fetchError);
+      throw fetchError;
+    }
+    
+    // Delete user from auth (this will cascade to profiles due to foreign key)
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (deleteError) {
+      console.error('Error deleting user:', deleteError);
+      throw deleteError;
+    }
+    
+    // Log the admin action
+    await logAdminAction('delete_user', userId, currentUser, null);
+    
+    console.log(`User ${userId} deleted`);
+    return true;
+  } catch (error) {
+    const err = error as Error;
+    console.error('Delete user error:', err);
+    throw error;
+  }
+};
+
+// Log admin actions for audit trail
+const logAdminAction = async (
+  action: string,
+  targetUserId: string,
+  oldValues: any,
+  newValues: any
+) => {
+  try {
+    const { error } = await supabase
+      .from('user_audit_log')
+      .insert({
+        admin_user_id: (await supabase.auth.getUser()).data.user?.id,
+        target_user_id: targetUserId,
+        action,
+        old_values: oldValues,
+        new_values: newValues,
+      });
+    
+    if (error) {
+      console.error('Error logging admin action:', error);
+    }
+  } catch (error) {
+    console.error('Error logging admin action:', error);
+  }
+};
+
+// Sign in an existing user (only active users can sign in)
 export const signIn = async (email: string, password: string) => {
   try {
     console.log('Signing in user:', email);
@@ -161,8 +335,8 @@ export const signIn = async (email: string, password: string) => {
     
     console.log('User authenticated successfully:', authData.user.id);
     
-    // 2. Fetch user profile data with additional error handling
-    let profile: UserProfile = { username: email.split('@')[0] };
+    // 2. Fetch user profile data with status check
+    let profile: UserProfile & { status?: string } = { username: email.split('@')[0] };
     
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -173,6 +347,12 @@ export const signIn = async (email: string, password: string) => {
         
       if (!profileError && profileData) {
         profile = profileData;
+        
+        // Check if user is blocked or suspended
+        if (profile.status === 'blocked' || profile.status === 'suspended') {
+          await supabase.auth.signOut();
+          throw new Error(`Account is ${profile.status}. Please contact administrator.`);
+        }
       } else if (profileError) {
         console.error('Profile error:', profileError);
         // If profile doesn't exist, create a basic one
@@ -183,6 +363,7 @@ export const signIn = async (email: string, password: string) => {
             .upsert({
               id: authData.user.id,
               username: email.split('@')[0],
+              status: 'active',
             });
             
           if (upsertError) {
@@ -215,6 +396,7 @@ export const signIn = async (email: string, password: string) => {
       gender: profile.gender || '',
       phone: profile.phone_number || '',
       city: profile.city || '',
+      status: profile.status || 'active',
       isAdmin,
     };
   } catch (error) {
@@ -247,6 +429,14 @@ export const setupAuthListener = (callback: (user: User | null) => void) => {
     if (event === 'SIGNED_IN' && session?.user) {
       try {
         const profileData = await fetchUserProfile(session.user.id);
+        
+        // Check if user is blocked or suspended
+        if (profileData?.status === 'blocked' || profileData?.status === 'suspended') {
+          await supabase.auth.signOut();
+          callback(null);
+          return;
+        }
+        
         const isAdmin = await checkIsAdmin(session.user.id);
         
         const userData: User = {
@@ -257,6 +447,7 @@ export const setupAuthListener = (callback: (user: User | null) => void) => {
           gender: profileData?.gender || '',
           phone: profileData?.phone || '',
           city: profileData?.city || '',
+          status: profileData?.status || 'active',
           isAdmin,
         };
         
