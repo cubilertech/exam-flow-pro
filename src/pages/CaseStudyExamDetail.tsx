@@ -135,7 +135,8 @@ const CaseStudyExamDetail = () => {
 
       setExamInfo({
         ...examData,
-        order_index: examData.order_index || 0
+        order_index: examData.order_index || 0,
+        subject_count: 0
       });
     } catch (error) {
       console.error("Error fetching exam data:", error);

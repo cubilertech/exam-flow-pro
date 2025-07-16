@@ -160,7 +160,7 @@ export const RegisterForm = () => {
       setLoading(true);
       dispatch(registerStart());
 
-      const userData = await signUp({
+      const response = await signUp({
         email: data.email,
         password: data.password,
         username: data.username,
@@ -170,6 +170,18 @@ export const RegisterForm = () => {
         gender: data.gender,
         phone_number: data.phone,
       });
+
+      // Create user object that matches the expected User type
+      const userData = {
+        id: response.user?.id || '',
+        username: data.username,
+        email: data.email,
+        country: data.country,
+        city: data.city,
+        gender: data.gender,
+        isAdmin: false,
+        phone_number: data.phone,
+      };
 
       dispatch(registerSuccess(userData));
       navigate("/my-exams");

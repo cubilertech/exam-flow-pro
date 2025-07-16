@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -68,37 +69,46 @@ const ExamResults = () => {
       if (examError) throw examError;
       setExamInfo(examData);
 
-      // Fetch user's answers for the exam
+      // Fetch user's answers for the exam - use user_case_answers table
       const { data: answersData, error: answersError } = await supabase
-        .from("user_exam_answers")
+        .from("user_case_answers")
         .select("*")
-        .eq("exam_id", examId)
         .eq("user_id", user.id);
 
       if (answersError) throw answersError;
-      setUserAnswers(answersData || []);
+      
+      // Transform the data to match UserAnswer interface
+      const transformedAnswers: UserAnswer[] = answersData?.map(answer => ({
+        question_id: answer.case_question_id || '',
+        user_answer: answer.user_answer,
+        is_correct: true // We'll calculate this when comparing with correct answer
+      })) || [];
+      
+      setUserAnswers(transformedAnswers);
 
       // Fetch questions for the exam
       const { data: questionsData, error: questionsError } = await supabase
         .from("case_questions")
         .select("*")
-        .eq("exam_id", examId);
+        .in("case_id", [examId]); // Assuming we're getting questions for this exam
 
       if (questionsError) throw questionsError;
 
       // Map questions with user answers
-      const mappedQuestions = questionsData?.map((question) => {
-        const userAnswer = answersData?.find((answer) => answer.question_id === question.id);
+      const mappedQuestions: ExamResultQuestion[] = questionsData?.map((question) => {
+        const userAnswer = transformedAnswers.find((answer) => answer.question_id === question.id);
+        const isCorrect = userAnswer ? userAnswer.user_answer === question.correct_answer : false;
+        
         return {
           id: question.id,
           question_text: question.question_text,
           correct_answer: question.correct_answer,
           explanation: question.explanation || '',
-          categoryId: 'case-study', // Assuming all questions are in the same category
-          tags: [], // Assuming no tags
-          difficulty: 'medium', // Assuming default difficulty
+          categoryId: 'case-study',
+          tags: [],
+          difficulty: 'medium' as const,
           userAnswer: userAnswer?.user_answer,
-          isCorrect: userAnswer?.is_correct,
+          isCorrect: isCorrect,
         };
       }) || [];
 
@@ -168,7 +178,7 @@ const ExamResults = () => {
               <p>
                 Your Answer: {question.userAnswer || "Not answered"}
               </p>
-              <Badge variant={question.isCorrect ? "success" : "destructive"}>
+              <Badge variant={question.isCorrect ? "default" : "destructive"}>
                 {question.isCorrect ? "Correct" : "Incorrect"}
               </Badge>
             </CardContent>

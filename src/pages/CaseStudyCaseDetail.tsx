@@ -104,7 +104,6 @@ export const CaseStudyCaseDetail = () => {
   const [isDeletingCase, setIsDeletingCase] = useState(false);
   const { toast } = useToast();
 
-  // console.log("question order ", questionOrder);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -583,8 +582,8 @@ export const CaseStudyCaseDetail = () => {
                 <SortableItem
                   key={question.id}
                   selectedQuestion={question}
-                  onDelete={handleDeleteQuestion}
-                  onEdit={handleEditQuestion}
+                  onDelete={(q) => handleDeleteQuestion(q)}
+                  onEdit={(q) => handleEditQuestion(q)}
                 />
               ))}
             </div>
