@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -15,7 +16,7 @@ interface Case {
   created_at: string;
   updated_at: string;
   instructions: string;
-  subject_id: number;
+  subject_id: string; // Changed from number to string
   scenario: string;
   order_index: number;
 }
