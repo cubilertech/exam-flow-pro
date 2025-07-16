@@ -64,8 +64,6 @@ interface ExamResultData {
 
 interface Answer {
   questionId: string;
-  selectedOptions?: string[];
-  isCorrect?: boolean;
   // Add other properties of an answer if they exist
 }
 
@@ -85,13 +83,6 @@ interface Question {
   serialNumber: number;
   text: string;
   options: QuestionOption[];
-  explanation?: string;
-  imageUrl?: string;
-  categoryId?: string;
-  tags?: string[];
-  difficulty?: string;
-  userAnswer?: string[];
-  isCorrect?: boolean;
   // Add other properties of a question if they exist
 }
 
@@ -385,10 +376,10 @@ const ExamResults = () => {
                     <span className="text-sm font-medium text-muted-foreground">Questions</span>
                     <span className="font-medium">{examResult.questionCount}</span>
                   </div>
-                  <div className="flex flex-col space-y-1">
+                  {examResult?.isTimed &&   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Time Taken</span>
                     <span className="font-medium">{formatTime(examResult.timeTaken)}</span>
-                  </div>
+                  </div> }
                   <div className="flex flex-col space-y-1">
                     <span className="text-sm font-medium text-muted-foreground">Correct</span>
                     <div className="flex items-center">
@@ -429,6 +420,44 @@ const ExamResults = () => {
               </CardFooter>
             </Card>
           </div>
+          
+          {/* <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Performance Analysis</CardTitle>
+              <CardDescription>
+                Areas where you performed well and areas that need improvement
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {examResult.score < 70 && (
+                  <div className="flex items-start p-4 border rounded-md">
+                    <AlertCircle className="h-5 w-5 text-amber-500 mr-3 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">Areas for Improvement</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Your score indicates that you may need more practice in this area.
+                        Consider reviewing the questions you got wrong and studying the explanations.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-start p-4 border rounded-md">
+                  <BarChart3 className="h-5 w-5 text-primary mr-3 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Time Management</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      You spent an average of {(examResult.timeTaken / examResult.questionCount).toFixed(1)} seconds per question.
+                      {examResult.timeTaken / examResult.questionCount > 60 
+                        ? ' Try to improve your speed for better time management.'
+                        : ' Good job managing your time efficiently!'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card> */}
         </TabsContent>
         
         <TabsContent value="questions" className="mt-6">

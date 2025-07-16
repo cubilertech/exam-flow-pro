@@ -76,17 +76,17 @@ import { SortableItem } from "@/components/case-study/SortableItem";
 interface CaseInfo {
   id: string;
   title: string;
-  subject_id: string; // Changed from number to string
+  subject_id: number;
   scenario: string;
   order_index: number;
-  question_count?: number; // Made optional
+  question_count: number;
   is_deleted_case: boolean;
 }
 
 interface Question {
   id: string;
   question_text: string;
-  case_id: string; // Changed from number to string
+  case_id: number;
   correct_answer: string;
   explanation: string;
   order_index: number;
@@ -96,6 +96,7 @@ const formSchema = z.object({
   title: z.string().min(2, { message: "Name must be at least 2 characters" }),
   scenario: z.string().optional(),
 });
+
 
 export const CaseStudyCaseDetail = () => {
   const { examId, subjectId, caseId } = useParams<{
@@ -175,10 +176,7 @@ export const CaseStudyCaseDetail = () => {
         if(error) throw error
 
       if (data) {
-        setCaseInfo({
-          ...data,
-          question_count: 0 // Set default value
-        });
+        setCaseInfo(data);
       }
     } catch (error) {
       console.error("Error in Fetching Case");
@@ -200,6 +198,7 @@ export const CaseStudyCaseDetail = () => {
         .select("*")
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
+
 
          if(error) throw error
 
@@ -283,12 +282,35 @@ export const CaseStudyCaseDetail = () => {
     }
   };
 
-  const handleDeleteQuestion = async (question: Question) => {
-    try {
-      await supabase
-        .from("case_questions")
-        .delete()
-        .eq("id", question.id);
+//   const handleDeleteQuestion = async (question: Question) => {
+//   try {
+//     await supabase
+//       .from("case_questions")
+//       .delete()
+//       .eq("id", question.id);
+
+//     // setQuestions((prev) => prev.filter((q) => q.id !== question.id));
+
+//     toast({ title: "Deleted", description: "Question deleted" });
+
+//     if (caseId) await fetchQuestions(caseId); // will update questions + order
+
+//   } catch (error) {
+//     toast({
+//       title: "Error",
+//       description: "Failed to delete question",
+//       variant: "destructive",
+//     });
+//   }
+// };
+
+
+const handleDeleteQuestion = async (question: Question) => {
+  try {
+    await supabase
+      .from("case_questions")
+      .delete()
+      .eq("id", question.id);
 
     toast({ title: "Deleted", description: "Question deleted" });
 
@@ -325,6 +347,7 @@ export const CaseStudyCaseDetail = () => {
   }
 };
 
+
   const handleEditCase = () => {
     setEditSheetOpen(false);
     fetchCaseInfo();
@@ -336,6 +359,33 @@ export const CaseStudyCaseDetail = () => {
     setCurrentQuestion(question);
     console.log("Editing", question);
   };
+
+  // const onEditCase = async (values: z.infer<typeof formSchema>) => {
+  //   console.log("Edit Case")
+  //   if (!caseId) return;
+  //   try {
+  //     const { error, data } = await supabase
+  //       .from("cases")
+  //       .update({
+  //         title: values.title,
+  //         scenario: values.scenario || null,
+  //       })
+  //       .eq("id", caseId);
+  //     if (error) throw error;
+  //     await fetchCaseDetail();
+  //     toast({ title: "Updated", description: "Case updated successfully" });
+  //     setSheetOpen(false);
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update Case",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //     setEditSheetOpen(false);
+  //   }
+  // };
 
   const handleFormSubmitted = () => {
     setSheetOpen(false);
@@ -412,7 +462,6 @@ export const CaseStudyCaseDetail = () => {
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="container mx-auto py-6">
@@ -521,6 +570,9 @@ export const CaseStudyCaseDetail = () => {
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {caseInfo?.title}
         </h1>
+        {/* <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
+          <PenSquare className="mr-2 h-4 w-4" /> Edit Case
+        </Button> */}
         {isAdmin && (
           <div>
             <Button
@@ -673,6 +725,64 @@ export const CaseStudyCaseDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Case</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onEditCase)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter case name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="scenario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Scenario</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter description (optional)"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Case"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog> */}
     </div>
   ) : (
     <CaseSenerioShow />
