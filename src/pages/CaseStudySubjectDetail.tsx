@@ -64,14 +64,14 @@ interface SubjectInfo {
   id: string;
   name: string;
   description: string;
-  exams_case_id: string;
+  exams_case_id: number;
   order_index: number;
   case_count?: number;
   is_deleted_subject?: boolean;
 }
 interface Case {
   id: string;
-  subject_id: string;
+  subject_id: number;
   title: string;
   scenario: string;
   order_index: number;
@@ -600,6 +600,15 @@ export const CaseStudySubjectDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* {isAdmin && (
+        <CreateCaseStudyCaseModal
+          open={isCreateSubjectModalOpen}
+          onOpenChange={setIsCreateSubjectModalOpen}
+          subjectId={subjectId!}
+          onSuccess={fetchSubject}
+        />
+      )} */}
     </div>
   );
 };

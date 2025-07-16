@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
@@ -25,11 +24,12 @@ export const useQuestionBankSubscriptions = () => {
       if (error) throw error;
 
       const activeQuestionBanks = data?.map(item => {
+        // Transform to match our QuestionBank interface
         return {
           id: item.question_banks.id,
           name: item.question_banks.name,
           description: item.question_banks.description,
-          question_bank_id: item.question_banks.id
+          question_bank_id: item.question_banks.id // Add for backward compatibility
         };
       }) || [];
       
@@ -40,8 +40,31 @@ export const useQuestionBankSubscriptions = () => {
         dispatch(setActiveQuestionBank(activeQuestionBanks[0].id));
       }
     } catch (error) {
-      console.error('Error fetching subscribed question banks:', error);
       toast.error('Failed to fetch subscribed question banks');
+      console.error(error);
+    }
+  };
+
+  const subscribeToQuestionBank = async (questionBankId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .upsert({
+          user_id: user.id,
+          question_bank_id: questionBankId,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      // Refresh subscriptions
+      await fetchSubscribedQuestionBanks();
+      toast.success('Successfully subscribed to question bank');
+    } catch (error) {
+      toast.error('Failed to subscribe to question bank');
+      console.error(error);
     }
   };
 
@@ -49,6 +72,8 @@ export const useQuestionBankSubscriptions = () => {
     if (!user) return;
 
     try {
+      // No longer need to deactivate other subscriptions
+      // Just update Redux state to track the active question bank for UI
       dispatch(setActiveQuestionBank(questionBankId));
       toast.success('Question bank activated');
     } catch (error) {
@@ -63,6 +88,7 @@ export const useQuestionBankSubscriptions = () => {
 
   return { 
     subscriptions, 
+    subscribeToQuestionBank,
     setActiveQuestionBankById,
     activeQuestionBankId
   };

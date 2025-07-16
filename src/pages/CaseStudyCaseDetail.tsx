@@ -72,12 +72,31 @@ import { CaseSenerioShow } from "./CaseSenerioShow";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
 import { useToast } from "@/hooks/use-toast";
 import { SortableItem } from "@/components/case-study/SortableItem";
-import { CaseQuestion, CaseInfo } from "@/types/case-study";
+
+interface CaseInfo {
+  id: string;
+  title: string;
+  subject_id: number;
+  scenario: string;
+  order_index: number;
+  question_count: number;
+  is_deleted_case: boolean;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  case_id: number;
+  correct_answer: string;
+  explanation: string;
+  order_index: number;
+}
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Name must be at least 2 characters" }),
   scenario: z.string().optional(),
 });
+
 
 export const CaseStudyCaseDetail = () => {
   const { examId, subjectId, caseId } = useParams<{
@@ -89,21 +108,22 @@ export const CaseStudyCaseDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
   const [caseInfo, setCaseInfo] = useState<CaseInfo | null>(null);
-  const [questions, setQuestions] = useState<CaseQuestion[]>([]);
-  const [availbleQuestions, setAvailbleQuestions] = useState<CaseQuestion[] | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [availbleQuestions, setAvailbleQuestions] = useState<Question[] | null>(null);
   const [questionOrder, setQuestionOrder] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<CaseQuestion | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState<CaseQuestion | null>(null);
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
   const [loading,setLoading] = useState(true);
   const [caseToDelete, setCaseToDelete] = useState<CaseInfo | null>(null);
   const [isDeletingCase, setIsDeletingCase] = useState(false);
   const { toast } = useToast();
 
+  // console.log("question order ", questionOrder);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -156,10 +176,7 @@ export const CaseStudyCaseDetail = () => {
         if(error) throw error
 
       if (data) {
-        setCaseInfo({
-          ...data,
-          question_count: 0 // Set default value
-        });
+        setCaseInfo(data);
       }
     } catch (error) {
       console.error("Error in Fetching Case");
@@ -181,6 +198,7 @@ export const CaseStudyCaseDetail = () => {
         .select("*")
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
+
 
          if(error) throw error
 
@@ -208,7 +226,7 @@ export const CaseStudyCaseDetail = () => {
 
   const filteredQuestions = questionOrder
     .map((id) => questions.find((q) => q.id === id))
-    .filter((q): q is CaseQuestion => !!q);
+    .filter((q): q is Question => !!q);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -264,12 +282,35 @@ export const CaseStudyCaseDetail = () => {
     }
   };
 
-  const handleDeleteQuestion = async (question: CaseQuestion) => {
-    try {
-      await supabase
-        .from("case_questions")
-        .delete()
-        .eq("id", question.id);
+//   const handleDeleteQuestion = async (question: Question) => {
+//   try {
+//     await supabase
+//       .from("case_questions")
+//       .delete()
+//       .eq("id", question.id);
+
+//     // setQuestions((prev) => prev.filter((q) => q.id !== question.id));
+
+//     toast({ title: "Deleted", description: "Question deleted" });
+
+//     if (caseId) await fetchQuestions(caseId); // will update questions + order
+
+//   } catch (error) {
+//     toast({
+//       title: "Error",
+//       description: "Failed to delete question",
+//       variant: "destructive",
+//     });
+//   }
+// };
+
+
+const handleDeleteQuestion = async (question: Question) => {
+  try {
+    await supabase
+      .from("case_questions")
+      .delete()
+      .eq("id", question.id);
 
     toast({ title: "Deleted", description: "Question deleted" });
 
@@ -306,17 +347,45 @@ export const CaseStudyCaseDetail = () => {
   }
 };
 
+
   const handleEditCase = () => {
     setEditSheetOpen(false);
     fetchCaseInfo();
     console.log("Editing Case");
   };
 
-  const handleEditQuestion = (question: CaseQuestion) => {
+  const handleEditQuestion = (question: Question) => {
     setSheetOpen(true);
     setCurrentQuestion(question);
     console.log("Editing", question);
   };
+
+  // const onEditCase = async (values: z.infer<typeof formSchema>) => {
+  //   console.log("Edit Case")
+  //   if (!caseId) return;
+  //   try {
+  //     const { error, data } = await supabase
+  //       .from("cases")
+  //       .update({
+  //         title: values.title,
+  //         scenario: values.scenario || null,
+  //       })
+  //       .eq("id", caseId);
+  //     if (error) throw error;
+  //     await fetchCaseDetail();
+  //     toast({ title: "Updated", description: "Case updated successfully" });
+  //     setSheetOpen(false);
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update Case",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //     setEditSheetOpen(false);
+  //   }
+  // };
 
   const handleFormSubmitted = () => {
     setSheetOpen(false);
@@ -393,7 +462,6 @@ export const CaseStudyCaseDetail = () => {
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="container mx-auto py-6">
@@ -502,6 +570,9 @@ export const CaseStudyCaseDetail = () => {
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {caseInfo?.title}
         </h1>
+        {/* <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
+          <PenSquare className="mr-2 h-4 w-4" /> Edit Case
+        </Button> */}
         {isAdmin && (
           <div>
             <Button
@@ -582,8 +653,8 @@ export const CaseStudyCaseDetail = () => {
                 <SortableItem
                   key={question.id}
                   selectedQuestion={question}
-                  onDelete={(q) => handleDeleteQuestion(q)}
-                  onEdit={(q) => handleEditQuestion(q)}
+                  onDelete={handleDeleteQuestion}
+                  onEdit={handleEditQuestion}
                 />
               ))}
             </div>
@@ -654,6 +725,64 @@ export const CaseStudyCaseDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Case</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onEditCase)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter case name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="scenario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Scenario</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter description (optional)"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Case"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog> */}
     </div>
   ) : (
     <CaseSenerioShow />

@@ -11,7 +11,6 @@ export interface User {
   phone?: string;
   city?: string;
   isAdmin: boolean;
-  status?: 'active' | 'blocked' | 'suspended';
 }
 
 interface AuthState {
