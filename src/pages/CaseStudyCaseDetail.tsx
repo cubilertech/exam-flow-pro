@@ -1,145 +1,790 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { CaseInfo, Question } from '@/types/case-study';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Edit, Copy } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from "react";
+import {
+  PenSquare,
+  Plus,
+  Search,
+  Trash,
+  BookOpen,
+} from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import * as z from "zod";
 
-const CaseStudyCaseDetail = () => {
-  const { caseId } = useParams<{ caseId: string }>();
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useAppSelector } from "@/lib/hooks";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { CaseQuestionForm } from "@/components/case-study/CaseQuestionForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
+
+import { CaseSenerioShow } from "./CaseSenerioShow";
+import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
+import { useToast } from "@/hooks/use-toast";
+import { SortableItem } from "@/components/case-study/SortableItem";
+
+interface CaseInfo {
+  id: string;
+  title: string;
+  subject_id: number;
+  scenario: string;
+  order_index: number;
+  question_count: number;
+  is_deleted_case: boolean;
+}
+
+interface Question {
+  id: string;
+  question_text: string;
+  case_id: number;
+  correct_answer: string;
+  explanation: string;
+  order_index: number;
+}
+
+const formSchema = z.object({
+  title: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  scenario: z.string().optional(),
+});
+
+
+export const CaseStudyCaseDetail = () => {
+  const { examId, subjectId, caseId } = useParams<{
+    examId: string;
+    subjectId: string;
+    caseId: string;
+  }>();
+  const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
+  const isAdmin = user?.isAdmin || false;
   const [caseInfo, setCaseInfo] = useState<CaseInfo | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [availbleQuestions, setAvailbleQuestions] = useState<Question[] | null>(null);
+  const [questionOrder, setQuestionOrder] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [loading,setLoading] = useState(true);
+  const [caseToDelete, setCaseToDelete] = useState<CaseInfo | null>(null);
+  const [isDeletingCase, setIsDeletingCase] = useState(false);
   const { toast } = useToast();
 
+  // console.log("question order ", questionOrder);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      scenario: "",
+    },
+  });
+
+  console.log("ava", availbleQuestions);
+  console.log("Ques", questions);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!caseId) return;
-      
-      try {
-        // Fetch case data
-        const { data: caseData, error: caseError } = await supabase
-          .from('cases')
-          .select('*')
-          .eq('id', caseId)
-          .single();
-
-        if (caseError) throw caseError;
-        
-        // Add question_count by counting questions
-        const { count } = await supabase
-          .from('case_questions')
-          .select('*', { count: 'exact', head: true })
-          .eq('case_id', caseId);
-
-        setCaseInfo({
-          ...caseData,
-          question_count: count || 0
-        } as CaseInfo);
-
-        // Fetch questions
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('case_questions')
-          .select('*')
-          .eq('case_id', caseId)
-          .order('order_index');
-
-        if (questionsError) throw questionsError;
-        
-        setQuestions(questionsData as Question[]);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    if (caseId) {
+      fetchCaseInfo();
+      fetchQuestions(caseId);
+    }
   }, [caseId]);
 
-  if (loading) {
-    return <p>Loading case details...</p>;
-  }
-
-  if (!caseInfo) {
-    return <p>Case not found.</p>;
-  }
-
-  const handleCopyToClipboard = () => {
-    const caseDetailUrl = `${window.location.origin}/case-study-cases/${caseId}`;
-    navigator.clipboard.writeText(caseDetailUrl)
-      .then(() => {
-        toast({
-          title: "Copied!",
-          description: "Case detail URL copied to clipboard.",
-        })
-      })
-      .catch(err => {
-        console.error("Failed to copy: ", err);
-        toast({
-          title: "Error",
-          description: "Failed to copy URL to clipboard.",
-          variant: "destructive",
-        })
+  useEffect(() => {
+    if (caseInfo) {
+      form.reset({
+        title: caseInfo.title,
+        scenario: caseInfo.scenario || "",
       });
+    }
+  }, [caseInfo, form]);
+
+  useEffect(() => {
+    const ordered = questions
+      .filter((q) =>
+        q.question_text.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map((q) => q.id);
+
+    setQuestionOrder(ordered);
+  }, [questions, searchTerm]);
+
+  const fetchCaseInfo = async () => {
+    setLoading(true);
+    if (!caseId) return;
+    try {
+      const { data, error } = await supabase
+        .from("cases")
+        .select("*")
+        .eq("id", caseId)
+        .eq("is_deleted_case", false)
+        .order("order_index", { ascending: true })
+        .maybeSingle();
+
+        if(error) throw error
+
+      if (data) {
+        setCaseInfo(data);
+      }
+    } catch (error) {
+      console.error("Error in Fetching Case");
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }finally{
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="container mx-auto p-4">
-      <Card className="modern-card">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>{caseInfo.title}</CardTitle>
-              <CardDescription>Explore the details of this case.</CardDescription>
-            </div>
-            <div className="space-x-2">
-              <Button variant="secondary" size="sm" onClick={handleCopyToClipboard}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Link
-              </Button>
-              <Link to={`/case-study-cases/edit/${caseId}`}>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Case
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold">Scenario</h3>
-            <p>{caseInfo.scenario}</p>
-          </div>
-          {caseInfo.instructions && (
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Instructions</h3>
-              <p>{caseInfo.instructions}</p>
-            </div>
-          )}
-          <div>
-            <h3 className="text-lg font-semibold">Questions</h3>
-            {questions.length > 0 ? (
-              <ul className="list-disc pl-5">
-                {questions.map((question) => (
-                  <li key={question.id} className="mb-2">
-                    {question.question_text}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No questions available for this case.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const fetchQuestions = async (caseId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+
+
+         if(error) throw error
+
+      if (data.length === 0) {
+        setAvailbleQuestions([]);
+        console.log("Fetched Questions:", data);
+      }
+
+      if (data.length > 0) {
+        console.log("Fetched Questions:", data);
+        setQuestionCount(data.length);
+        setQuestions(data);
+      }
+    } catch (error) {
+      console.error("Error Fetching the Questions :", error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }finally{
+      setLoading(false)
+    }
+  };
+
+  const filteredQuestions = questionOrder
+    .map((id) => questions.find((q) => q.id === id))
+    .filter((q): q is Question => !!q);
+
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = async (event) => {
+    if (
+      event.target &&
+      "closest" in event.target &&
+      (event.target as HTMLElement).closest("[data-no-drag]")
+    ) {
+      return;
+    }
+
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = questionOrder.indexOf(active.id as string);
+    const newIndex = questionOrder.indexOf(over.id as string);
+    const newOrder = arrayMove(questionOrder, oldIndex, newIndex);
+    setQuestionOrder(newOrder);
+
+    const updates = newOrder.map((id, index) => ({
+      id,
+      order_index: index,
+    }));
+
+    const updatedQuestions = questions
+      .map((q) => {
+        const updated = updates.find((u) => u.id === q.id);
+        return updated ? { ...q, order_index: updated.order_index } : q;
+      })
+      .sort((a, b) => a.order_index - b.order_index); // 🔧 sort ascending
+
+    console.log("updatedQuestions: ", updatedQuestions);
+    // setQuestions(updatedQuestions.sort()); // optimistic update
+
+    setQuestions(updatedQuestions.sort((a, b) => a.order_index - b.order_index));
+
+    try {
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("case_questions")
+            .update({ order_index: update.order_index })
+            .eq("id", update.id)
+        )
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update order in database",
+        variant: "destructive",
+      });
+    }
+  };
+
+//   const handleDeleteQuestion = async (question: Question) => {
+//   try {
+//     await supabase
+//       .from("case_questions")
+//       .delete()
+//       .eq("id", question.id);
+
+//     // setQuestions((prev) => prev.filter((q) => q.id !== question.id));
+
+//     toast({ title: "Deleted", description: "Question deleted" });
+
+//     if (caseId) await fetchQuestions(caseId); // will update questions + order
+
+//   } catch (error) {
+//     toast({
+//       title: "Error",
+//       description: "Failed to delete question",
+//       variant: "destructive",
+//     });
+//   }
+// };
+
+
+const handleDeleteQuestion = async (question: Question) => {
+  try {
+    await supabase
+      .from("case_questions")
+      .delete()
+      .eq("id", question.id);
+
+    toast({ title: "Deleted", description: "Question deleted" });
+
+    if (caseId) {
+      // ✅ Reorder remaining questions in DB
+      const { data: remaining, error } = await supabase
+        .from("case_questions")
+        .select("id")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+
+      if (error) throw error;
+
+      // Normalize order_index
+      await Promise.all(
+        remaining.map((q, index) =>
+          supabase
+            .from("case_questions")
+            .update({ order_index: index })
+            .eq("id", q.id)
+        )
+      );
+
+      // ✅ Finally refetch updated list
+      await fetchQuestions(caseId);
+    }
+
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to delete question",
+      variant: "destructive",
+    });
+  }
 };
 
-export default CaseStudyCaseDetail;
+
+  const handleEditCase = () => {
+    setEditSheetOpen(false);
+    fetchCaseInfo();
+    console.log("Editing Case");
+  };
+
+  const handleEditQuestion = (question: Question) => {
+    setSheetOpen(true);
+    setCurrentQuestion(question);
+    console.log("Editing", question);
+  };
+
+  // const onEditCase = async (values: z.infer<typeof formSchema>) => {
+  //   console.log("Edit Case")
+  //   if (!caseId) return;
+  //   try {
+  //     const { error, data } = await supabase
+  //       .from("cases")
+  //       .update({
+  //         title: values.title,
+  //         scenario: values.scenario || null,
+  //       })
+  //       .eq("id", caseId);
+  //     if (error) throw error;
+  //     await fetchCaseDetail();
+  //     toast({ title: "Updated", description: "Case updated successfully" });
+  //     setSheetOpen(false);
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update Case",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //     setEditSheetOpen(false);
+  //   }
+  // };
+
+  const handleFormSubmitted = () => {
+    setSheetOpen(false);
+    setCurrentQuestion(null);
+    fetchQuestions(caseId);
+  };
+
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
+  }
+
+  const confirmDeleteImmediate = async (caseId: string) => {
+    try {
+      setIsDeletingCase(true);
+      const { error: deleteError } = await supabase
+        .from("cases")
+        .update({
+          is_deleted_case: true,
+        })
+        .eq("id", caseId);
+      if (deleteError) throw deleteError;
+
+      navigate(-1);
+      await fetchCaseInfo();
+
+      toast({ title: "Deleted", description: "Case Deleted Sucessfully. " });
+    } catch (error) {
+      console.error("Failed to delete Case", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete Case",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingCase(false);
+      setCaseToDelete(null);
+      setLoading(false)
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!caseToDelete?.id) return;
+    await confirmDeleteImmediate(caseToDelete.id);
+  };
+
+  const handleDeleteCase = async (deletedCase: CaseInfo) => {
+    console.log("delete click")
+    setLoading(true);
+    try {
+      const { count, error } = await supabase
+        .from("case_questions")
+        .select("*", { count: "exact", head: true })
+        .eq("case_id", deletedCase.id);
+
+      if (error) throw error;
+
+      if (count === 0) {
+        await confirmDeleteImmediate(deletedCase.id);
+      } else {
+        setCaseToDelete(deletedCase);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Could not check for Case before deleting.",
+        variant: "destructive",
+      });
+    }finally {
+      setLoading(false);
+    }
+  };
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading Case details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return isAdmin ? (
+    <div className="container py-4 md:py-8 px-4 md:px-8">
+      <ol className="flex items-center whitespace-nowrap text-sm md:text-base ">
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  text-gray-500 hover:text-gray-800 hover:font-semibold focus:outline-none focus:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-500 dark:focus:text-blue-500"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/case-study-exams`);
+            }}
+          >
+            Home
+          </Link>
+          <svg
+            className="shrink-0 mx-2 size-4 text-gray-400 dark:text-neutral-600"
+            xmlns="http://www.w3.org/2000/svg"
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </li>
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  text-gray-500 hover:text-gray-800 hover:font-semibold focus:outline-none focus:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-500 dark:focus:text-blue-500"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/case-study-exams/${examId}`);
+            }}
+          >
+            Exam
+          </Link>
+          <svg
+            className="shrink-0 mx-2 size-4 text-gray-400 dark:text-neutral-600"
+            xmlns="http://www.w3.org/2000/svg"
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </li>
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  text-gray-500 hover:text-gray-800 hover:font-semibold focus:outline-none focus:text-blue-600 dark:text-neutral-500 dark:hover:text-blue-500 dark:focus:text-blue-500"
+            to="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
+            }}
+          >
+            Subject
+          </Link>
+          <svg
+            className="shrink-0 mx-2 size-4 text-gray-400 dark:text-neutral-600"
+            xmlns="http://www.w3.org/2000/svg"
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </li>
+        <li className="inline-flex items-center">
+          <Link
+            className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
+            to="#"
+          >
+            Case
+          </Link>
+        </li>
+      </ol>
+
+      <div className="flex flex-col md:flex-row items-start md:items-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
+          {caseInfo?.title}
+        </h1>
+        {/* <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
+          <PenSquare className="mr-2 h-4 w-4" /> Edit Case
+        </Button> */}
+        {isAdmin && (
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => setEditSheetOpen(true)}
+              className="mr-2"
+            >
+              <PenSquare className="h-4 w-4" />
+            </Button>
+            <Button variant="delete" onClick={() => handleDeleteCase(caseInfo)}>
+              <Trash className=" h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {caseInfo?.scenario && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Scenario</CardTitle>
+            <CardDescription className="max-h-32 overflow-y-auto">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: normalizeHTML(caseInfo.scenario),
+                }}
+              />
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      <div className="rounded-lg border p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="relative flex-1 mr-4">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search Question..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={() => {
+              setCurrentQuestion(null);
+              setSheetOpen(true);
+            }}
+            className="px-3  md:px-6 py-2 md:py-3"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Add Question
+          </Button>
+        </div>
+        {questionCount === 0 && availbleQuestions && (
+          <div className="text-center py-12">
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">
+              No Question available
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin
+                ? "Add your first case to get started"
+                : "Check back later for new subjects"}
+            </p>
+          </div>
+        )}
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={questionOrder}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="flex flex-col gap-y-3">
+              {filteredQuestions.map((question, index) => (
+                <SortableItem
+                  key={question.id}
+                  selectedQuestion={question}
+                  onDelete={handleDeleteQuestion}
+                  onEdit={handleEditQuestion}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
+
+      <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full md:max-w-3xl overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle>Edit Case</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <CreateCaseStudyCaseForm
+              subjectId={subjectId || ""}
+              initialData={caseInfo}
+              onsuccess={handleEditCase}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-full md:max-w-3xl overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle>
+              {currentQuestion ? "Edit Question" : "Add New Question"}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <CaseQuestionForm
+              caseId={caseId || ""}
+              initialData={currentQuestion}
+              onFormSubmitted={handleFormSubmitted}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog
+        open={!!caseToDelete}
+        onOpenChange={(open) => !open && setCaseToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Case.? Related Data also Deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingCase}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isDeletingCase}
+            >
+              {isDeletingCase ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Case</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onEditCase)}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter case name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="scenario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Scenario</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter description (optional)"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Case"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog> */}
+    </div>
+  ) : (
+    <CaseSenerioShow />
+  );
+};

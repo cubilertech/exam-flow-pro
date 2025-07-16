@@ -37,16 +37,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               
               const profile = profileData || { username: user.email?.split('@')[0] || 'user' };
               
-              // Check if user is blocked or suspended
-              const userStatus = (profile as any)?.status || 'active';
-              if (userStatus === 'blocked' || userStatus === 'suspended') {
-                console.log('User is blocked or suspended, signing out');
-                await supabase.auth.signOut();
-                dispatch(logout());
-                navigate('/login');
-                return;
-              }
-              
               const { data: adminData } = await supabase
                 .from('admin_users')
                 .select('*')
@@ -56,12 +46,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               dispatch(loginSuccess({
                 id: user.id,
                 email: user.email || '',
-                username: (profile as any)?.username || '',
-                country: (profile as any)?.country || '',
-                gender: (profile as any)?.gender || '',
-                phone: (profile as any)?.phone_number || '',
-                city: (profile as any)?.city || '',
-                status: userStatus as 'active' | 'blocked' | 'suspended',
+                username: profile.username || '',
+                country: 'country' in profile ? profile.country || '' : '',
+                gender: 'gender' in profile ? profile.gender || '' : '',
+                phone: 'phone_number' in profile ? profile.phone_number || '' : '',
+                city: 'city' in profile ? profile.city || '' : '',
                 isAdmin: Boolean(adminData)
               }));
 
@@ -105,16 +94,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           const profile = profileData || { username: user.email?.split('@')[0] || 'user' };
           
-          // Check if user is blocked or suspended
-          const userStatus = (profile as any)?.status || 'active';
-          if (userStatus === 'blocked' || userStatus === 'suspended') {
-            console.log('User is blocked or suspended, signing out');
-            await supabase.auth.signOut();
-            dispatch(logout());
-            navigate('/login');
-            return;
-          }
-          
           // Check if the user is an admin
           const { data: adminData } = await supabase
             .from('admin_users')
@@ -126,12 +105,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           dispatch(loginSuccess({
             id: user.id,
             email: user.email || '',
-            username: (profile as any)?.username || '',
-            country: (profile as any)?.country || '',
-            gender: (profile as any)?.gender || '',
-            phone: (profile as any)?.phone_number || '',
-            city: (profile as any)?.city || '',
-            status: userStatus as 'active' | 'blocked' | 'suspended',
+            username: profile.username || '',
+            country: 'country' in profile ? profile.country || '' : '',
+            gender: 'gender' in profile ? profile.gender || '' : '',
+            phone: 'phone_number' in profile ? profile.phone_number || '' : '',
+            city: 'city' in profile ? profile.city || '' : '',
             isAdmin: Boolean(adminData)
           }));
         }
