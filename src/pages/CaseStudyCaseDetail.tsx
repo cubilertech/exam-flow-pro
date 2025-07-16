@@ -72,25 +72,7 @@ import { CaseSenerioShow } from "./CaseSenerioShow";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
 import { useToast } from "@/hooks/use-toast";
 import { SortableItem } from "@/components/case-study/SortableItem";
-
-interface CaseInfo {
-  id: string;
-  title: string;
-  subject_id: string; // Changed from number to string
-  scenario: string;
-  order_index: number;
-  question_count?: number; // Made optional
-  is_deleted_case: boolean;
-}
-
-interface Question {
-  id: string;
-  question_text: string;
-  case_id: string; // Changed from number to string
-  correct_answer: string;
-  explanation: string;
-  order_index: number;
-}
+import { CaseQuestion, CaseInfo } from "@/types/case-study";
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -107,16 +89,16 @@ export const CaseStudyCaseDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
   const [caseInfo, setCaseInfo] = useState<CaseInfo | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [availbleQuestions, setAvailbleQuestions] = useState<Question[] | null>(null);
+  const [questions, setQuestions] = useState<CaseQuestion[]>([]);
+  const [availbleQuestions, setAvailbleQuestions] = useState<CaseQuestion[] | null>(null);
   const [questionOrder, setQuestionOrder] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<CaseQuestion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [questionToDelete, setQuestionToDelete] = useState<CaseQuestion | null>(null);
   const [loading,setLoading] = useState(true);
   const [caseToDelete, setCaseToDelete] = useState<CaseInfo | null>(null);
   const [isDeletingCase, setIsDeletingCase] = useState(false);
@@ -227,7 +209,7 @@ export const CaseStudyCaseDetail = () => {
 
   const filteredQuestions = questionOrder
     .map((id) => questions.find((q) => q.id === id))
-    .filter((q): q is Question => !!q);
+    .filter((q): q is CaseQuestion => !!q);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -283,7 +265,7 @@ export const CaseStudyCaseDetail = () => {
     }
   };
 
-  const handleDeleteQuestion = async (question: Question) => {
+  const handleDeleteQuestion = async (question: CaseQuestion) => {
     try {
       await supabase
         .from("case_questions")
@@ -331,7 +313,7 @@ export const CaseStudyCaseDetail = () => {
     console.log("Editing Case");
   };
 
-  const handleEditQuestion = (question: Question) => {
+  const handleEditQuestion = (question: CaseQuestion) => {
     setSheetOpen(true);
     setCurrentQuestion(question);
     console.log("Editing", question);

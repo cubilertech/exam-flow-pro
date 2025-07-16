@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 
 import { Loader2 } from 'lucide-react';
@@ -34,7 +35,7 @@ import {
   loginSuccess,
 } from '@/features/auth/authSlice';
 import { useAppDispatch } from '@/lib/hooks';
-import { signIn } from '@/services/authService';
+import { signIn, getCurrentUser } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const loginSchema = z.object({
@@ -51,8 +52,6 @@ export const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // const from = (location.state as any)?.from?.pathname || "/";
-
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -68,24 +67,28 @@ export const LoginForm = () => {
       dispatch(loginStart());
       
       console.log("Attempting login with:", data.email);
-      const userData = await signIn(data.email, data.password);
+      const authData = await signIn(data.email, data.password);
       
-      if (userData) {
-        dispatch(loginSuccess(userData));
-        toast.success("Login successful!");
-        // Use a small timeout to ensure state updates have propagated
-        if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
-          const redirectPath = userData?.isAdmin ? '/questions' : '/my-exams';
-          navigate(redirectPath, { replace: true });
+      if (authData.user) {
+        // Get the complete user data with profile info
+        const userData = await getCurrentUser();
+        
+        if (userData) {
+          dispatch(loginSuccess(userData));
+          toast.success("Login successful!");
+          // Use a small timeout to ensure state updates have propagated
+          if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
+            const redirectPath = userData.isAdmin ? '/questions' : '/my-exams';
+            navigate(redirectPath, { replace: true });
+          }
+        } else {
+          throw new Error("Failed to get user profile data");
         }
-        // setTimeout(() => {
-        //   navigate(from, { replace: true });
-        // }, 100);
       } else {
         throw new Error("No user data returned from login");
       }
     } catch (error) {
-      const err =  error as Error;
+      const err = error as Error;
       console.error("Login error:", err);
       const errorMessage = err.message || "Login failed. Please check your credentials.";
       dispatch(loginFailure(errorMessage));

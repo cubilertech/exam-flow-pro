@@ -121,6 +121,33 @@ export const deleteUser = async (userId: string) => {
   if (error) throw error;
 };
 
+export const createUserByAdmin = async (email: string, password: string, userData: {
+  username: string;
+  country: string;
+  gender: string;
+  phone?: string;
+  city?: string;
+}) => {
+  // Create user through auth
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: email,
+    password: password,
+    email_confirm: true,
+    user_metadata: {
+      username: userData.username,
+      full_name: userData.username,
+      country: userData.country,
+      gender: userData.gender,
+      phone_number: userData.phone || '',
+      city: userData.city || ''
+    }
+  });
+
+  if (authError) throw authError;
+  
+  return authData;
+};
+
 export const createUser = async (userData: {
   email: string;
   password: string;

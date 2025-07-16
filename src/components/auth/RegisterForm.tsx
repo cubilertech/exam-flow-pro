@@ -38,7 +38,7 @@ import {
 } from "@/features/auth/authSlice";
 import { useToast } from "@/hooks/use-toast";
 import { useAppDispatch } from "@/lib/hooks";
-import { createUserByAdmin } from "@/services/authService";
+import { signUp } from "@/services/authService";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const registerSchema = z
@@ -160,17 +160,20 @@ export const RegisterForm = () => {
       setLoading(true);
       dispatch(registerStart());
 
-      const userData = await createUserByAdmin(data.email, data.password, {
+      const userData = await signUp({
+        email: data.email,
+        password: data.password,
         username: data.username,
+        full_name: data.username,
         country: data.country,
         city: data.city,
         gender: data.gender,
-        phone: data.phone,
+        phone_number: data.phone,
       });
 
       dispatch(registerSuccess(userData));
       navigate("/my-exams");
-    }catch (error) {
+    } catch (error) {
       const err = error as Error;
     
       let errorMessage = "Registration failed. Please try again.";
