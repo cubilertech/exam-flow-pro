@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 
 import {
@@ -56,9 +57,10 @@ export const Navbar = () => {
       dispatch(logout());
       toast.success("Logged out successfully");
       navigate("/login");
-    } catch (error: Error) {
+    } catch (error: unknown) {
       console.error("Logout error:", error);
-      toast.error(`Logout failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Logout failed";
+      toast.error(`Logout failed: ${errorMessage}`);
     }
   };
 
@@ -151,9 +153,6 @@ export const Navbar = () => {
               <Button variant="outline" asChild className='py-1 px-2 sm:py-3 sm:px-6 '>
                 <Link to="/login">Login</Link>
               </Button>
-              <Button asChild className='py-2 px-4 sm:py-3 sm:px-6 '>
-                <Link to="/register">Register</Link>
-              </Button>
             </div>
           )}
         </div>
@@ -161,4 +160,3 @@ export const Navbar = () => {
     </header>
   );
 };
-
