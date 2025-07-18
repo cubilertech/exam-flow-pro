@@ -135,7 +135,7 @@ const CaseStudyExamDetail = () => {
 
       setExamInfo({
         ...examData,
-        order_index: examData.order_index || 0,
+        order_index: 0, // Default value since order_index doesn't exist in the database
         subject_count: 0
       });
     } catch (error) {
