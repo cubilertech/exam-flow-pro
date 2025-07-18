@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import UserManagement from "./UserManagement";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("questions");
@@ -18,16 +19,12 @@ const Admin = () => {
         <TabsContent value="questions">
           <div className="grid gap-6">
             <h2 className="text-xl font-semibold">Question Management</h2>
-            {/* Question management components will go here */}
             <p className="text-muted-foreground">Question management functionality coming soon</p>
           </div>
         </TabsContent>
         
         <TabsContent value="users">
-          <div className="grid gap-6">
-            <h2 className="text-xl font-semibold">User Management</h2>
-            <p className="text-muted-foreground">User management functionality coming soon</p>
-          </div>
+          <UserManagement />
         </TabsContent>
       </Tabs>
     </div>

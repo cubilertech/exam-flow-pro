@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ import { Progress } from "@/components/ui/progress";
 interface Case {
   id: string;
   title: string;
-  subject_id: number;
+  subject_id: string; // Changed from number to string
   scenario: string;
   order_index: number;
   question_count: number;
@@ -54,7 +55,7 @@ interface Case {
 interface Question {
   id: string;
   question_text: string;
-  case_id: number;
+  case_id: string; // Changed from number to string
   correct_answer: string;
   explanation: string;
   order_index: number;
@@ -92,8 +93,6 @@ export const CaseStudyTakeExam = () => {
     content: "",
     stringHandler: htmlToProsemirrorNode,
   });
-
-
 
   useEffect(() => {
     if (caseId) {
