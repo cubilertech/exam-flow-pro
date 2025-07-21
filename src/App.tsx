@@ -44,7 +44,7 @@ function App() {
           <Router>
             <AuthProvider>
               <SidebarProvider>
-                <div className="min-h-screen bg-background">
+                <div className="min-h-screen bg-background w-full">
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
@@ -146,7 +146,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-study-exams/:id" 
+                      path="/case-study-exams/:examId" 
                       element={
                         <PrivateRoute>
                           <MainLayout>
@@ -156,7 +156,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-study-subjects/:id" 
+                      path="/case-study-exams/:examId/subjects/:subjectId" 
                       element={
                         <PrivateRoute>
                           <MainLayout>
@@ -166,7 +166,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-study-cases/:id" 
+                      path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId" 
                       element={
                         <PrivateRoute>
                           <MainLayout>
@@ -176,7 +176,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-study-take-exam/:id" 
+                      path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId/testId/:testId" 
                       element={
                         <StudentRoute>
                           <MainLayout>
@@ -186,7 +186,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-senerio-show/:id" 
+                      path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId" 
                       element={
                         <StudentRoute>
                           <MainLayout>
