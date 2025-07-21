@@ -117,7 +117,6 @@ export const UserQuestionBankModal = ({
       const toAdd = userSubscriptions.filter((id) => !currentSubIds.includes(id));
       const toRemove = currentSubIds.filter((id) => !userSubscriptions.includes(id));
 
-      // Add new subscriptions with upsert
       if (toAdd.length > 0) {
         const { error: addError } = await supabase
           .from('user_subscriptions')
@@ -128,7 +127,7 @@ export const UserQuestionBankModal = ({
               is_active: true,
             })),
             {
-              onConflict: 'user_id,question_bank_id', // ✅ FIXED: now a string
+              onConflict: 'user_id,question_bank_id',
             }
           );
 
