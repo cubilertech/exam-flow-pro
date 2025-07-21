@@ -1,17 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QuestionBankModal } from "@/components/admin/QuestionBankModal";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent, 
-  CardFooter 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 import { Plus, Search, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -45,47 +44,46 @@ const QuestionBank = () => {
         .order("name");
 
       if (error) throw error;
-      
+
       if (data) {
-        // Get category counts for each question bank
-        const banksWithCounts = await Promise.all(data.map(async (bank) => {
-          // Get category count
-          const { count: categoryCount, error: catError } = await supabase
-            .from("categories")
-            .select("*", { count: 'exact', head: true })
-            .eq("question_bank_id", bank.id);
-          
-          if (catError) throw catError;
-          
-          // Get question count via categories
-          const { data: cats } = await supabase
-            .from("categories")
-            .select("id")
-            .eq("question_bank_id", bank.id);
-            
-          if (cats && cats.length > 0) {
-            const categoryIds = cats.map(c => c.id);
-            const { count: questionCount, error: qError } = await supabase
-              .from("questions")
-              .select("*", { count: 'exact', head: true })
-              .in("category_id", categoryIds);
-            
-            if (qError) throw qError;
-            
+        const banksWithCounts = await Promise.all(
+          data.map(async (bank) => {
+            const { count: categoryCount, error: catError } = await supabase
+              .from("categories")
+              .select("*", { count: "exact", head: true })
+              .eq("question_bank_id", bank.id);
+
+            if (catError) throw catError;
+
+            const { data: cats } = await supabase
+              .from("categories")
+              .select("id")
+              .eq("question_bank_id", bank.id);
+
+            if (cats && cats.length > 0) {
+              const categoryIds = cats.map((c) => c.id);
+              const { count: questionCount, error: qError } = await supabase
+                .from("questions")
+                .select("*", { count: "exact", head: true })
+                .in("category_id", categoryIds);
+
+              if (qError) throw qError;
+
+              return {
+                ...bank,
+                categoryCount: categoryCount || 0,
+                questionCount: questionCount || 0,
+              };
+            }
+
             return {
               ...bank,
               categoryCount: categoryCount || 0,
-              questionCount: questionCount || 0
+              questionCount: 0,
             };
-          }
-          
-          return {
-            ...bank,
-            categoryCount: categoryCount || 0,
-            questionCount: 0
-          };
-        }));
-        
+          })
+        );
+
         setQuestionBanks(banksWithCounts);
       }
     } catch (error) {
@@ -108,9 +106,11 @@ const QuestionBank = () => {
     navigate(`/questions/${bankId}`);
   };
 
-  const filteredBanks = questionBanks.filter(bank => 
-    bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (bank.description && bank.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredBanks = questionBanks.filter(
+    (bank) =>
+      bank.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bank.description &&
+        bank.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -139,28 +139,48 @@ const QuestionBank = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredBanks.map((bank) => (
-            <Card key={bank.id} className="transition-shadow hover:shadow-md">
-              <CardHeader>
-                <CardTitle>{bank.name}</CardTitle>
-                {bank.description && (
-                  <CardDescription className="line-clamp-2">{bank.description}</CardDescription>
-                )}
+            <Card
+              key={bank.id}
+              className="flex flex-col justify-between h-64 transition-shadow hover:shadow-md"
+            >
+              <CardHeader className="pb-2">
+                <CardTitle
+                  className="text-lg line-clamp-2 min-h-[3.5rem]"
+                  title={bank.name}
+                >
+                  {bank.name}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex space-x-4 text-sm">
+
+              <CardContent className="flex-1 overflow-hidden pt-0 pb-2">
+                {bank.description && (
+                  <CardDescription className="line-clamp-3 text-sm">
+                    {bank.description}
+                  </CardDescription>
+                )}
+              </CardContent>
+
+              <CardContent className="text-sm text-muted-foreground pt-0 pb-2">
+                <div className="flex space-x-4">
                   <div>
-                    <span className="font-medium">{bank.categoryCount}</span> Categories
+                    <span className="font-medium text-black">
+                      {bank.categoryCount}
+                    </span>{" "}
+                    Categories
                   </div>
                   <div>
-                    <span className="font-medium">{bank.questionCount}</span> Questions
+                    <span className="font-medium text-black">
+                      {bank.questionCount}
+                    </span>{" "}
+                    Questions
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-auto"
+
+              <CardFooter className="justify-end pt-0">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => viewBankDetails(bank.id)}
                 >
                   View Details
@@ -173,21 +193,22 @@ const QuestionBank = () => {
           {filteredBanks.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center p-8 bg-muted rounded-md">
               <p className="mb-4 text-muted-foreground">
-                {searchTerm 
-                  ? "No question banks found matching your search" 
+                {searchTerm
+                  ? "No question banks found matching your search"
                   : "No question banks found"}
               </p>
               <Button onClick={() => setBankModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Create Your First Question Bank
+                <Plus className="h-4 w-4 mr-2" /> Create Your First Question
+                Bank
               </Button>
             </div>
           )}
         </div>
       )}
 
-      <QuestionBankModal 
-        open={bankModalOpen} 
-        onOpenChange={setBankModalOpen} 
+      <QuestionBankModal
+        open={bankModalOpen}
+        onOpenChange={setBankModalOpen}
         onSuccess={handleBankCreated}
       />
     </div>

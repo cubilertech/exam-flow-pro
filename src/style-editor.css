@@ -1,4 +1,5 @@
 /* Container class */
+
 .rich-text-content {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.7;
@@ -14,6 +15,7 @@
   }
   
   /* Unordered list */
+  
   .rich-text-content ul {
     list-style-type: disc;
     padding-left: 1.5rem;

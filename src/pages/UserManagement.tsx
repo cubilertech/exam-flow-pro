@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,16 +9,16 @@ import { getAllUsers, updateUserStatus, deleteUser } from '@/services/authServic
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { EditUserModal } from '@/components/admin/EditUserModal';
 import { UserQuestionBankModal } from '@/components/admin/UserQuestionBankModal';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 interface UserProfile {
@@ -54,14 +53,14 @@ const UserManagement = () => {
       const usersData = await getAllUsers();
       const mappedUsers = usersData.map((user: any) => ({
         ...user,
-        status: user.status || 'active'
+        status: user.status || 'active',
       }));
       setUsers(mappedUsers);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to fetch users",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch users',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -74,14 +73,14 @@ const UserManagement = () => {
       await updateUserStatus(userId, newStatus);
       await fetchUsers();
       toast({
-        title: "Success",
+        title: 'Success',
         description: `User ${newStatus === 'active' ? 'unblocked' : 'blocked'} successfully`,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update user status",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update user status',
+        variant: 'destructive',
       });
     }
   };
@@ -91,14 +90,14 @@ const UserManagement = () => {
       await deleteUser(userId);
       await fetchUsers();
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: 'Success',
+        description: 'User deleted successfully',
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete user",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'destructive',
       });
     }
   };
@@ -108,7 +107,7 @@ const UserManagement = () => {
     setQuestionBankModalOpen(true);
   };
 
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter((user) =>
     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.country?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -136,15 +135,14 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage users and their access to question banks</p>
         </div>
         <Button onClick={() => setCreateModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New User
+          <Plus className="h-4 w-4 mr-2" /> Add New User
         </Button>
       </div>
 
@@ -160,21 +158,26 @@ const UserManagement = () => {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredUsers.map((user) => (
-          <Card key={user.id}>
+          <Card key={user.id} className="shadow-sm border border-border rounded-2xl">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                   <div>
-                    <CardTitle className="text-lg">{user.username}</CardTitle>
+                    <CardTitle className="text-lg text-primary font-semibold">
+                      {user.username}
+                    </CardTitle>
                     <CardDescription>{user.full_name}</CardDescription>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(user.status)}>
+                  <Badge
+                    className="text-xs px-2 py-1"
+                    variant={getStatusBadgeVariant(user.status)}
+                  >
                     {user.status}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                   <Button
                     variant="outline"
                     size="sm"
@@ -216,7 +219,8 @@ const UserManagement = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete User</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete {user.username}? This action cannot be undone and will remove all their question bank access.
+                          Are you sure you want to delete {user.username}? This action cannot be
+                          undone and will remove all their question bank access.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -254,12 +258,8 @@ const UserManagement = () => {
         ))}
       </div>
 
-      <CreateUserModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onUserCreated={fetchUsers}
-      />
-
+      {/* Modals */}
+      <CreateUserModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} onUserCreated={fetchUsers} />
       <EditUserModal
         isOpen={editModalOpen}
         onClose={() => {
@@ -269,7 +269,6 @@ const UserManagement = () => {
         user={selectedUser}
         onUserUpdated={fetchUsers}
       />
-
       <UserQuestionBankModal
         isOpen={questionBankModalOpen}
         onClose={() => {

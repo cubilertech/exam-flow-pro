@@ -108,7 +108,7 @@ const QuestionBankDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
+
   // For category management in the edit dialog
   const [newCategory, setNewCategory] = useState("");
   const [editedCategories, setEditedCategories] = useState<Category[]>([]);
@@ -156,7 +156,7 @@ const QuestionBankDetail = () => {
         .single();
 
       if (error) throw error;
-      
+
       if (data) {
         setQuestionBank(data);
       }
@@ -180,7 +180,7 @@ const QuestionBankDetail = () => {
         .order("name");
 
       if (error) throw error;
-      
+
       if (data) {
         setCategories(data.map(cat => ({
           id: cat.id,
@@ -201,7 +201,7 @@ const QuestionBankDetail = () => {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      
+
       let query = supabase
         .from("questions")
         .select(`
@@ -215,7 +215,7 @@ const QuestionBankDetail = () => {
           question_options(id, text, is_correct)
         `)
         .order("created_at", { ascending: false });
-      
+
       if (selectedCategory && selectedCategory !== "all") {
         query = query.eq("category_id", selectedCategory);
       } else if (id) {
@@ -225,7 +225,7 @@ const QuestionBankDetail = () => {
           .from("categories")
           .select("id")
           .eq("question_bank_id", id);
-        
+
         if (categoriesData && categoriesData.length > 0) {
           const categoryIds = categoriesData.map(cat => cat.id);
           query = query.in("category_id", categoryIds);
@@ -236,11 +236,11 @@ const QuestionBankDetail = () => {
           return;
         }
       }
-      
+
       const { data, error } = await query;
 
       if (error) throw error;
-      
+
       if (data) {
         const formattedQuestions: Question[] = data.map(q => ({
           id: q.id,
@@ -257,7 +257,7 @@ const QuestionBankDetail = () => {
           difficulty: q.difficulty || 'easy',
           tags: []
         }));
-        
+
         setQuestions(formattedQuestions);
       }
     } catch (error) {
@@ -286,10 +286,10 @@ const QuestionBankDetail = () => {
   // Category management in edit dialog
   const handleAddCategory = () => {
     if (newCategory.trim() && !editedCategories.some(cat => cat.name === newCategory.trim())) {
-      setEditedCategories([...editedCategories, { 
-        id: crypto.randomUUID(), 
+      setEditedCategories([...editedCategories, {
+        id: crypto.randomUUID(),
         name: newCategory.trim(),
-        questionBankId: id 
+        questionBankId: id
       }]);
       setNewCategory("");
     }
@@ -308,10 +308,10 @@ const QuestionBankDetail = () => {
 
   const onEditQuestionBank = async (values: z.infer<typeof formSchema>) => {
     if (!id) return;
-    
+
     try {
       setIsSubmitting(true);
-      
+
       // 1. Update question bank details
       const { error: bankError } = await supabase
         .from("question_banks")
@@ -330,7 +330,7 @@ const QuestionBankDetail = () => {
           .from("categories")
           .delete()
           .in("id", deletedCategoryIds);
-        
+
         if (deleteError) throw deleteError;
       }
 
@@ -338,7 +338,7 @@ const QuestionBankDetail = () => {
       const newCategories = editedCategories.filter(
         cat => !categories.some(existingCat => existingCat.id === cat.id)
       );
-      
+
       if (newCategories.length > 0) {
         const categoriesToInsert = newCategories.map(cat => ({
           name: cat.name,
@@ -348,7 +348,7 @@ const QuestionBankDetail = () => {
         const { error: insertError } = await supabase
           .from("categories")
           .insert(categoriesToInsert);
-        
+
         if (insertError) throw insertError;
       }
 
@@ -360,7 +360,7 @@ const QuestionBankDetail = () => {
             .from("categories")
             .update({ name: cat.name })
             .eq("id", cat.id);
-          
+
           if (updateError) throw updateError;
         }
       }
@@ -369,14 +369,14 @@ const QuestionBankDetail = () => {
         title: "Success",
         description: "Question bank updated successfully",
       });
-      
+
       setEditDialogOpen(false);
       setDeletedCategoryIds([]);
       fetchQuestionBank();
       fetchCategories();
     } catch (error) {
       const err = error as Error;
-      toast({ 
+      toast({
         title: "Error",
         description: err.message || "Failed to update question bank",
         variant: "destructive",
@@ -386,7 +386,7 @@ const QuestionBankDetail = () => {
     }
   };
 
-  const filteredQuestions = questions.filter(question => 
+  const filteredQuestions = questions.filter(question =>
     question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
     question.serialNumber.toString().includes(searchTerm)
   );
@@ -397,25 +397,33 @@ const QuestionBankDetail = () => {
 
   return (
     <div className="container py-8">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate("/questions")}
-          className="mr-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Question Banks
-        </Button>
-        <h1 className="text-3xl font-bold flex-1">
-          {questionBank?.name}
-        </h1>
-        <Button 
-          variant="outline"
-          onClick={() => setEditDialogOpen(true)}
-        >
-          <PenSquare className="mr-2 h-4 w-4" />
-          Edit Bank
-        </Button>
+      <div className="mb-6">
+        {/* First row: Back button on left, Edit button on right */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/questions")}
+            className="mr-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Question Banks
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => setEditDialogOpen(true)}
+          >
+            <PenSquare className="mr-2 h-4 w-4" />
+            Edit Bank
+          </Button>
+        </div>
+
+        {/* Second row: Question bank name centered */}
+        <div className="mt-4 text-center">
+          <h1 className="text-3xl font-bold">
+            {questionBank?.name}
+          </h1>
+        </div>
       </div>
 
       <Card className="mb-6">
@@ -470,7 +478,7 @@ const QuestionBankDetail = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setCurrentQuestion(null);
               setSheetOpen(true);
@@ -480,8 +488,8 @@ const QuestionBankDetail = () => {
           </Button>
         </div>
 
-        <QuestionsList 
-          questions={filteredQuestions} 
+        <QuestionsList
+          questions={filteredQuestions}
           onEdit={handleEditQuestion}
         />
       </div>
@@ -492,10 +500,10 @@ const QuestionBankDetail = () => {
             <SheetTitle>{currentQuestion ? "Edit Question" : "Add New Question"}</SheetTitle>
           </SheetHeader>
           <div className="py-4">
-            <QuestionForm 
+            <QuestionForm
               questionBankId={id || ""}
-              categoryId={selectedCategory !== "all" ? selectedCategory : ""} 
-              initialData={currentQuestion} 
+              categoryId={selectedCategory !== "all" ? selectedCategory : ""}
+              initialData={currentQuestion}
               allCategories={categories}
               onFormSubmitted={handleFormSubmitted}
             />
@@ -508,7 +516,7 @@ const QuestionBankDetail = () => {
           <DialogHeader>
             <DialogTitle>Edit Question Bank</DialogTitle>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onEditQuestionBank)} className="space-y-4">
               <FormField
@@ -524,7 +532,7 @@ const QuestionBankDetail = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -532,10 +540,10 @@ const QuestionBankDetail = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Enter description (optional)" 
-                        className="resize-none" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Enter description (optional)"
+                        className="resize-none"
+                        {...field}
                         value={field.value || ""}
                       />
                     </FormControl>
@@ -547,10 +555,10 @@ const QuestionBankDetail = () => {
               <div className="space-y-2">
                 <FormLabel>Categories</FormLabel>
                 <div className="flex space-x-2">
-                  <Input 
-                    placeholder="Add category" 
-                    value={newCategory} 
-                    onChange={(e) => setNewCategory(e.target.value)} 
+                  <Input
+                    placeholder="Add category"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
                     className="flex-1"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -559,8 +567,8 @@ const QuestionBankDetail = () => {
                       }
                     }}
                   />
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     onClick={handleAddCategory}
                     disabled={!newCategory.trim()}
                     size="icon"
@@ -592,9 +600,9 @@ const QuestionBankDetail = () => {
               </div>
 
               <DialogFooter className="pt-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
+                <Button
+                  variant="outline"
+                  type="button"
                   onClick={() => {
                     setEditDialogOpen(false);
                     setEditedCategories([...categories]);
@@ -604,8 +612,8 @@ const QuestionBankDetail = () => {
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSubmitting || editedCategories.length === 0}
                 >
                   {isSubmitting ? "Updating..." : "Update Question Bank"}

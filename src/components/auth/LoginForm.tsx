@@ -100,7 +100,8 @@ export const LoginForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <div className='flex items-center justify-center center'>
+      <Card className="w-full max-w-md mx-auto ">
       <CardHeader>
         <CardTitle className="text-2xl">Log in</CardTitle>
         <CardDescription>
@@ -169,5 +170,6 @@ export const LoginForm = () => {
         </div>
       </CardFooter>
     </Card>
+    </div>
   );
 };
