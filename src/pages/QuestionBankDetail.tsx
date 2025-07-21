@@ -418,7 +418,6 @@ const QuestionBankDetail = () => {
           </Button>
         </div>
 
-        {/* Second row: Question bank name centered */}
         <div className="mt-4 text-center">
           <h1 className="text-3xl font-bold">
             {questionBank?.name}
