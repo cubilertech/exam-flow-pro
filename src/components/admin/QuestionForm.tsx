@@ -24,7 +24,6 @@ import {
 import { i18nFormat } from "@remirror/i18n";
 import { UploadImageButton } from "../remirror-extensions/UploadImageButton";
 
-
 import { v4 as uuidv4 } from "uuid";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -90,7 +89,7 @@ function normalizeHTML(input: string) {
 // this function is used to normalize the HTML input
 const extensions = () => [
   new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
-  new CodeExtension(),  
+  new CodeExtension(),
   new BoldExtension({}),
   new BlockquoteExtension(),
   new NodeFormattingExtension({}),
@@ -142,36 +141,39 @@ export const QuestionForm = ({
     options?: string;
     optionTexts?: string;
   }>({});
-  const fetchCategories = useCallback(async (questionBankId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("question_bank_id", questionBankId)
-        .order("name");
+  const fetchCategories = useCallback(
+    async (questionBankId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .eq("question_bank_id", questionBankId)
+          .order("name");
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data) {
-        setCategories(
-          data.map((cat) => ({
-            id: cat.id,
-            name: cat.name,
-            questionBankId: cat.question_bank_id,
-          })),
-        );
+        if (data) {
+          setCategories(
+            data.map((cat) => ({
+              id: cat.id,
+              name: cat.name,
+              questionBankId: cat.question_bank_id,
+            })),
+          );
+        }
+      } catch (error) {
+        const err = error as Error;
+        toast({
+          title: "Error",
+          description: err.message || "Failed to load categories",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
-      const err = error as Error;
-      toast({
-        title: "Error",
-        description: err.message || "Failed to load categories",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
-const { manager, state, onChange } = useRemirror({
+  const { manager, state, onChange } = useRemirror({
     extensions: extensions,
     content: formData.explanation,
     stringHandler: htmlToProsemirrorNode,
@@ -188,8 +190,6 @@ const { manager, state, onChange } = useRemirror({
       setCategories(allCategories);
     }
   }, [allCategories]);
-
- 
 
   const handleTextChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -299,7 +299,6 @@ const { manager, state, onChange } = useRemirror({
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
-      console.log(bucketExists, filePath, file);
       const { error: uploadError } = await supabase.storage
         .from("question_images")
         .upload(filePath, file, {
