@@ -91,6 +91,7 @@ const CaseStudyExamDetail = () => {
   const [examToDelete, setExamToDelete] = useState<CaseStudyExamInfo | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -98,6 +99,7 @@ const CaseStudyExamDetail = () => {
       description: "",
     },
   });
+  console.log("subjects", subjects);
 
   useEffect(() => {
     console.log("Fetching exam details for ID:", examId);
@@ -196,6 +198,8 @@ const CaseStudyExamDetail = () => {
       setLoading(false);
     }
   };
+
+  console.log("examInfo", examInfo);
 
   const onEditExam = async (values: z.infer<typeof formSchema>) => {
     if (!examId) return;

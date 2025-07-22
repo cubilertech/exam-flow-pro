@@ -186,7 +186,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/case-senerio-show/:id" 
+                      path="/case-study-exams/:examId/subjects/:subjectId/cases/:caseId" 
                       element={
                         <StudentRoute>
                           <MainLayout>

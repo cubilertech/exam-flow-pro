@@ -249,25 +249,6 @@ export const CaseStudyTakeExam = () => {
     return Object.keys(savedAnswers).length;
   };
 
-//   const getStrippedTextLength = (html: string) => {
-//   try {
-//     const parsed = JSON.parse(html) as string;
-//     const text = parsed
-//       .replace(/<[^>]+>/g, "")   // Remove HTML tags
-//       .replace(/&nbsp;/g, "")    // Remove &nbsp;
-//       .replace(/\s+/g, "")       // Remove all spaces
-//       .trim();
-//     return text.length;
-//   } catch {
-//     return 0;
-//   }
-// };
-//   const validateForm = () => {
-  
-//   const answerLength = getStrippedTextLength(formData.correct_answer);
-
-//   return answerLength >= 2;
-// };
 
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">
@@ -279,13 +260,7 @@ export const CaseStudyTakeExam = () => {
               Question {currentQuestionIndex} of {totalQuestions}
             </span>
 
-            {/* <Button
-              onClick={() => "handleFinishExam()"}
-              variant="default"
-              className="py-2 px-4 sm:py-3 sm:px-6"
-            >
-              Finish Exam
-            </Button> */}
+            
           </div>
           <div className="mb-4">
             <Progress
