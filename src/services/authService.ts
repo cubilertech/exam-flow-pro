@@ -31,12 +31,46 @@ export const signUp = async (userData: {
 };
 
 export const signIn = async (email: string, password: string) => {
+  // First check if user exists and their status
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', (await supabase.auth.signInWithPassword({ email, password })).data?.user?.id)
+    .single();
+
+  if (profileError && profileError.code !== 'PGRST116') {
+    // If it's not a "not found" error, throw it
+    throw profileError;
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
 
   if (error) throw error;
+
+  // Check user status after successful authentication
+  if (data.user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile?.status === 'blocked') {
+      // Sign out immediately if user is blocked
+      await supabase.auth.signOut();
+      throw new Error('Your account has been blocked by the administrator. Please contact admin support for assistance.');
+    }
+
+    if (profile?.status === 'suspended') {
+      // Sign out immediately if user is suspended
+      await supabase.auth.signOut();
+      throw new Error('Your account has been suspended by the administrator. Please contact admin support for assistance.');
+    }
+  }
+
   return data;
 };
 
@@ -91,6 +125,7 @@ export const getAllUsers = async () => {
 
   return data;
 };
+
 export const updateUserProfile = async (
   userId: string,
   profileData: {
@@ -112,11 +147,29 @@ export const updateUserProfile = async (
 };
 
 export const updateUserStatus = async (userId: string, status: string) => {
-  // Since status doesn't exist in profiles table, we'll just return success
-  // In a real implementation, you might want to add a status column to profiles
-  console.log(`User ${userId} status updated to ${status}`);
-  return { success: true };
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ status })
+    .eq('id', userId);
+
+  if (error) throw error;
+
+  // If blocking a user, force sign out all their sessions
+  if (status === 'blocked' || status === 'suspended') {
+    try {
+      // Create an edge function call to handle session termination
+      await supabase.functions.invoke('terminate-user-sessions', {
+        body: { userId }
+      });
+    } catch (funcError) {
+      console.warn('Could not terminate user sessions:', funcError);
+      // Don't throw error here as the status update was successful
+    }
+  }
+
+  return data;
 };
+
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase
@@ -137,6 +190,7 @@ export const checkIsAdmin = async (userId: string): Promise<boolean> => {
     return false;
   }
 };
+
 export const deleteUser = async (userId: string) => {
   const { error } = await supabase
     .from('profiles')
@@ -145,8 +199,6 @@ export const deleteUser = async (userId: string) => {
 
   if (error) throw error;
 };
-
-// services/authService.ts
 
 export const createUserByAdmin = async (
    email: string,
