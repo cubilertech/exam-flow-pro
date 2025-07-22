@@ -22,7 +22,6 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <SidebarProvider>
-      {/* <div className="min-h-screen flex w-full flex-col min-w-full bg-gradient-to-br from-background via-background to-muted/30"> */}
       <div className="min-h-screen flex w-full flex-col min-w-full bg-gradient-to-br from-background via-background to-muted/30">
         <Navbar />
         <div className="w-full sm:flex sm:flex-1">
