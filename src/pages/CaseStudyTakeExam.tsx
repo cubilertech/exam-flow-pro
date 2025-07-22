@@ -1,278 +1,368 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ArrowRight, FileText, Clock } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { saveAnswer, setSessionStartTime, setTotalQuestions } from "@/features/caseAnswers/caseAnswersSlice";
+
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  BoldExtension,
+  CodeExtension,
+  HeadingExtension,
+  BlockquoteExtension,
+  NodeFormattingExtension,
+  BulletListExtension,
+  TableExtension,
+} from "remirror/extensions";
+import { Remirror, ThemeProvider, useRemirror } from "@remirror/react";
+import { htmlToProsemirrorNode } from "remirror";
+import {
+  ToggleCodeButton,
+  ToggleBoldButton,
+  HeadingLevelButtonGroup,
+  IndentationButtonGroup,
+  TextAlignmentButtonGroup,
+  Toolbar,
+} from "@remirror/react-ui";
+import { Box } from "@mui/material";
+import { UploadImageButton } from "../components/remirror-extensions/UploadImageButton";
+import { TableDropdown } from "../components/remirror-extensions/TableButton";
+import { imageExtension, reactComponentExtension } from "@/lib/image-extension";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useToast } from "@/hooks/use-toast";
+import {
+  removeAnswer,
+  saveAnswer,
+} from "@/features/caseAnswers/caseAnswersSlice";
+
+import { Progress } from "@/components/ui/progress";
 
 interface Case {
   id: string;
-  created_at: string;
-  updated_at: string;
   title: string;
+  subject_id: string; // Changed from number to string
   scenario: string;
-  instructions: string | null;
-  subject_id: string | null;
-  order_index: number | null;
-  is_deleted_case: boolean | null;
+  order_index: number;
+  question_count: number;
 }
 
-interface CaseQuestion {
+interface Question {
   id: string;
-  created_at: string;
-  updated_at: string;
-  case_id: string | null;
   question_text: string;
+  case_id: string; // Changed from number to string
   correct_answer: string;
-  explanation: string | null;
-  hint: string | null;
-  order_index: number | null;
+  explanation: string;
+  order_index: number;
 }
 
-export default function CaseStudyTakeExam() {
-  const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const { examId, subjectId, caseId } = useParams();
-  
-  const { answers, sessionStartTime } = useAppSelector(
-    (state) => state.caseAnswers
-  );
+export const CaseStudyTakeExam = () => {
+  const { examId, subjectId, caseId , testId } = useParams<{examId: string; subjectId: string;caseId: string; testId : string}>();
   const { user } = useAppSelector((state) => state.auth);
+  const [questions, setQuestions] = React.useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(1);
+  const [answerHtml, setAnswerHtml] = useState<string>("");
+  const [showAnswer, setShowAnswer] = useState(false);
+  const dispatch = useAppDispatch();
+  const [resultData, setResultData] = useState<any>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const savedAnswers = useAppSelector((state) => state.caseAnswers.answers);
+  const [isAnswerValid, setIsAnswerValid] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const [case_, setCase] = useState<Case | null>(null);
-  const [questions, setQuestions] = useState<CaseQuestion[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const extensions = () => [
+    new HeadingExtension({ levels: [1, 2, 3, 4, 5] }),
+    new CodeExtension(),
+    new BoldExtension({}),
+    new BlockquoteExtension(),
+    new NodeFormattingExtension({}),
+    new BulletListExtension({}),
+    new TableExtension(),
+    imageExtension(),
+    reactComponentExtension(),
+  ];
+
+  const { manager, state, getContext } = useRemirror({
+    extensions,
+    content: "",
+    stringHandler: htmlToProsemirrorNode,
+  });
 
   useEffect(() => {
-    const fetchCaseAndQuestions = async () => {
-      if (!caseId) return;
-
-      try {
-        const { data: caseData, error: caseError } = await supabase
-          .from("cases")
-          .select("*")
-          .eq("id", caseId)
-          .single();
-
-        if (caseError) throw caseError;
-        setCase(caseData);
-
-        const { data: questionsData, error: questionsError } = await supabase
-          .from("case_questions")
-          .select("*")
-          .eq("case_id", caseId)
-          .order("order_index");
-
-        if (questionsError) throw questionsError;
-        setQuestions(questionsData);
-        
-        // Set total questions count and start time if not already set
-        dispatch(setTotalQuestions(questionsData.length));
-        if (!sessionStartTime) {
-          dispatch(setSessionStartTime(Date.now()));
-        }
-
-      } catch (error) {
-        console.error("Error fetching case and questions:", error);
-        toast.error("Failed to load case study");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCaseAndQuestions();
-  }, [caseId, dispatch, sessionStartTime]);
-
-  const currentQuestion = questions[currentQuestionIndex];
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
-  const currentAnswer = currentQuestion ? answers[currentQuestion.id] || "" : "";
-
-  const handleAnswerChange = (content: string) => {
-    if (currentQuestion) {
-      dispatch(saveAnswer({
-        questionId: currentQuestion.id,
-        answerHtml: content
-      }));
+    if (caseId) {
+      fetchQuestions(caseId);
     }
-  };
+  }, [caseId]);
 
-  const handleNext = () => {
-    if (isLastQuestion) {
-      handleSubmit();
-    } else {
-      setCurrentQuestionIndex(prev => prev + 1);
-    }
-  };
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [currentQuestionIndex]);
 
-  const handlePrevious = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!user?.id || !caseId) return;
-
-    setIsSubmitting(true);
+  const fetchQuestions = async (caseId: string) => {
     try {
-      // Navigate to results page instead of subject detail
-      navigate(`/case-study-exams/${examId}/subjects/${subjectId}/cases/${caseId}/results`);
+      
+      const { data, error } = await supabase
+        .from("case_questions")
+        .select("*")
+        .eq("case_id", caseId)
+        .order("order_index", { ascending: true });
+  
+      if (data.length > 0) {
+        setQuestions(data);
+      }
+      if (error) throw error;
     } catch (error) {
-      console.error("Error submitting case study:", error);
-      toast.error("Failed to submit case study");
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error submitting answer:", error);  
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading case study...</p>
-        </div>
-      </div>
-    );
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentQuestionIndex - 1];
+
+  // Handler for answer changes
+
+  const onAnswerChange = (updatedHtml: string) => {
+    const isEmpty = manager.view.state.doc.textContent.trim() === "";
+
+    setIsAnswerValid(!isEmpty);
+
+    setAnswerHtml(JSON.stringify(updatedHtml));
+
+    if (currentQuestion?.id) {
+      if (isEmpty) {
+        console.log("Answer cleared — removing from Redux");
+        dispatch(removeAnswer({ questionId: currentQuestion.id }));
+      } else {
+        console.log("Answer saved to Redux:", updatedHtml);
+        dispatch(
+          saveAnswer({
+            questionId: currentQuestion.id,
+            answerHtml: JSON.stringify(updatedHtml),
+          })
+        );
+      }
+    }
+  };
+
+  function normalizeHTML(input: string) {
+    try {
+      const maybeParsed = JSON.parse(input);
+      return typeof maybeParsed === "string" ? maybeParsed : input;
+    } catch {
+      return input;
+    }
   }
 
-  if (!case_ || questions.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">Case study not found or has no questions.</p>
-        <Button 
-          onClick={() => navigate(`/case-study-exams/${examId}/subjects/${subjectId}`)}
-          className="mt-4"
-        >
-          Back to Subject
-        </Button>
-      </div>
-    );
-  }
+  //  Function to handle exam submission
+  const handleSubmitAnswer = async () => {
+    setIsSubmitted(true);
+    try {
+      const payload = {
+        user_id: user.id,
+        case_id: caseId,
+        current_question_index: currentQuestionIndex,
+        completed: true,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (testId) {
+        // Already exists: UPDATE
+        console.log("Update");
+        const { data, error } = await supabase
+          .from("user_case_progress")
+          .update(payload)
+          .eq("id", testId);
+
+        if (error) throw error;
+        setResultData(data);
+        
+        toast({
+          title: "Success",
+          description: "Answer submitted successfully",
+        });
+      }
+      if (currentQuestionIndex < totalQuestions) {
+         setCurrentQuestionIndex(currentQuestionIndex + 1);
+     }
+     if (currentQuestionIndex === totalQuestions) {
+      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);     
+        // (/case-study-exams/:examId/subjects/:subjectId/cases/:caseId)
+     }
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitted(false);
+    }
+  };
+
+  // If you want to submit all answers in Redux at once later (e.g., at "Finish Exam"), you can do:********
+  //   const handleFinishExam = async () => {
+  //   storeCurrentAnswerToRedux();
+
+  //   for (const [questionId, user_answer] of Object.entries(savedAnswers)) {
+  //     await supabase.from("user_case_answers").insert({
+  //       user_id: user.id,
+  //       case_question_id: questionId,
+  //       user_answer,
+  //       created_at: new Date().toISOString(),
+  //       answered_at: new Date().toISOString(),
+  //     });
+  //   }
+
+  //   toast.success("All answers submitted.");
+  //   navigate("/some/summary/page");
+  // };
+
+  useEffect(() => {
+    const saved = savedAnswers[currentQuestion?.id];
+    const savedAnswerHtml = saved ? JSON.parse(saved) : "";
+    // Ensure Remirror is initialized
+    if (
+      getContext()?.commands &&
+      typeof getContext().commands.setContent === "function"
+    ) {
+      if (savedAnswerHtml) {
+        getContext().commands.setContent(savedAnswerHtml);
+        setAnswerHtml(saved);
+      } else {
+        getContext().commands.setContent("");
+        setAnswerHtml("");
+      }
+    }
+  }, [currentQuestionIndex]);
+
+  // console.log("Saved Answers:", savedAnswers);
+
+  const getCompletedQuestionCount = () => {
+    return Object.keys(savedAnswers).length;
+  };
+
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-          <ArrowLeft className="h-4 w-4" />
-          <button 
-            onClick={() => navigate(`/case-study-exams/${examId}/subjects/${subjectId}`)}
-            className="hover:text-gray-900"
-          >
-            Back to Subject
-          </button>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">{case_.title}</h1>
-        <div className="flex items-center gap-4 mt-2">
-          <Badge variant="outline" className="flex items-center gap-1">
-            <FileText className="h-3 w-3" />
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </Badge>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {sessionStartTime ? 
-              `${Math.floor((Date.now() - sessionStartTime) / 60000)}m elapsed` : 
-              'Starting...'
-            }
-          </Badge>
-        </div>
-      </div>
+    <div className="container py-4 md:py-8 px-4 md:px-8">
+      {/* Question Navigation and Display */}
+      {totalQuestions > 0 && (
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xl sm:text-2xl font-bold">
+              Question {currentQuestionIndex} of {totalQuestions}
+            </span>
 
-      {/* Case Scenario */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Case Scenario</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div 
-            className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: case_.scenario }}
-          />
-          {case_.instructions && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Instructions:</h4>
-              <div 
-                className="text-blue-800"
-                dangerouslySetInnerHTML={{ __html: case_.instructions }}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Current Question */}
-      {currentQuestion && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Question {currentQuestionIndex + 1}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div 
-              className="prose max-w-none mb-4"
-              dangerouslySetInnerHTML={{ __html: currentQuestion.question_text }}
-            />
             
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Your Answer:
-              </label>
-              <textarea
-                value={currentAnswer}
-                onChange={(e) => handleAnswerChange(e.target.value)}
-                placeholder="Type your answer here..."
-                className="w-full min-h-[150px] p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-              />
+          </div>
+          <div className="mb-4">
+            <Progress
+              value={(getCompletedQuestionCount() / totalQuestions) * 100}
+              className="h-2"
+            />
+            <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+              <span>
+                Completed: {getCompletedQuestionCount()}/{totalQuestions}
+              </span>
+              <span>
+                {Math.round(
+                  (getCompletedQuestionCount() / totalQuestions) * 100
+                )}
+                %
+              </span>
             </div>
+          </div>
+          <div className="bg-white shadow-md rounded-lg border border-gray-200">
+            <CardDescription className="p-4 rounded-md">
+              <h3 className="font-semibold text-lg mb-2">
+                Question {currentQuestionIndex}{" "}
+              </h3>
+              <div
+                className="bg-gray-50 p-4 rounded-md mb-4 h-36 overflow-y-auto"
+                dangerouslySetInnerHTML={{
+                  __html: normalizeHTML(currentQuestion?.question_text),
+                }}
+              />
 
-            {currentQuestion.hint && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm font-medium text-yellow-800 mb-1">Hint:</p>
-                <p className="text-yellow-700 text-sm">{currentQuestion.hint}</p>
+              {/* Correct Answer */}
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Answer </h3>
+                <ThemeProvider>
+                  <Remirror
+                    manager={manager}
+                    initialContent={state}
+                    onChange={({ helpers }) =>
+                      onAnswerChange(helpers.getHTML())
+                    }
+                    autoRender="end"
+                    editable={!showAnswer} // ✅ Disable editing after Proceed
+                  >
+                    <Toolbar>
+                      <Box sx={{ display: "flex" }}>
+                        <ToggleBoldButton />
+                        <HeadingLevelButtonGroup />
+                        <ToggleCodeButton />
+                        <TextAlignmentButtonGroup />
+                        <IndentationButtonGroup />
+                        <UploadImageButton />
+                        <TableDropdown />
+                      </Box>
+                    </Toolbar>
+                  </Remirror>
+                </ThemeProvider>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {currentQuestion && (
+                <div className="flex justify-end items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAnswer(true)}
+                    disabled={!isAnswerValid}
+                    className={`flex items-center mt-4 ${showAnswer ? "hidden" : ""}`}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {showAnswer ? "Processing " : "Proceed Answer"}
+                  </Button>
+
+                </div>
+              )}
+
+              {/* Content */}
+
+              {showAnswer && currentQuestion?.correct_answer && (
+                <div className="mt-0  p-4  rounded-md">
+                  <h4 className=" font-medium text-sm mb-2">Correct Answer:</h4>
+                  <div
+                    className="text-sm prose prose-sm max-w-none bg-secondary p-2 rounded-sm min-h-16"
+                    dangerouslySetInnerHTML={{
+                      __html: normalizeHTML(currentQuestion.correct_answer),
+                    }}
+                  />
+                  <div className="flex justify-end">
+                 <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSubmitAnswer()}
+                    className="flex items-center mt-4"
+                  >
+                    {isSubmitted ? "Submitting" : "Submit Answer"}
+                  </Button>
+
+                  </div>
+                </div>
+              )}
+            </CardDescription>
+          </div>         
+        </div>
       )}
-
-      {/* Navigation */}
-      <div className="flex justify-between items-center">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentQuestionIndex === 0}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-
-        <span className="text-sm text-gray-600">
-          {Object.keys(answers).length} of {questions.length} questions answered
-        </span>
-
-        <Button
-          onClick={handleNext}
-          disabled={isSubmitting}
-          className={isLastQuestion ? "bg-green-600 hover:bg-green-700" : ""}
-        >
-          {isSubmitting ? (
-            "Submitting..."
-          ) : isLastQuestion ? (
-            "Submit Case Study"
-          ) : (
-            <>
-              Next
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
-}
+};
