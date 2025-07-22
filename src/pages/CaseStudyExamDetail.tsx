@@ -40,7 +40,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { NumberDomain } from "recharts/types/util/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,12 +54,11 @@ import {
 interface CaseStudyExamInfo {
   id: string;
   title: string;
-  description: string;
-  order_index?: number;
+  description: string | null;
   created_at: string;
-  subject_count?: number;
-  is_deleted_exam: boolean;
-  is_subscribed?: boolean;
+  updated_at: string;
+  is_deleted_exam: boolean | null;
+  order_index?: number | null;
 }
 
 interface Subject {
@@ -73,9 +71,7 @@ interface Subject {
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  description: z
-    .string()
-    .min(5, { message: "Name must be at least 5 characters" }),
+  description: z.string().min(5, { message: "Name must be at least 5 characters" }),
 });
 
 const CaseStudyExamDetail = () => {
@@ -84,17 +80,15 @@ const CaseStudyExamDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
   const { toast } = useToast();
+
   const [examInfo, setExamInfo] = useState<CaseStudyExamInfo | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] =
-    useState(false);
-  const [subjectCount, setSubjectCount] = useState<Number>(0);
+  const [isCreateSubjectModalOpen, setIsCreateSubjectModalOpen] = useState(false);
+  const [subjectCount, setSubjectCount] = useState<number>(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [examToDelete, setExamToDelete] = useState<CaseStudyExamInfo | null>(
-    null
-  );
+  const [examToDelete, setExamToDelete] = useState<CaseStudyExamInfo | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -106,6 +100,7 @@ const CaseStudyExamDetail = () => {
   });
 
   useEffect(() => {
+    console.log("Fetching exam details for ID:", examId);
     if (examId) {
       fetchSubjects();
       fetchExam();
@@ -124,20 +119,15 @@ const CaseStudyExamDetail = () => {
   const fetchExam = async () => {
     try {
       setLoading(true);
-      const { data: examData, error: examError } = await supabase
+      const { data: examData, error } = await supabase
         .from("exams_case")
         .select("*")
         .eq("id", examId)
         .eq("is_deleted_exam", false)
         .single();
 
-        if(examError) throw examError
-
-      setExamInfo({
-        ...examData,
-        order_index: 0, // Default value since order_index doesn't exist in the database
-        subject_count: 0
-      });
+      if (error) throw error;
+      setExamInfo(examData);
     } catch (error) {
       console.error("Error fetching exam data:", error);
       toast({
@@ -145,6 +135,7 @@ const CaseStudyExamDetail = () => {
         description: "Failed to load exam data",
         variant: "destructive",
       });
+      setExamInfo(null);
     } finally {
       setLoading(false);
     }
@@ -153,11 +144,9 @@ const CaseStudyExamDetail = () => {
   const fetchSubjects = async () => {
     try {
       setLoading(true);
-
       const processedSubjects: Subject[] = [];
 
-      // Step 1: Fetch all non-deleted subjects with non-deleted cases
-      const { data: subjectsData, error: subjectsError } = await supabase
+      const { data: subjectsData, error } = await supabase
         .from("subjects")
         .select(`*, cases(id)`)
         .eq("exams_case_id", examId)
@@ -165,39 +154,27 @@ const CaseStudyExamDetail = () => {
         .eq("cases.is_deleted_case", false)
         .order("order_index", { ascending: true });
 
-      if (subjectsError) throw subjectsError;
+      if (error) throw error;
 
-      // Step 2: Process each subject to calculate case_count
       for (const subject of subjectsData || []) {
         const cases = subject.cases || [];
         let caseCount = 0;
 
         if (isAdmin) {
-          // ✅ Admins see all non-deleted cases
           caseCount = cases.length;
         } else {
-          // ❌ Users: Only count cases that have at least one question
           let visibleCaseCount = 0;
-
           for (const caseItem of cases) {
-            const { count: questionCount, error: questionError } = await supabase
+            const { count, error } = await supabase
               .from("case_questions")
               .select("*", { count: "exact", head: true })
               .eq("case_id", caseItem.id);
-
-            if (questionError) throw questionError;
-
-            if ((questionCount || 0) > 0) {
-              visibleCaseCount++;
-            }
+            if (error) throw error;
+            if ((count || 0) > 0) visibleCaseCount++;
           }
-
           caseCount = visibleCaseCount;
         }
 
-        // ✅ Only push subject if:
-        // - Admin: always include
-        // - User: only if it has at least one valid case
         if (isAdmin || caseCount > 0) {
           processedSubjects.push({
             ...subject,
@@ -206,8 +183,8 @@ const CaseStudyExamDetail = () => {
         }
       }
 
-      setSubjectCount(processedSubjects.length);
       setSubjects(processedSubjects);
+      setSubjectCount(processedSubjects.length);
     } catch (error) {
       console.error("Error fetching subject data:", error);
       toast({
@@ -224,7 +201,6 @@ const CaseStudyExamDetail = () => {
     if (!examId) return;
     try {
       setIsSubmitting(true);
-
       const { error } = await supabase
         .from("exams_case")
         .update({
@@ -234,7 +210,6 @@ const CaseStudyExamDetail = () => {
         .eq("id", examId);
 
       if (error) throw error;
-
       toast({ title: "Updated", description: "Exam updated successfully" });
       fetchExam();
       setEditDialogOpen(false);
@@ -242,7 +217,7 @@ const CaseStudyExamDetail = () => {
       console.error("Error updating exam:", error);
       toast({
         title: "Error",
-        description: "Failed to update subject",
+        description: "Failed to update exam",
         variant: "destructive",
       });
     } finally {
@@ -256,17 +231,14 @@ const CaseStudyExamDetail = () => {
         .from("subjects")
         .select("*", { count: "exact", head: true })
         .eq("exams_case_id", exam.id);
-
       if (error) throw error;
 
       if (count === 0) {
-        // No subjects → delete immediately
         await confirmDeleteImmediate(exam.id);
       } else {
-        // Has subjects → show confirmation dialog
         setExamToDelete(exam);
       }
-    } catch (err) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Could not check for subjects before deleting.",
@@ -275,23 +247,19 @@ const CaseStudyExamDetail = () => {
     }
   };
 
-  const confirmDeleteImmediate = async (examId: string)  => {
+  const confirmDeleteImmediate = async (examId: string) => {
     try {
       setIsDeleting(true);
-      const { error: deleteError } = await supabase
+      const { error } = await supabase
         .from("exams_case")
-        .update({
-          is_deleted_exam: true,
-        })
+        .update({ is_deleted_exam: true })
         .eq("id", examId);
-      if (deleteError) throw deleteError;
+      if (error) throw error;
+
       navigate("/case-study-exams");
-      fetchExam();
-      // const updated = questions.filter((q) => q.id !== questionToDelete.id);
-      // setQuestions(updated);
       toast({ title: "Deleted", description: "Exam Deleted." });
-    } catch(error) {
-      console.error("Failed to delete Exam", error)
+    } catch (error) {
+      console.error("Failed to delete Exam", error);
       toast({
         title: "Error",
         description: "Failed to delete Exam",
@@ -317,32 +285,30 @@ const CaseStudyExamDetail = () => {
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading exam details...</p>
           </div>
         </div>
       </div>
     );
   }
-  // console.log("examId" , examId)
+
   if (!examInfo) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-muted-foreground mb-4">
-            Exam not found
-          </h3>
-          <Button onClick={() => navigate("/case-study-exams")}>
-            <ArrowLeft className="mt-3 mr-2 h-4 w-4" />
-            Back to Exams
-          </Button>
-        </div>
+      <div className="container mx-auto py-6 text-center">
+        <h3 className="text-lg font-medium text-muted-foreground mb-4">
+          Exam not found
+        </h3>
+        <Button onClick={() => navigate("/case-study-exams")}>
+          <ArrowLeft className="mt-3 mr-2 h-4 w-4" />
+          Back to Exams
+        </Button>
       </div>
     );
   }
 
   return (
-    
+
     <div className="container mx-auto py-6 space-y-6">
       <ol className="flex items-center whitespace-nowrap text-sm md:text-base ">
         <li className="inline-flex items-center">
@@ -375,10 +341,10 @@ const CaseStudyExamDetail = () => {
           <Link
             className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
             to="#"
-            // onClick={(e) => {
-            //   e.preventDefault();
-            //   navigate(0);
-            // }}
+          // onClick={(e) => {
+          //   e.preventDefault();
+          //   navigate(0);
+          // }}
           >
             Exam
           </Link>
@@ -406,14 +372,17 @@ const CaseStudyExamDetail = () => {
       </div>
 
       {examInfo?.description && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-            <CardDescription className="max-h-32 overflow-y-auto">
-              {examInfo.description}
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="-mx-4 sm:mx-0">
+          <Card className="w-full mb-6">
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+              <CardDescription className="max-h-32 overflow-y-auto">
+                {examInfo.description}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
       )}
 
       <div className="flex items-center justify-between">

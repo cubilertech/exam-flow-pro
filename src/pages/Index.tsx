@@ -104,9 +104,9 @@ const Index = () => {
 
       {/* Key Features Section */}
       <section className="py-8 sm:py-16 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-4">
               Master the SBPM Exams: Your Essential Study Companion
             </h2>
           </div>
@@ -169,9 +169,9 @@ const Index = () => {
 
       {/* What to Expect */}
       <section className="py-8 sm:py-16 bg-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold mb-8">
               What to Expect from Your SBPM Question Bank
             </h2>
             <p className="text-sm md:text-base lg:text-lg leading-relaxed text-black">
@@ -189,8 +189,8 @@ const Index = () => {
 
       {/* Enhanced Learning Tools */}
       <section className="py-8 sm:py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-center mb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-xl sm:text-2xl lg:text-4xl font-extrabold text-center mb-12">
             Enhanced Learning Tools to Optimize Your Study
           </h2>
           <p className="text-sm md:text-base lg:text-lg text-center mb-12 max-w-3xl mx-auto text-black">
@@ -247,8 +247,8 @@ const Index = () => {
 
       {/* QBank Details */}
       <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-center mb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-xl sm:text-2xl lg:text-4xl font-extrabold text-center mb-12">
             SaudiKnowledgeSeeker QBank Details
           </h2>
 
@@ -285,8 +285,8 @@ const Index = () => {
 
       {/* Unique Features */}
       <section className="py-8 sm:py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-center mb-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-xl sm:text-2xl lg:text-4xl font-extrabold text-center mb-12">
             What Makes Us Unique?
           </h2>
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -307,9 +307,9 @@ const Index = () => {
 
       {/* CTA Section */}
       <section className="bg-white py-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center text-black">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-6">
+            <h2 className="text-xl sm:text-2xl lg:text-4xl font-extrabold mb-6">
               Ready to Master Your SBPM Exams?
             </h2>
             <p className="text-sm sm:text-xl mb-8 opacity-90">
@@ -321,7 +321,7 @@ const Index = () => {
                 size="lg"
                 variant="default"
                 asChild
-                className="text-base sm:text-lg py-3 sm:py-5 px-6 sm:px-8"
+                className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-5 px-6 sm:px-8"
               >
                 <Link to="/register">Start Your Free Trial</Link>
               </Button>
@@ -329,7 +329,7 @@ const Index = () => {
                 size="lg"
                 variant="outline"
                 asChild
-                className="text-base sm:text-lg py-3 sm:py-5 px-6 sm:px-8 border-primary text-primary"
+                className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-5 px-6 sm:px-8 border-primary text-primary"
               >
                 <Link to="#pricing">View Pricing</Link>
               </Button>

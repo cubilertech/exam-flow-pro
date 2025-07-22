@@ -72,7 +72,25 @@ import { CaseSenerioShow } from "./CaseSenerioShow";
 import { CreateCaseStudyCaseForm } from "@/components/case-study/CreateCaseStudyCaseForm";
 import { useToast } from "@/hooks/use-toast";
 import { SortableItem } from "@/components/case-study/SortableItem";
-import { CaseQuestion, CaseInfo } from "@/types/case-study";
+
+interface CaseInfo {
+  id: string;
+  title: string | null;
+  subject_id: number | null;
+  scenario: string | null;
+  order_index: number | null;
+  question_count: number;
+  is_deleted_case: boolean;
+}
+
+interface Question {
+  id: string;
+  question_text: string | null;
+  case_id: number | null;
+  correct_answer: string;
+  explanation: string | null;
+  order_index: number | null;
+}
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -89,17 +107,17 @@ export const CaseStudyCaseDetail = () => {
   const { user } = useAppSelector((state) => state.auth);
   const isAdmin = user?.isAdmin || false;
   const [caseInfo, setCaseInfo] = useState<CaseInfo | null>(null);
-  const [questions, setQuestions] = useState<CaseQuestion[]>([]);
-  const [availbleQuestions, setAvailbleQuestions] = useState<CaseQuestion[] | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [availbleQuestions, setAvailbleQuestions] = useState<Question[] | null>(null);
   const [questionOrder, setQuestionOrder] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<CaseQuestion | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [questionToDelete, setQuestionToDelete] = useState<CaseQuestion | null>(null);
-  const [loading,setLoading] = useState(true);
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [loading, setLoading] = useState(true);
   const [caseToDelete, setCaseToDelete] = useState<CaseInfo | null>(null);
   const [isDeletingCase, setIsDeletingCase] = useState(false);
   const { toast } = useToast();
@@ -112,9 +130,6 @@ export const CaseStudyCaseDetail = () => {
     },
   });
 
-  console.log("ava", availbleQuestions);
-  console.log("Ques", questions);
-
   useEffect(() => {
     if (caseId) {
       fetchCaseInfo();
@@ -125,7 +140,7 @@ export const CaseStudyCaseDetail = () => {
   useEffect(() => {
     if (caseInfo) {
       form.reset({
-        title: caseInfo.title,
+        title: caseInfo.title || "",
         scenario: caseInfo.scenario || "",
       });
     }
@@ -134,10 +149,9 @@ export const CaseStudyCaseDetail = () => {
   useEffect(() => {
     const ordered = questions
       .filter((q) =>
-        q.question_text.toLowerCase().includes(searchTerm.toLowerCase())
+        q.question_text?.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .map((q) => q.id);
-
     setQuestionOrder(ordered);
   }, [questions, searchTerm]);
 
@@ -153,22 +167,28 @@ export const CaseStudyCaseDetail = () => {
         .order("order_index", { ascending: true })
         .maybeSingle();
 
-        if(error) throw error
+      if (error) throw error;
 
       if (data) {
-        setCaseInfo({
-          ...data,
-          question_count: 0 // Set default value
-        });
+        const formattedCase: CaseInfo = {
+          id: data.id,
+          title: data.title ?? null,
+          subject_id: data.subject_id ? parseInt(data.subject_id, 10) : null,
+          scenario: data.scenario ?? null,
+          order_index: data.order_index ?? null,
+          is_deleted_case: data.is_deleted_case ?? false,
+          question_count: 0, // Default or computed elsewhere
+        };
+        setCaseInfo(formattedCase);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in Fetching Case");
       toast({
         title: "Error",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -182,33 +202,41 @@ export const CaseStudyCaseDetail = () => {
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
 
-         if(error) throw error
+      if (error) throw error;
 
       if (data.length === 0) {
         setAvailbleQuestions([]);
-        console.log("Fetched Questions:", data);
-      }
+        setQuestions([]);
+        setQuestionCount(0);
+      } else {
+        // Convert fields to match the `Question` interface
+        const mappedQuestions: Question[] = data.map((item: any) => ({
+          id: item.id,
+          question_text: item.question_text ?? null,
+          case_id: item.case_id ? Number(item.case_id) : null,
+          correct_answer: item.correct_answer,
+          explanation: item.explanation ?? null,
+          order_index: item.order_index ?? null,
+        }));
 
-      if (data.length > 0) {
-        console.log("Fetched Questions:", data);
-        setQuestionCount(data.length);
-        setQuestions(data);
+        setQuestions(mappedQuestions);
+        setQuestionCount(mappedQuestions.length);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error Fetching the Questions :", error);
       toast({
         title: "Error",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
-    }finally{
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   };
 
   const filteredQuestions = questionOrder
     .map((id) => questions.find((q) => q.id === id))
-    .filter((q): q is CaseQuestion => !!q);
+    .filter((q): q is Question => !!q);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -239,10 +267,9 @@ export const CaseStudyCaseDetail = () => {
         const updated = updates.find((u) => u.id === q.id);
         return updated ? { ...q, order_index: updated.order_index } : q;
       })
-      .sort((a, b) => a.order_index - b.order_index); // 🔧 sort ascending
+      .sort((a, b) => a.order_index - b.order_index);
 
     console.log("updatedQuestions: ", updatedQuestions);
-    // setQuestions(updatedQuestions.sort()); // optimistic update
 
     setQuestions(updatedQuestions.sort((a, b) => a.order_index - b.order_index));
 
@@ -264,47 +291,43 @@ export const CaseStudyCaseDetail = () => {
     }
   };
 
-  const handleDeleteQuestion = async (question: CaseQuestion) => {
+  const handleDeleteQuestion = async (question: Question) => {
     try {
       await supabase
         .from("case_questions")
         .delete()
         .eq("id", question.id);
 
-    toast({ title: "Deleted", description: "Question deleted" });
+      toast({ title: "Deleted", description: "Question deleted" });
 
-    if (caseId) {
-      // ✅ Reorder remaining questions in DB
-      const { data: remaining, error } = await supabase
-        .from("case_questions")
-        .select("id")
-        .eq("case_id", caseId)
-        .order("order_index", { ascending: true });
+      if (caseId) {
+        const { data: remaining, error } = await supabase
+          .from("case_questions")
+          .select("id")
+          .eq("case_id", caseId)
+          .order("order_index", { ascending: true });
 
-      if (error) throw error;
+        if (error) throw error;
+        await Promise.all(
+          remaining.map((q, index) =>
+            supabase
+              .from("case_questions")
+              .update({ order_index: index })
+              .eq("id", q.id)
+          )
+        );
+        await fetchQuestions(caseId);
+      }
 
-      // Normalize order_index
-      await Promise.all(
-        remaining.map((q, index) =>
-          supabase
-            .from("case_questions")
-            .update({ order_index: index })
-            .eq("id", q.id)
-        )
-      );
-
-      // ✅ Finally refetch updated list
-      await fetchQuestions(caseId);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete question",
+        variant: "destructive",
+      });
     }
+  };
 
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to delete question",
-      variant: "destructive",
-    });
-  }
-};
 
   const handleEditCase = () => {
     setEditSheetOpen(false);
@@ -312,12 +335,11 @@ export const CaseStudyCaseDetail = () => {
     console.log("Editing Case");
   };
 
-  const handleEditQuestion = (question: CaseQuestion) => {
+  const handleEditQuestion = (question: Question) => {
     setSheetOpen(true);
     setCurrentQuestion(question);
     console.log("Editing", question);
   };
-
   const handleFormSubmitted = () => {
     setSheetOpen(false);
     setCurrentQuestion(null);
@@ -389,11 +411,10 @@ export const CaseStudyCaseDetail = () => {
         description: "Could not check for Case before deleting.",
         variant: "destructive",
       });
-    }finally {
+    } finally {
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="container mx-auto py-6">
@@ -502,6 +523,9 @@ export const CaseStudyCaseDetail = () => {
         <h1 className="text-2xl md:text-3xl font-bold flex-0 md:flex-1 my-3 md:my-0">
           {caseInfo?.title}
         </h1>
+        {/* <Button variant="outline" onClick={() => setEditSheetOpen(true)}>
+          <PenSquare className="mr-2 h-4 w-4" /> Edit Case
+        </Button> */}
         {isAdmin && (
           <div>
             <Button
@@ -582,8 +606,8 @@ export const CaseStudyCaseDetail = () => {
                 <SortableItem
                   key={question.id}
                   selectedQuestion={question}
-                  onDelete={(q) => handleDeleteQuestion(q)}
-                  onEdit={(q) => handleEditQuestion(q)}
+                  onDelete={handleDeleteQuestion}
+                  onEdit={handleEditQuestion}
                 />
               ))}
             </div>

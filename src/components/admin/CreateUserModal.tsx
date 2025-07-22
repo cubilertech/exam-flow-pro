@@ -137,29 +137,36 @@ export const CreateUserModal = ({
   }, [selectedCountry]);
 
   const onSubmit = async (data: FormValues) => {
-    try {
-      setLoading(true);
-      await createUserByAdmin(data.email, data.password, {
-        username: data.username,
-        country: data.country,
-        city: data.city,
-        gender: data.gender,
-        phone: data.phone,
-      });
-      toast({ title: 'Success', description: 'User created successfully' });
-      form.reset();
-      onUserCreated();
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create user',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+
+    const result = await createUserByAdmin(data.email, data.password, {
+      username: data.username,
+      country: data.country,
+      city: data.city,
+      gender: data.gender,
+      phone: data.phone,
+    });
+
+    console.log('User creation result:', result);
+
+    toast({ title: 'Success', description: 'User created successfully' });
+
+    form.reset();
+    onUserCreated();
+    onClose();
+  } catch (error) {
+    console.error('User creation failed:', error); // <--- log actual error
+    toast({
+      title: 'Success',
+      description: 'User created successfully',
+      variant: 'destructive',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);

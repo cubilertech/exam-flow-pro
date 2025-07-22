@@ -84,22 +84,28 @@ export const getAllUsers = async () => {
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching users:', error);
+    throw new Error('Failed to fetch users');
+  }
+
   return data;
 };
-
-export const updateUserProfile = async (userId: string, profileData: {
-  username: string;
-  full_name: string;
-  country: string;
-  gender: string;
-  phone_number: string;
-  city: string;
-}) => {
+export const updateUserProfile = async (
+  userId: string,
+  profileData: {
+    username: string;
+    full_name: string;
+    country: string;
+    gender: string;
+    phone_number: string;
+    city: string;
+  }
+) => {
   const { data, error } = await supabase
-    .from('profiles')
+    .from("profiles")
     .update(profileData)
-    .eq('id', userId);
+    .eq("id", userId);
 
   if (error) throw error;
   return data;
@@ -140,8 +146,10 @@ export const deleteUser = async (userId: string) => {
   if (error) throw error;
 };
 
+// services/authService.ts
+
 export const createUserByAdmin = async (
-  email: string,
+   email: string,
   password: string,
   userData: {
     username: string;
@@ -216,6 +224,7 @@ export const createUserByAdmin = async (
     throw error;
   }
 };
+
 export const createUser = async (userData: {
   email: string;
   password: string;

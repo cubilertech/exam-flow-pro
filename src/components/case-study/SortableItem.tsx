@@ -1,19 +1,26 @@
-
 import { CSS } from "@dnd-kit/utilities";
 import { Edit, GripVertical, Trash2 } from "lucide-react";
 import { CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { useSortable } from "@dnd-kit/sortable";
-import { CaseQuestion } from "@/types/case-study";
+
+interface Question {
+  id: string;
+  question_text: string;
+  case_id: number;
+  correct_answer: string;
+  explanation: string;
+  order_index: number;
+}
 
 export const SortableItem = ({
   selectedQuestion,
   onDelete,
   onEdit,
 }: {
-  selectedQuestion: CaseQuestion;
-  onDelete: (question: CaseQuestion) => void;
-  onEdit: (question: CaseQuestion) => void;
+  selectedQuestion: Question;
+  onDelete: (question: Question) => void;
+  onEdit: (question: Question) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: selectedQuestion.id });
@@ -92,6 +99,7 @@ export const SortableItem = ({
           </div>
         </CardHeader>
       </div>
+      {/* </Card> */}
     </div>
   );
 };
