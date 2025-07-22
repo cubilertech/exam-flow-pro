@@ -114,7 +114,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/take-exam/:id" 
+                      path="/exam/take" 
                       element={
                         <StudentRoute>
                           <MainLayout>
@@ -124,7 +124,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/exam-results/:id" 
+                      path="/exam-results/:resultId" 
                       element={
                         <StudentRoute>
                           <MainLayout>

@@ -156,15 +156,6 @@ export const LoginForm = () => {
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
-        <div className="text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link
-            to="/register"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Register
-          </Link>
-        </div>
         <div className="text-xs text-muted-foreground italic">
           Note: This is a development environment. For testing, you need to register a new account first.
         </div>
