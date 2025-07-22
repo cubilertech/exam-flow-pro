@@ -546,7 +546,7 @@ export const CaseStudyCaseDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Scenario</CardTitle>
-            <CardDescription className="max-h-32 overflow-y-auto">
+            <CardDescription className="max-h-32 overflow-y-auto custom-scrollbar">
               <div
                 dangerouslySetInnerHTML={{
                   __html: normalizeHTML(caseInfo.scenario),

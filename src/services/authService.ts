@@ -80,9 +80,13 @@ export const getCurrentUser = async () => {
 
 export const getAllUsers = async () => {
   const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
+  .from('profiles')
+  .select(`
+    *
+  `)
+
     .order('created_at', { ascending: false });
+    console.log('Fetched users:', data);
 
   if (error) {
     console.error('Error fetching users:', error);
@@ -111,12 +115,17 @@ export const updateUserProfile = async (
   return data;
 };
 
-export const updateUserStatus = async (userId: string, status: string) => {
-  // Since status doesn't exist in profiles table, we'll just return success
-  // In a real implementation, you might want to add a status column to profiles
-  console.log(`User ${userId} status updated to ${status}`);
+export const updateUserStatus = async (userId: string, status?: string) => {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
   return { success: true };
 };
+
+
 export const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase

@@ -279,7 +279,7 @@ export const CaseStudyTakeExam = () => {
               </span>
             </div>
           </div>
-          <div className="bg-white shadow-md rounded-lg border border-gray-200">
+          <div className="bg-white shadow-md rounded-lg border border-gray-200 custom-scrollbar">
             <CardDescription className="p-4 rounded-md">
               <h3 className="font-semibold text-lg mb-2">
                 Question {currentQuestionIndex}{" "}
