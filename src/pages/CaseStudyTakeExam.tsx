@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -38,8 +39,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   removeAnswer,
   saveAnswer,
-  startSession,
-  endSession,
 } from "@/features/caseAnswers/caseAnswersSlice";
 
 import { Progress } from "@/components/ui/progress";
@@ -100,18 +99,6 @@ export const CaseStudyTakeExam = () => {
       fetchQuestions(caseId);
     }
   }, [caseId]);
-
-  // Start session when questions are loaded
-  useEffect(() => {
-    if (questions.length > 0 && examId && subjectId && caseId) {
-      dispatch(startSession({
-        totalQuestions: questions.length,
-        caseId,
-        subjectId,
-        examId,
-      }));
-    }
-  }, [questions, examId, subjectId, caseId, dispatch]);
 
   useEffect(() => {
     setShowAnswer(false);
@@ -205,9 +192,8 @@ export const CaseStudyTakeExam = () => {
          setCurrentQuestionIndex(currentQuestionIndex + 1);
      }
      if (currentQuestionIndex === totalQuestions) {
-        // End session and navigate to results
-        dispatch(endSession());
-        navigate(`/case-study-exams/${examId}/subjects/${subjectId}/results`);
+      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);     
+        // (/case-study-exams/:examId/subjects/:subjectId/cases/:caseId)
      }
     } catch (error) {
       console.error("Error submitting answer:", error);
@@ -273,6 +259,8 @@ export const CaseStudyTakeExam = () => {
             <span className="text-xl sm:text-2xl font-bold">
               Question {currentQuestionIndex} of {totalQuestions}
             </span>
+
+            
           </div>
           <div className="mb-4">
             <Progress
@@ -343,10 +331,12 @@ export const CaseStudyTakeExam = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     {showAnswer ? "Processing " : "Proceed Answer"}
                   </Button>
+
                 </div>
               )}
 
               {/* Content */}
+
               {showAnswer && currentQuestion?.correct_answer && (
                 <div className="mt-0  p-4  rounded-md">
                   <h4 className=" font-medium text-sm mb-2">Correct Answer:</h4>
@@ -365,6 +355,7 @@ export const CaseStudyTakeExam = () => {
                   >
                     {isSubmitted ? "Submitting" : "Submit Answer"}
                   </Button>
+
                   </div>
                 </div>
               )}
