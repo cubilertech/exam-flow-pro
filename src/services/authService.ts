@@ -31,18 +31,6 @@ export const signUp = async (userData: {
 };
 
 export const signIn = async (email: string, password: string) => {
-  // First check if user exists and their status
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
-    .select('status')
-    .eq('id', (await supabase.auth.signInWithPassword({ email, password })).data?.user?.id)
-    .single();
-
-  if (profileError && profileError.code !== 'PGRST116') {
-    // If it's not a "not found" error, throw it
-    throw profileError;
-  }
-
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
@@ -52,22 +40,27 @@ export const signIn = async (email: string, password: string) => {
 
   // Check user status after successful authentication
   if (data.user) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('status')
       .eq('id', data.user.id)
       .single();
 
-    if (profile?.status === 'blocked') {
-      // Sign out immediately if user is blocked
-      await supabase.auth.signOut();
-      throw new Error('Your account has been blocked by the administrator. Please contact admin support for assistance.');
-    }
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      // Continue with login if profile fetch fails
+    } else {
+      if (profile?.status === 'blocked') {
+        // Sign out immediately if user is blocked
+        await supabase.auth.signOut();
+        throw new Error('Your account has been blocked by the administrator. Please contact admin support for assistance.');
+      }
 
-    if (profile?.status === 'suspended') {
-      // Sign out immediately if user is suspended
-      await supabase.auth.signOut();
-      throw new Error('Your account has been suspended by the administrator. Please contact admin support for assistance.');
+      if (profile?.status === 'suspended') {
+        // Sign out immediately if user is suspended
+        await supabase.auth.signOut();
+        throw new Error('Your account has been suspended by the administrator. Please contact admin support for assistance.');
+      }
     }
   }
 
@@ -247,6 +240,7 @@ export const createUserByAdmin = async (
         gender: userData.gender,
         phone_number: userData.phone,
         city: userData.city,
+        status: 'active', // Set default status
       });
     
     if (profileError) {

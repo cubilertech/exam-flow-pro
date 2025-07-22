@@ -335,6 +335,7 @@ export type Database = {
           gender: string | null
           id: string
           phone_number: string | null
+          status: string | null
           updated_at: string
           username: string | null
         }
@@ -346,6 +347,7 @@ export type Database = {
           gender?: string | null
           id: string
           phone_number?: string | null
+          status?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -357,6 +359,7 @@ export type Database = {
           gender?: string | null
           id?: string
           phone_number?: string | null
+          status?: string | null
           updated_at?: string
           username?: string | null
         }
