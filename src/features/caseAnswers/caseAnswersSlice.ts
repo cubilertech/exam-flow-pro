@@ -1,13 +1,18 @@
+
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface AnswerState {
   answers: {
     [questionId: string]: string;
   };
+  sessionStartTime: number | null;
+  totalQuestions: number;
 }
 
 const initialState: AnswerState = {
   answers: {},
+  sessionStartTime: null,
+  totalQuestions: 0,
 };
 
 const caseAnswersSlice = createSlice({
@@ -26,9 +31,23 @@ const caseAnswersSlice = createSlice({
     },
     clearAnswers: (state) => {
       state.answers = {};
+      state.sessionStartTime = null;
+      state.totalQuestions = 0;
+    },
+    setSessionStartTime: (state, action: PayloadAction<number>) => {
+      state.sessionStartTime = action.payload;
+    },
+    setTotalQuestions: (state, action: PayloadAction<number>) => {
+      state.totalQuestions = action.payload;
     },
   },
 });
 
-export const { saveAnswer, clearAnswers, removeAnswer } = caseAnswersSlice.actions;
+export const { 
+  saveAnswer, 
+  clearAnswers, 
+  removeAnswer, 
+  setSessionStartTime, 
+  setTotalQuestions 
+} = caseAnswersSlice.actions;
 export default caseAnswersSlice.reducer;

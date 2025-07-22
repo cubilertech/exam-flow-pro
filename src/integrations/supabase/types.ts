@@ -591,6 +591,7 @@ export type Database = {
           current_question_index: number | null
           id: string
           started_at: string | null
+          submission_count: number | null
           updated_at: string
           user_id: string
         }
@@ -602,6 +603,7 @@ export type Database = {
           current_question_index?: number | null
           id?: string
           started_at?: string | null
+          submission_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -613,6 +615,7 @@ export type Database = {
           current_question_index?: number | null
           id?: string
           started_at?: string | null
+          submission_count?: number | null
           updated_at?: string
           user_id?: string
         }
