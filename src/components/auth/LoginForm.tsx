@@ -37,6 +37,10 @@ import {
 import { useAppDispatch } from '@/lib/hooks';
 import { signIn, getCurrentUser } from '@/services/authService';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Label } from 'recharts';
+// import { Label } from 'recharts';
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -46,114 +50,102 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const LoginForm = () => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const dispatch = useAppDispatch();
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    dispatch(loginStart());
 
-  const onSubmit = async (data: LoginFormValues) => {
     try {
-      setLoading(true);
-      setFormError(null);
-      dispatch(loginStart());
+      const data = await signIn(email, password);
       
-      console.log("Attempting login with:", data.email);
-      const authData = await signIn(data.email, data.password);
-      
-      if (authData.user) {
-        // Get the complete user data with profile info
-        const userData = await getCurrentUser();
+      if (data.user) {
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        });
         
-        if (userData) {
-          dispatch(loginSuccess(userData));
-          toast.success("Login successful!");
-          // Use a small timeout to ensure state updates have propagated
-          if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/') {
-            const redirectPath = userData.isAdmin ? '/questions' : '/my-exams';
-            navigate(redirectPath, { replace: true });
-          }
-        } else {
-          throw new Error("Failed to get user profile data");
-        }
-      } else {
-        throw new Error("No user data returned from login");
+        // The AuthProvider will handle the redirect
       }
-    } catch (error) {
-      const err = error as Error;
-      console.error("Login error:", err);
-      const errorMessage = err.message || "Login failed. Please check your credentials.";
+    } catch (error: any) {
+      console.error("Login error:", error);
+      const errorMessage = error.message || "Login failed";
+      
+      // Check if it's a blocked/suspended user error
+      if (errorMessage.includes("blocked") || errorMessage.includes("suspended")) {
+        setError(errorMessage);
+        toast({
+          title: "Access Denied",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        setError("Invalid email or password");
+        toast({
+          title: "Error",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+      }
+      
       dispatch(loginFailure(errorMessage));
-      setFormError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className='flex items-center justify-center center'>
-      <Card className="w-full max-w-md mx-auto ">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl">Log in</CardTitle>
+        <CardTitle>Sign In</CardTitle>
         <CardDescription>
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {formError && (
-              <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm mb-4">
-                {formError}
-              </div>
-            )}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="email@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="space-y-2">
+            <FormLabel htmlFor="email">Email</FormLabel>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Enter your email"
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          
+          <div className="space-y-2">
+            <FormLabel htmlFor="password">Password</FormLabel>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Enter your password"
             />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                "Login"
-              )}
-            </Button>
-          </form>
-        </Form>
+          </div>
+          
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </Button>
+        </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-4">
         <div className="text-xs text-muted-foreground italic">
@@ -161,6 +153,5 @@ export const LoginForm = () => {
         </div>
       </CardFooter>
     </Card>
-    </div>
   );
 };

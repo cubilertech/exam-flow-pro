@@ -37,6 +37,33 @@ export const signIn = async (email: string, password: string) => {
   });
 
   if (error) throw error;
+
+  // Check user status after successful authentication
+  if (data.user) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('status')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      // Continue with login if profile fetch fails
+    } else {
+      if (profile?.status === 'blocked') {
+        // Sign out immediately if user is blocked
+        await supabase.auth.signOut();
+        throw new Error('Your account has been blocked by the administrator. Please contact admin support for assistance.');
+      }
+
+      if (profile?.status === 'suspended') {
+        // Sign out immediately if user is suspended
+        await supabase.auth.signOut();
+        throw new Error('Your account has been suspended by the administrator. Please contact admin support for assistance.');
+      }
+    }
+  }
+
   return data;
 };
 
@@ -95,6 +122,7 @@ export const getAllUsers = async () => {
 
   return data;
 };
+
 export const updateUserProfile = async (
   userId: string,
   profileData: {
@@ -146,6 +174,7 @@ export const checkIsAdmin = async (userId: string): Promise<boolean> => {
     return false;
   }
 };
+
 export const deleteUser = async (userId: string) => {
   const { error } = await supabase
     .from('profiles')
@@ -154,8 +183,6 @@ export const deleteUser = async (userId: string) => {
 
   if (error) throw error;
 };
-
-// services/authService.ts
 
 export const createUserByAdmin = async (
    email: string,
@@ -204,6 +231,7 @@ export const createUserByAdmin = async (
         gender: userData.gender,
         phone_number: userData.phone,
         city: userData.city,
+        status: 'active', // Set default status
       });
     
     if (profileError) {
