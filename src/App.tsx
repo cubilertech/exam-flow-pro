@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -11,7 +12,6 @@ import { Toaster as ToasterComponent } from './components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
 import { SidebarProvider } from './components/ui/sidebar';
 import { MainLayout } from './layouts/MainLayout';
-import { CaseStudyResults } from './pages/CaseStudyResults';
 
 // Pages
 import Index from './pages/Index';
@@ -181,16 +181,6 @@ function App() {
                         <StudentRoute>
                           <MainLayout>
                             <CaseStudyTakeExam />
-                          </MainLayout>
-                        </StudentRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/case-study-exams/:examId/subjects/:subjectId/results" 
-                      element={
-                        <StudentRoute>
-                          <MainLayout>
-                            <CaseStudyResults />
                           </MainLayout>
                         </StudentRoute>
                       } 
