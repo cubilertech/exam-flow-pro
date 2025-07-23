@@ -62,23 +62,11 @@ export const SortableItem = ({
           className="pb-3 p-4 bg-gray-100 flex-1 group rounded-r-lg"
           data-no-drag
         >
-          <div className="flex">
-            
-            <div className="w-full bg-white rounded-xl shadow-md p-4 overflow-y-auto max-h-40 custom-scrollbar"
->
-              
-                <div className="flex flex-row text-sm md:text-base pt-1 md:pt-0">
-                  <span className="font-bold mr-1">Q:{ selectedQuestion.order_index + 1}</span>
-                <h3
-                  className=""
-                  dangerouslySetInnerHTML={{
-                    __html: ` ${normalizeHTML(selectedQuestion.question_text)}`,
-                  }}
-                ></h3>
-                </div>
-             
+          <div style={{ display: "flex" }}>
+            <div className="w-full bg-white rounded-xl shadow-md p-4 relative">
 
-              <div className="flex gap-2 flex-shrink-0 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
+              {/* Edit/Delete Buttons - now top-right positioned */}
+              <div className="absolute top-2 right-2 flex gap-2 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
                 <Button
                   variant="outline"
                   size="sm"
@@ -96,8 +84,21 @@ export const SortableItem = ({
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </div>
+
+              {/* Question Content */}
+              <div className="rich-text-content">
+                <span className="font-bold mr-1">Q: {selectedQuestion.order_index + 1}</span>
+                <h3
+                  className=""
+                  dangerouslySetInnerHTML={{
+                    __html: ` ${normalizeHTML(selectedQuestion.question_text)}`,
+                  }}
+                ></h3>
+              </div>
+
             </div>
           </div>
+
         </CardHeader>
       </div>
       {/* </Card> */}

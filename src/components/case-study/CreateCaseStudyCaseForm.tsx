@@ -250,14 +250,3 @@ export const CreateCaseStudyCaseForm = ({
     </form>
   );
 };
-
-
-
-
-
-
-
-
-
-
-

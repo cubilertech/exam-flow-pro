@@ -197,11 +197,11 @@ export const CaseStudySubjectDetail = () => {
 
   const filteredCases = cases
     ? cases.filter((c) => {
-        const matchesSearch =
-          c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch && (isAdmin || c.question_count > 0);
-      })
+      const matchesSearch =
+        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch && (isAdmin || c.question_count > 0);
+    })
     : [];
 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {
@@ -378,10 +378,10 @@ export const CaseStudySubjectDetail = () => {
           <Link
             className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
             to="#"
-            // onClick={(e) => {
-            //   e.preventDefault();
-            //   navigate(0);
-            // }}
+          // onClick={(e) => {
+          //   e.preventDefault();
+          //   navigate(0);
+          // }}
           >
             Subject
           </Link>
@@ -469,14 +469,15 @@ export const CaseStudySubjectDetail = () => {
               }
             >
               <CardHeader>
-                <div className="flex items-center space-x-2">
+                {/* Title (first line) */}
+                <CardTitle className="text-lg mb-1 flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">
-                    {normalizeHTML(c.title)}
-                  </CardTitle>
-                </div>
+                  <span>{normalizeHTML(c.title)}</span>
+                </CardTitle>
+
+                {/* Scenario (next 3 lines max) */}
                 {c.scenario && (
-                  <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5 custom-scrollbar">
+                  <CardDescription className="line-clamp-4 text-sm text-muted-foreground">
                     <div
                       dangerouslySetInnerHTML={{
                         __html: normalizeHTML(c.scenario),
@@ -485,6 +486,8 @@ export const CaseStudySubjectDetail = () => {
                   </CardDescription>
                 )}
               </CardHeader>
+
+              {/* Footer content (last line) */}
               <CardContent>
                 <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                   <FileText className="h-4 w-4" />
@@ -492,6 +495,7 @@ export const CaseStudySubjectDetail = () => {
                 </div>
               </CardContent>
             </Card>
+
           ))}
         </div>
       </div>
@@ -530,7 +534,7 @@ export const CaseStudySubjectDetail = () => {
                         placeholder="Enter description "
                         className="resize-none"
                         {...field}
-                        // required
+                      // required
                       />
                     </FormControl>
                     <FormMessage />
