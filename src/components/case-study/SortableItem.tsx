@@ -40,14 +40,20 @@ export const SortableItem = ({
     transition,
   };
 
-  function normalizeHTML(input: string) {
+  function normalizeHTML(input: string): string {
     try {
       const maybeParsed = JSON.parse(input);
-      return typeof maybeParsed === "string" ? maybeParsed : input;
+      input = typeof maybeParsed === "string" ? maybeParsed : input;
     } catch {
-      return input;
+      // do nothing
     }
+
+    return input
+      .replace(/<\/?(div|p|br|h[1-6]|ul|li)[^>]*>/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
+
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
@@ -86,15 +92,42 @@ export const SortableItem = ({
               </div>
 
               {/* Question Content */}
-              <div className="rich-text-content">
-                <span className="font-bold mr-1">Q: {selectedQuestion.order_index + 1}</span>
-                <h3
-                  className=""
-                  dangerouslySetInnerHTML={{
-                    __html: ` ${normalizeHTML(selectedQuestion.question_text)}`,
-                  }}
-                ></h3>
+              <div className="flex items-center gap-2 text-sm md:text-base w-full overflow-hidden">
+                <span className="font-bold shrink-0">
+                  Q: {selectedQuestion.order_index + 1}
+                </span>
+                {
+                  (() => {
+                    const html = normalizeHTML(selectedQuestion.question_text);
+                    const imgMatch = html.match(/^<img[^>]*src="([^"]+)"[^>]*>/i);
+                    const imgTag = imgMatch ? imgMatch[0] : '';
+                    const imgSrc = imgMatch ? imgMatch[1] : '';
+                    const textWithoutImg = html.replace(/^<img[^>]*>/i, '').replace(/<[^>]+>/g, '');
+                    const words = textWithoutImg.trim().split(/\s+/);
+                    const truncatedText = words.slice(0, 12).join(' ') + (words.length > 10 ? '...' : '');
+
+
+                    return (
+                      <div className="flex items-center gap-2 w-full overflow-hidden whitespace-nowrap text-ellipsis">
+                        {imgSrc && (
+                          <img
+                            src={imgSrc}
+                            alt=""
+                            className="w-[100%] h-6 object-fit shrink-0"
+
+                          />
+                        )}
+                        <span className="truncate">{truncatedText}</span>
+                      </div>
+                    );
+                  })()
+                }
               </div>
+
+
+
+
+
 
             </div>
           </div>
