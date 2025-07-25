@@ -61,21 +61,21 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface SubjectInfo {
-  id: string;
+  id?: string;
   name: string;
   description: string;
-  exams_case_id: string;
-  order_index: number;
+  exams_case_id?: string;
+  order_index?: number;
   case_count?: number;
   is_deleted_subject?: boolean;
 }
 interface Case {
-  id: string;
-  subject_id: string;
+  id?: string;
+  subject_id?: string;
   title: string;
   scenario: string;
-  order_index: number;
-  question_count: number;
+  order_index?: number;
+  question_count?: number;
 }
 
 const formSchema = z.object({

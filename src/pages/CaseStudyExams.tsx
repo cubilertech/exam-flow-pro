@@ -40,10 +40,25 @@ const CaseStudyExams = () => {
       setLoading(true);
       const examsWithSubjectCount: any[] = [];
 
-      // Step 1: Fetch all non-deleted exams with non-deleted subjects and cases
+      let subscribedExamIds: string[] = [];
+
+      // Step 1: If not admin, get subscribed exam IDs for current user
+      if (!isAdmin && user?.id) {
+        const { data: subscriptionData, error: subscriptionError } =
+          await supabase
+            .from("user_subscriptions")
+            .select("case_id")
+            .eq("user_id", user.id);
+
+        if (subscriptionError) throw subscriptionError;
+
+        subscribedExamIds = subscriptionData.map((sub) => sub.case_id);
+      }
+
+      // Step 2: Fetch exams with nested subjects and cases
       const { data: examsData, error: examsError } = await supabase
         .from("exams_case")
-        .select(`*,subjects(*,cases(id))`)
+        .select("*,subjects(*,cases(id))")
         .eq("is_deleted_exam", false)
         .eq("subjects.is_deleted_subject", false)
         .eq("subjects.cases.is_deleted_case", false)
@@ -51,8 +66,11 @@ const CaseStudyExams = () => {
 
       if (examsError) throw examsError;
 
-      // Step 2: Loop through exams to calculate subjectCount
+      // Step 3: Filter and count subjects per exam
       for (const exam of examsData || []) {
+        // Skip exam if user isn't subscribed to it (non-admin only)
+        if (!isAdmin && !subscribedExamIds.includes(exam.id)) continue;
+
         const subjects = exam.subjects || [];
         let subjectCount = 0;
 
@@ -60,11 +78,9 @@ const CaseStudyExams = () => {
           const cases = subject.cases || [];
 
           if (isAdmin) {
-            if (isAdmin) {
-              subjectCount++; // count all subjects, even if they have 0 cases
-            }
+            subjectCount++; // Admin sees all subjects
           } else {
-            // Only count subject if at least one case has questions
+            // User sees only subjects with visible cases (with questions)
             let visibleCaseCount = 0;
 
             for (const caseItem of cases) {
@@ -92,6 +108,8 @@ const CaseStudyExams = () => {
           subjectCount,
         });
       }
+
+      // Step 4: Filter out exams with 0 visible subjects (non-admin only)
       const filteredExams = isAdmin
         ? examsWithSubjectCount
         : examsWithSubjectCount.filter((exam) => exam.subjectCount > 0);
@@ -108,6 +126,7 @@ const CaseStudyExams = () => {
       setLoading(false);
     }
   };
+
 
   const handleExamClick = (exam: CaseStudyExam) => {
     // if (isAdmin) {
@@ -153,41 +172,44 @@ const CaseStudyExams = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {exams.map((exam) => (
-          <Card
-            key={exam.id}
-            className={`cursor-pointer transition-shadow hover:shadow-lg`}
-            onClick={() => handleExamClick(exam)}
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-lg">{exam.title}</CardTitle>
+      {exams.length === 0 ? (
+        <div className="text-center text-muted-foreground py-10">
+          No case study exams found.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {exams.map((exam) => (
+            <Card key={exam.id} className="cursor-pointer transition-shadow hover:shadow-lg" onClick={() => handleExamClick(exam)}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">{exam.title}</CardTitle>
+                  </div>
                 </div>
-              </div>
-              {exam.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5 custom-scrollbar">
-                  {exam.description}
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <Users className="h-4 w-4" />
-                  <span>{exam.subjectCount} subjects</span>
+                {exam.description && (
+                  <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem] line-clamp-5 custom-scrollbar">
+                    {exam.description}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-1">
+                    <Users className="h-4 w-4" />
+                    <span>{exam.subjectCount} subjects</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{new Date(exam.created_at).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{new Date(exam.created_at).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
 
       {isAdmin && (
         <CreateCaseStudyExamModal
