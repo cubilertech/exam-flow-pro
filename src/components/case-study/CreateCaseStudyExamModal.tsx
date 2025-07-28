@@ -121,7 +121,7 @@ export const CreateCaseStudyExamModal = ({
             {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
           </div>
 
-          <div className="space-y-2 custom-scrollbar">
+          <div className="space-y-2">
             <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"

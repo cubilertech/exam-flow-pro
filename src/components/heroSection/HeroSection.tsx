@@ -36,7 +36,7 @@ const HeroSection = () => {
               asChild
               className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-3"
             >
-              <Link to="/users">Start Your Preparation</Link>
+              <Link to="/register">Start Your Preparation</Link>
             </Button>
 
             <Button

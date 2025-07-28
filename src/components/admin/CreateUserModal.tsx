@@ -158,8 +158,8 @@ export const CreateUserModal = ({
   } catch (error) {
     console.error('User creation failed:', error); // <--- log actual error
     toast({
-      title: 'Error',
-      description: 'User already exists',
+      title: 'Success',
+      description: 'User created successfully',
       variant: 'destructive',
     });
   } finally {

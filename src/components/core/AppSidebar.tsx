@@ -69,16 +69,16 @@ export function AppSidebar() {
   ];
 
   return (
-    <div className="w-60 flex-shrink-0 border-r bg-secondary position-sticky overflow-y-auto custom-scrollbar">
+    <div className="w-60 flex-shrink-0 border-r bg-secondary">
       <div className="flex h-full max-h-screen flex-col gap-2 py-4">
-        <div className="px-3 py-2 text-center position-fixed">
+        <div className="px-3 py-2 text-center">
           <h2 className="font-bold text-2xl">Dashboard</h2>
           <span className="text-xs">Manage your account</span>
         </div>
         <div className="relative px-3 py-2">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
-              <AccordionTrigger className="position-fixed">
+              <AccordionTrigger>
                 {user?.isAdmin ? "Admin" : "Student"} Dashboard
               </AccordionTrigger>
               <AccordionContent>
