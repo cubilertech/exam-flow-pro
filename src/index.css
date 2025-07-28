@@ -4,87 +4,87 @@
 
 @layer base {
   :root {
-    /* Base colors */
+    /* Base colors */  
     --background: 260 33% 98%;
-    --foreground: 260 10% 20%;
+  --foreground: 260 10% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 260 10% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 10% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 260 10% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 10% 20%;
 
-    /* Primary - Purple with gradient support */
-    --primary: 260 50% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-gradient-from: 260 60% 55%;
-    --primary-gradient-to: 260 40% 45%;
+  /* Primary - Purple with gradient support */
+  --primary: 260 50% 50%;
+  --primary-foreground: 0 0% 100%;
+  --primary-gradient-from: 260 60% 55%;
+  --primary-gradient-to: 260 40% 45%;
 
-    /* Secondary - Lighter Purple */
-    --secondary: 260 30% 96%;
-    --secondary-foreground: 260 50% 50%;
+  /* Secondary - Lighter Purple */
+  --secondary: 260 30% 96%;
+  --secondary-foreground: 260 50% 50%;
 
-    /* Muted - Gray with slight purple tint */
-    --muted: 260 20% 90%;
-    --muted-foreground: 260 10% 40%;
+  /* Muted - Gray with slight purple tint */
+  --muted: 260 20% 90%;
+  --muted-foreground: 260 10% 40%;
 
-    /* Accent - Vibrant Purple */
-    --accent: 260 90% 65%;
-    --accent-foreground: 0 0% 100%;
+  /* Accent - Vibrant Purple */
+  --accent: 260 90% 65%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Red */
-    --destructive: 0 90% 60%;
-    --destructive-foreground: 0 0% 100%;
+  /* Destructive - Red */
+  --destructive: 0 90% 60%;
+  --destructive-foreground: 0 0% 100%;
 
-    /* UI Elements */
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 260 50% 50%;
+  /* UI Elements */
+  --border: 260 20% 90%;
+  --input: 260 20% 90%;
+  --ring: 260 50% 50%;
 
-    --radius: 0.75rem;
+  --radius: 0.75rem;
 
-  }
+}
 
 
-  .dark {
-    --background: 260 33% 98%;
-    --foreground: 260 10% 20%;
+.dark {
+  --background: 260 33% 98%;
+  --foreground: 260 10% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 260 10% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 10% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 260 10% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 10% 20%;
 
-    /* Primary - Purple with gradient support */
-    --primary: 260 50% 50%;
-    --primary-foreground: 0 0% 100%;
-    --primary-gradient-from: 260 60% 55%;
-    --primary-gradient-to: 260 40% 45%;
+  /* Primary - Purple with gradient support */
+  --primary: 260 50% 50%;
+  --primary-foreground: 0 0% 100%;
+  --primary-gradient-from: 260 60% 55%;
+  --primary-gradient-to: 260 40% 45%;
 
-    /* Secondary - Lighter Purple */
-    --secondary: 260 30% 96%;
-    --secondary-foreground: 260 50% 50%;
+  /* Secondary - Lighter Purple */
+  --secondary: 260 30% 96%;
+  --secondary-foreground: 260 50% 50%;
 
-    /* Muted - Gray with slight purple tint */
-    --muted: 260 20% 90%;
-    --muted-foreground: 260 10% 40%;
+  /* Muted - Gray with slight purple tint */
+  --muted: 260 20% 90%;
+  --muted-foreground: 260 10% 40%;
 
-    /* Accent - Vibrant Purple */
-    --accent: 260 90% 65%;
-    --accent-foreground: 0 0% 100%;
+  /* Accent - Vibrant Purple */
+  --accent: 260 90% 65%;
+  --accent-foreground: 0 0% 100%;
 
-    /* Destructive - Red */
-    --destructive: 0 90% 60%;
-    --destructive-foreground: 0 0% 100%;
+  /* Destructive - Red */
+  --destructive: 0 90% 60%;
+  --destructive-foreground: 0 0% 100%;
 
-    /* UI Elements */
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 260 50% 50%;
+  /* UI Elements */
+  --border: 260 20% 90%;
+  --input: 260 20% 90%;
+  --ring: 260 50% 50%;
 
-    --radius: 0.75rem;
-  }
+  --radius: 0.75rem;
+}
 }
 
 @layer base {
@@ -151,4 +151,49 @@
   -webkit-user-select: none;
   -ms-user-select: none;
   -moz-user-select: none;
+}
+
+/* Case Study Results Animations */
+.confetti-container.animate .confetti-piece {
+  animation: confetti-fall 3s ease-out forwards;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: -10px;
+  opacity: 0;
+  border-radius: 2px;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Trophy bounce animation */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40%, 43% {
+    transform: translateY(-30px);
+  }
+  70% {
+    transform: translateY(-15px);
+  }
+  90% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
 }

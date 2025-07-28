@@ -197,11 +197,11 @@ export const CaseStudySubjectDetail = () => {
 
   const filteredCases = cases
     ? cases.filter((c) => {
-      const matchesSearch =
-        c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSearch && (isAdmin || c.question_count > 0);
-    })
+        const matchesSearch =
+          c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          c.scenario?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch && (isAdmin || c.question_count > 0);
+      })
     : [];
 
   const onEditSubject = async (values: z.infer<typeof formSchema>) => {
@@ -378,10 +378,10 @@ export const CaseStudySubjectDetail = () => {
           <Link
             className="flex items-center  font-semibold text-gray-800 truncate dark:text-neutral-200 hover:text-black focus:outline-none "
             to="#"
-          // onClick={(e) => {
-          //   e.preventDefault();
-          //   navigate(0);
-          // }}
+            // onClick={(e) => {
+            //   e.preventDefault();
+            //   navigate(0);
+            // }}
           >
             Subject
           </Link>
@@ -415,7 +415,7 @@ export const CaseStudySubjectDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Details</CardTitle>
-            <CardDescription className="max-h-32 overflow-y-auto custom-scrollbar">
+            <CardDescription className="max-h-32 overflow-y-auto">
               {subjectInfo.description}
             </CardDescription>
           </CardHeader>
@@ -458,49 +458,42 @@ export const CaseStudySubjectDetail = () => {
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCases.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 text-lg py-8">
-              Loading...
-            </div>
-          ) : (
-            filteredCases.map((c) => (
-              <Card
-                key={c.id}
-                className="cursor-pointer transition-shadow hover:shadow-lg"
-                onClick={() =>
-                  navigate(
-                    `/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`
-                  )
-                }
-              >
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">
-                      {normalizeHTML(c.title)}
-                    </CardTitle>
-                  </div>
-                  {c.scenario && (
-                    <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem] line-clamp-5 custom-scrollbar">
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: normalizeHTML(c.scenario),
-                        }}
-                      ></div>
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span>{c.question_count} questions</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          {filteredCases.map((c) => (
+            <Card
+              key={c.id}
+              className="cursor-pointer transition-shadow hover:shadow-lg"
+              onClick={() =>
+                navigate(
+                  `/case-study-exams/${examId}/subjects/${subjectId}/cases/${c.id}`
+                )
+              }
+            >
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">
+                    {normalizeHTML(c.title)}
+                  </CardTitle>
+                </div>
+                {c.scenario && (
+                  <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: normalizeHTML(c.scenario),
+                      }}
+                    ></div>
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>{c.question_count} questions</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -537,7 +530,7 @@ export const CaseStudySubjectDetail = () => {
                         placeholder="Enter description "
                         className="resize-none"
                         {...field}
-                      // required
+                        // required
                       />
                     </FormControl>
                     <FormMessage />

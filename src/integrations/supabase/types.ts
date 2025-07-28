@@ -19,7 +19,6 @@ export type Database = {
           created_at: string
           id: string
           user_id: string
-          email: string | null
         }
         Insert: {
           created_at?: string
@@ -336,10 +335,9 @@ export type Database = {
           gender: string | null
           id: string
           phone_number: string | null
+          status: string | null
           updated_at: string
           username: string | null
-          email: string | null
-          status?: string | null
         }
         Insert: {
           city?: string | null
@@ -349,9 +347,9 @@ export type Database = {
           gender?: string | null
           id: string
           phone_number?: string | null
+          status?: string | null
           updated_at?: string
           username?: string | null
-          status?: string | null
         }
         Update: {
           city?: string | null
@@ -361,9 +359,9 @@ export type Database = {
           gender?: string | null
           id?: string
           phone_number?: string | null
+          status?: string | null
           updated_at?: string
           username?: string | null
-          status?: string | null
         }
         Relationships: []
       }

@@ -214,7 +214,7 @@ export const CaseSenerioShow = () => {
                 <BookOpen className="w-5 h-5 mr-2 text-primary" />
                 Scenario
               </h3>
-              <div className="rich-text-content ">
+              <div className="bg-gray-50 rounded-lg p-6 ">
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
                    <span dangerouslySetInnerHTML={{__html : normalizeHTML(caseInfo.scenario)}}/>
                 </p>

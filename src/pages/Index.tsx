@@ -323,7 +323,7 @@ const Index = () => {
                 asChild
                 className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-5 px-6 sm:px-8"
               >
-                <Link to="/users">Start Your Free Trial</Link>
+                <Link to="/register">Start Your Free Trial</Link>
               </Button>
               <Button
                 size="lg"
