@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -144,23 +143,15 @@ export const UserCaseStudyModal = ({
         }
       }
 
-      // Remove unselected subscriptions - use raw SQL to avoid type issues
+      // Remove unselected subscriptions
       if (toRemove.length > 0) {
         for (const examId of toRemove) {
-          const { error: removeError } = await supabase.rpc('delete_user_subscription', {
-            p_user_id: user.id,
-            p_exams_case_id: examId
-          });
+          const { error: deleteError } = await supabase
+            .from('user_subscriptions')
+            .delete()
+            .match({ user_id: user.id, exams_case_id: examId });
 
-          if (removeError) {
-            // Fallback to direct deletion if RPC doesn't exist
-            const { error: deleteError } = await supabase
-              .from('user_subscriptions')
-              .delete()
-              .match({ user_id: user.id, exams_case_id: examId });
-
-            if (deleteError) throw deleteError;
-          }
+          if (deleteError) throw deleteError;
         }
       }
 

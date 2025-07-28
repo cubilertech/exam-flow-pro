@@ -12,6 +12,7 @@ interface CaseStudyExam {
 
 export const useCaseStudySubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<CaseStudyExam[]>([]);
+  const [subscribedExamIds, setSubscribedExamIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAppSelector((state) => state.auth);
 
@@ -34,8 +35,11 @@ export const useCaseStudySubscriptions = () => {
         title: item.exams_case.title,
         description: item.exams_case.description,
       })) || [];
+
+      const examIds = activeCaseStudyExams.map(exam => exam.id);
       
       setSubscriptions(activeCaseStudyExams);
+      setSubscribedExamIds(examIds);
     } catch (error) {
       console.error('Error fetching subscribed case study exams:', error);
       toast.error('Failed to fetch subscribed case study exams');
@@ -44,13 +48,19 @@ export const useCaseStudySubscriptions = () => {
     }
   };
 
+  const hasAccessToExam = (examId: string): boolean => {
+    return subscribedExamIds.includes(examId);
+  };
+
   useEffect(() => {
     fetchSubscribedCaseStudyExams();
   }, [user]);
 
   return { 
     subscriptions, 
+    subscribedExamIds,
     loading,
+    hasAccessToExam,
     refetch: fetchSubscribedCaseStudyExams
   };
 };
