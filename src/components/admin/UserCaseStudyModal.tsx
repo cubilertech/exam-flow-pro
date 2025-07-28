@@ -146,13 +146,16 @@ export const UserCaseStudyModal = ({
 
       // Remove unselected subscriptions
       if (toRemove.length > 0) {
-        const { error: removeError } = await supabase
-          .from('user_subscriptions')
-          .delete()
-          .eq('user_id', user.id)
-          .in('exams_case_id', toRemove);
+        // Use a simpler approach to avoid type inference issues
+        for (const examId of toRemove) {
+          const { error: removeError } = await supabase
+            .from('user_subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('exams_case_id', examId);
 
-        if (removeError) throw removeError;
+          if (removeError) throw removeError;
+        }
       }
 
       toast({
