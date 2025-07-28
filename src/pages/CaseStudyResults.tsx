@@ -2,200 +2,212 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, FileText, Trophy, ArrowRight } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearAnswers } from "@/features/caseAnswers/caseAnswersSlice";
+import { Trophy, CheckCircle, Clock, BookOpen, Sparkles } from "lucide-react";
 
 export const CaseStudyResults = () => {
+  const { examId, subjectId } = useParams<{ examId: string; subjectId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { examId, subjectId } = useParams<{ examId: string; subjectId: string }>();
-  const { answers, session } = useAppSelector((state) => state.caseAnswers);
+  const { answers, sessionStats } = useAppSelector((state) => state.caseAnswers);
 
   const answeredCount = Object.keys(answers).length;
-  const totalQuestions = session.totalQuestions || 0;
-  const completionRate = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const completionRate = sessionStats.totalQuestions > 0 
+    ? Math.round((answeredCount / sessionStats.totalQuestions) * 100) 
+    : 0;
 
   const getTimeTaken = () => {
-    if (session.startTime && session.endTime) {
-      const start = new Date(session.startTime).getTime();
-      const end = new Date(session.endTime).getTime();
-      const minutes = Math.floor((end - start) / (1000 * 60));
-      const seconds = Math.floor(((end - start) % (1000 * 60)) / 1000);
-      return `${minutes}m ${seconds}s`;
-    }
-    return "Unknown";
+    if (!sessionStats.startTime || !sessionStats.endTime) return "N/A";
+    
+    const start = new Date(sessionStats.startTime);
+    const end = new Date(sessionStats.endTime);
+    const diffInMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Less than 1 minute";
+    if (diffInMinutes === 1) return "1 minute";
+    return `${diffInMinutes} minutes`;
   };
 
+  // Trigger confetti animation on mount
   useEffect(() => {
-    // Add celebration animation on mount
-    const timer = setTimeout(() => {
-      const confetti = document.querySelector('.confetti-container');
-      if (confetti) {
-        confetti.classList.add('animate');
-      }
-    }, 300);
+    // Create confetti elements
+    const createConfetti = () => {
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.backgroundColor = [
+          '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3'
+        ][Math.floor(Math.random() * 6)];
+        document.body.appendChild(confetti);
 
-    return () => clearTimeout(timer);
+        // Remove confetti after animation
+        setTimeout(() => {
+          if (document.body.contains(confetti)) {
+            document.body.removeChild(confetti);
+          }
+        }, 4000);
+      }
+    };
+
+    createConfetti();
   }, []);
 
-  const handleContinue = () => {
+  const handleBackToSubject = () => {
     dispatch(clearAnswers());
-    if (examId && subjectId) {
-      navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
-    } else {
-      navigate('/case-study-exams');
-    }
+    navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
   };
 
-  const handleStartNew = () => {
+  const handleBackToExams = () => {
     dispatch(clearAnswers());
     navigate('/case-study-exams');
   };
 
   return (
-    <div className="container py-8 px-4 md:px-8 relative min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-      {/* Confetti Animation */}
-      <div className="confetti-container fixed inset-0 pointer-events-none z-10">
-        {[...Array(50)].map((_, i) => (
-          <div
-            key={i}
-            className="confetti-piece"
-            style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'][Math.floor(Math.random() * 6)],
-            }}
-          />
-        ))}
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Celebration Header */}
+      <div className="text-center mb-8">
+        <div className="relative inline-block">
+          <Trophy className="h-24 w-24 text-yellow-500 mx-auto mb-4 animate-bounce" />
+          <Sparkles className="h-8 w-8 text-yellow-400 absolute -top-2 -right-2 animate-pulse" />
+        </div>
+        <h1 className="text-4xl font-bold text-primary mb-2">
+          Congratulations! 🎉
+        </h1>
+        <p className="text-xl text-muted-foreground">
+          You've successfully completed the case study!
+        </p>
       </div>
 
-      <div className="max-w-4xl mx-auto relative z-20">
-        {/* Celebration Header */}
-        <div className="text-center mb-8">
-          <div className="mb-4">
-            <Trophy className="h-16 w-16 text-yellow-500 mx-auto animate-bounce" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Congratulations! 🎉
-          </h1>
-          <p className="text-xl text-gray-600">
-            You have successfully completed the case study!
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="text-center">
-            <CardHeader className="pb-4">
-              <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <CardTitle className="text-lg">Questions Answered</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">
-                {answeredCount}
-              </div>
-              <div className="text-sm text-gray-500">
-                out of {totalQuestions} questions
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader className="pb-4">
-              <FileText className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-              <CardTitle className="text-lg">Completion Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
-                {completionRate}%
-              </div>
-              <div className="text-sm text-gray-500">
-                overall completion
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center">
-            <CardHeader className="pb-4">
-              <Clock className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-              <CardTitle className="text-lg">Time Taken</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">
-                {getTimeTaken()}
-              </div>
-              <div className="text-sm text-gray-500">
-                total time spent
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Performance Badge */}
-        <div className="text-center mb-8">
-          <Badge 
-            variant={completionRate >= 80 ? "default" : completionRate >= 60 ? "secondary" : "outline"}
-            className="px-6 py-2 text-lg"
-          >
-            {completionRate >= 80 ? "Excellent Work!" : 
-             completionRate >= 60 ? "Good Job!" : "Keep Practicing!"}
-          </Badge>
-        </div>
-
-        {/* Summary Card */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Session Summary</CardTitle>
-            <CardDescription>
-              Review your performance in this case study
-            </CardDescription>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card className="text-center">
+          <CardHeader className="pb-2">
+            <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
+            <CardTitle className="text-sm font-medium">Questions Answered</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Questions Attempted:</span>
-              <span className="font-semibold">{answeredCount} / {totalQuestions}</span>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {answeredCount}
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Completion Rate:</span>
-              <span className="font-semibold">{completionRate}%</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Session Duration:</span>
-              <span className="font-semibold">{getTimeTaken()}</span>
-            </div>
-            {session.startTime && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Completed At:</span>
-                <span className="font-semibold">
-                  {new Date(session.endTime || session.startTime).toLocaleString()}
-                </span>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              out of {sessionStats.totalQuestions}
+            </p>
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            onClick={handleContinue}
-            className="px-8 py-3 text-lg"
-            size="lg"
-          >
-            Continue to Subject
-            <ArrowRight className="h-5 w-5 ml-2" />
-          </Button>
-          <Button 
-            onClick={handleStartNew}
-            variant="outline"
-            className="px-8 py-3 text-lg"
-            size="lg"
-          >
-            Start New Case Study
-          </Button>
-        </div>
+        <Card className="text-center">
+          <CardHeader className="pb-2">
+            <BookOpen className="h-8 w-8 text-blue-500 mx-auto" />
+            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {completionRate}%
+            </div>
+            <Badge variant={completionRate === 100 ? "default" : "secondary"} className="text-xs">
+              {completionRate === 100 ? "Perfect!" : "Great effort!"}
+            </Badge>
+          </CardContent>
+        </Card>
+
+        <Card className="text-center">
+          <CardHeader className="pb-2">
+            <Clock className="h-8 w-8 text-purple-500 mx-auto" />
+            <CardTitle className="text-sm font-medium">Time Taken</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {getTimeTaken()}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Total time spent
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="text-center">
+          <CardHeader className="pb-2">
+            <Sparkles className="h-8 w-8 text-pink-500 mx-auto" />
+            <CardTitle className="text-sm font-medium">Achievement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold text-primary">
+              Case Study
+            </div>
+            <Badge variant="outline" className="text-xs">
+              Completed
+            </Badge>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Card */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Session Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Status:</span>
+              <Badge variant="default" className="bg-green-500">
+                ✅ Submitted Successfully
+              </Badge>
+            </div>
+            
+            {sessionStats.startTime && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Started at:</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(sessionStats.startTime).toLocaleString()}
+                </span>
+              </div>
+            )}
+            
+            {sessionStats.endTime && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Completed at:</span>
+                <span className="text-sm text-muted-foreground">
+                  {new Date(sessionStats.endTime).toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
+              <p className="text-center text-sm font-medium text-purple-700">
+                🎊 Great job! Your responses have been submitted. Keep up the excellent work! 🎊
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button 
+          onClick={handleBackToSubject}
+          variant="default" 
+          size="lg"
+          className="min-w-[200px]"
+        >
+          Back to Subject
+        </Button>
+        <Button 
+          onClick={handleBackToExams}
+          variant="outline" 
+          size="lg"
+          className="min-w-[200px]"
+        >
+          All Case Studies
+        </Button>
       </div>
     </div>
   );

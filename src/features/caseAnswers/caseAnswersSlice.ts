@@ -1,25 +1,24 @@
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface SessionData {
-  startTime?: string;
-  endTime?: string;
-  totalQuestions?: number;
-  caseId?: string;
-  subjectId?: string;
-  examId?: string;
-}
-
 interface AnswerState {
   answers: {
     [questionId: string]: string;
   };
-  session: SessionData;
+  sessionStats: {
+    startTime: string | null;
+    endTime: string | null;
+    totalQuestions: number;
+  };
 }
 
 const initialState: AnswerState = {
   answers: {},
-  session: {},
+  sessionStats: {
+    startTime: null,
+    endTime: null,
+    totalQuestions: 0,
+  },
 };
 
 const caseAnswersSlice = createSlice({
@@ -38,22 +37,18 @@ const caseAnswersSlice = createSlice({
     },
     clearAnswers: (state) => {
       state.answers = {};
-      state.session = {};
-    },
-    startSession: (
-      state,
-      action: PayloadAction<{ totalQuestions: number; caseId: string; subjectId: string; examId: string }>
-    ) => {
-      state.session = {
-        startTime: new Date().toISOString(),
-        totalQuestions: action.payload.totalQuestions,
-        caseId: action.payload.caseId,
-        subjectId: action.payload.subjectId,
-        examId: action.payload.examId,
+      state.sessionStats = {
+        startTime: null,
+        endTime: null,
+        totalQuestions: 0,
       };
     },
+    startSession: (state, action: PayloadAction<{ totalQuestions: number }>) => {
+      state.sessionStats.startTime = new Date().toISOString();
+      state.sessionStats.totalQuestions = action.payload.totalQuestions;
+    },
     endSession: (state) => {
-      state.session.endTime = new Date().toISOString();
+      state.sessionStats.endTime = new Date().toISOString();
     },
   },
 });

@@ -101,37 +101,26 @@ export const CaseStudyTakeExam = () => {
     }
   }, [caseId]);
 
-  // Start session when questions are loaded
-  useEffect(() => {
-    if (questions.length > 0 && examId && subjectId && caseId) {
-      dispatch(startSession({
-        totalQuestions: questions.length,
-        caseId,
-        subjectId,
-        examId,
-      }));
-    }
-  }, [questions, examId, subjectId, caseId, dispatch]);
-
   useEffect(() => {
     setShowAnswer(false);
   }, [currentQuestionIndex]);
 
   const fetchQuestions = async (caseId: string) => {
     try {
-      
       const { data, error } = await supabase
         .from("case_questions")
         .select("*")
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
   
-      if (data.length > 0) {
+      if (data && data.length > 0) {
         setQuestions(data);
+        // Start the session when questions are loaded
+        dispatch(startSession({ totalQuestions: data.length }));
       }
       if (error) throw error;
     } catch (error) {
-      console.error("Error submitting answer:", error);  
+      console.error("Error fetching questions:", error);  
     }
   };
 
@@ -187,7 +176,6 @@ export const CaseStudyTakeExam = () => {
 
       if (testId) {
         // Already exists: UPDATE
-        console.log("Update");
         const { data, error } = await supabase
           .from("user_case_progress")
           .update(payload)
@@ -201,14 +189,16 @@ export const CaseStudyTakeExam = () => {
           description: "Answer submitted successfully",
         });
       }
+      
       if (currentQuestionIndex < totalQuestions) {
-         setCurrentQuestionIndex(currentQuestionIndex + 1);
-     }
-     if (currentQuestionIndex === totalQuestions) {
-        // End session and navigate to results
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      }
+      
+      if (currentQuestionIndex === totalQuestions) {
+        // End the session and navigate to results
         dispatch(endSession());
         navigate(`/case-study-exams/${examId}/subjects/${subjectId}/results`);
-     }
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast({
@@ -220,24 +210,6 @@ export const CaseStudyTakeExam = () => {
       setIsSubmitted(false);
     }
   };
-
-  // If you want to submit all answers in Redux at once later (e.g., at "Finish Exam"), you can do:********
-  //   const handleFinishExam = async () => {
-  //   storeCurrentAnswerToRedux();
-
-  //   for (const [questionId, user_answer] of Object.entries(savedAnswers)) {
-  //     await supabase.from("user_case_answers").insert({
-  //       user_id: user.id,
-  //       case_question_id: questionId,
-  //       user_answer,
-  //       created_at: new Date().toISOString(),
-  //       answered_at: new Date().toISOString(),
-  //     });
-  //   }
-
-  //   toast.success("All answers submitted.");
-  //   navigate("/some/summary/page");
-  // };
 
   useEffect(() => {
     const saved = savedAnswers[currentQuestion?.id];
@@ -257,12 +229,9 @@ export const CaseStudyTakeExam = () => {
     }
   }, [currentQuestionIndex]);
 
-  // console.log("Saved Answers:", savedAnswers);
-
   const getCompletedQuestionCount = () => {
     return Object.keys(savedAnswers).length;
   };
-
 
   return (
     <div className="container py-4 md:py-8 px-4 md:px-8">
@@ -273,6 +242,8 @@ export const CaseStudyTakeExam = () => {
             <span className="text-xl sm:text-2xl font-bold">
               Question {currentQuestionIndex} of {totalQuestions}
             </span>
+
+            
           </div>
           <div className="mb-4">
             <Progress
@@ -343,10 +314,12 @@ export const CaseStudyTakeExam = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     {showAnswer ? "Processing " : "Proceed Answer"}
                   </Button>
+
                 </div>
               )}
 
               {/* Content */}
+
               {showAnswer && currentQuestion?.correct_answer && (
                 <div className="mt-0  p-4  rounded-md">
                   <h4 className=" font-medium text-sm mb-2">Correct Answer:</h4>
@@ -365,6 +338,7 @@ export const CaseStudyTakeExam = () => {
                   >
                     {isSubmitted ? "Submitting" : "Submit Answer"}
                   </Button>
+
                   </div>
                 </div>
               )}
