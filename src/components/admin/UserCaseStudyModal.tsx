@@ -68,7 +68,7 @@ export const UserCaseStudyModal = ({
       // Fetch all case study exams
       const { data: examData, error: examError } = await supabase
         .from('exams_case')
-        .select('*')
+        .select('id, title, description')
         .eq('is_deleted_exam', false)
         .order('title');
 
@@ -85,7 +85,9 @@ export const UserCaseStudyModal = ({
       if (subError) throw subError;
 
       setCaseStudyExams(examData || []);
-      setUserSubscriptions(subData?.map((sub) => sub.exams_case_id).filter(Boolean) || []);
+      setUserSubscriptions(
+        subData?.map((sub: any) => sub.exams_case_id).filter(Boolean) || []
+      );
     } catch (error: any) {
       console.error('Error fetching data:', error.message || error);
       toast({
@@ -119,7 +121,8 @@ export const UserCaseStudyModal = ({
 
       if (fetchError) throw fetchError;
 
-      const currentSubIds = currentSubs?.map((sub) => sub.exams_case_id).filter(Boolean) || [];
+      const currentSubIds = 
+        currentSubs?.map((sub: any) => sub.exams_case_id).filter(Boolean) || [];
 
       const toAdd = userSubscriptions.filter((id) => !currentSubIds.includes(id));
       const toRemove = currentSubIds.filter((id) => !userSubscriptions.includes(id));
