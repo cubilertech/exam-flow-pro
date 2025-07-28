@@ -129,20 +129,19 @@ export const UserCaseStudyModal = ({
 
       // Add new subscriptions
       if (toAdd.length > 0) {
-        const { error: addError } = await supabase
-          .from('user_subscriptions')
-          .upsert(
-            toAdd.map((examId) => ({
-              user_id: user.id,
-              exams_case_id: examId,
-              is_active: true,
-            })),
-            {
-              onConflict: 'user_id,exams_case_id',
-            }
-          );
+        const subscriptionsToInsert = toAdd.map((examId) => ({
+          user_id: user.id,
+          exams_case_id: examId,
+          is_active: true,
+        }));
 
-        if (addError) throw addError;
+        for (const subscription of subscriptionsToInsert) {
+          const { error: insertError } = await supabase
+            .from('user_subscriptions')
+            .insert(subscription);
+
+          if (insertError) throw insertError;
+        }
       }
 
       // Remove unselected subscriptions
