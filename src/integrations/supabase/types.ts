@@ -591,6 +591,7 @@ export type Database = {
           current_question_index: number | null
           id: string
           started_at: string | null
+          submission_count: number | null
           updated_at: string
           user_id: string
         }
@@ -602,6 +603,7 @@ export type Database = {
           current_question_index?: number | null
           id?: string
           started_at?: string | null
+          submission_count?: number | null
           updated_at?: string
           user_id: string
         }
@@ -613,6 +615,7 @@ export type Database = {
           current_question_index?: number | null
           id?: string
           started_at?: string | null
+          submission_count?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -722,27 +725,37 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          case_id: string | null
           created_at: string
           id: string
           is_active: boolean | null
-          question_bank_id: string
+          question_bank_id: string | null
           user_id: string
         }
         Insert: {
+          case_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
-          question_bank_id: string
+          question_bank_id?: string | null
           user_id: string
         }
         Update: {
+          case_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
-          question_bank_id?: string
+          question_bank_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "exams_case"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_subscriptions_question_bank_id_fkey"
             columns: ["question_bank_id"]
