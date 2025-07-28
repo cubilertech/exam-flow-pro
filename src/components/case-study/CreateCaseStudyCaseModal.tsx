@@ -88,7 +88,7 @@ export const CreateCaseStudyCaseModal = ({
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 custom-scrollbar">
             <Label htmlFor="description">Scenario</Label>
             <Textarea
               id="description"

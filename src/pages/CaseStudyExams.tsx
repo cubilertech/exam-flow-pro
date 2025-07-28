@@ -168,7 +168,7 @@ const CaseStudyExams = () => {
                 </div>
               </div>
               {exam.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">
+                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5 custom-scrollbar">
                   {exam.description}
                 </CardDescription>
               )}
