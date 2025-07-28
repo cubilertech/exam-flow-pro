@@ -64,7 +64,8 @@ export const SortableItem = ({
         >
           <div className="flex">
             
-            <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
+            <div className="w-full bg-white rounded-xl shadow-md p-4 overflow-y-auto max-h-40 custom-scrollbar"
+>
               
                 <div className="flex flex-row text-sm md:text-base pt-1 md:pt-0">
                   <span className="font-bold mr-1">Q:{ selectedQuestion.order_index + 1}</span>

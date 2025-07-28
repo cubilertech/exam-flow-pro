@@ -24,6 +24,7 @@ import {
 interface UserProfile {
   id: string;
   username: string;
+  email: string;
   full_name: string;
   country: string;
   gender: string;
@@ -71,7 +72,14 @@ const UserManagement = () => {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
-      await fetchUsers();
+
+      // 🔁 Update local state directly (faster than full refetch)
+      setUsers(prev =>
+        prev.map(user =>
+          user.id === userId ? { ...user, status: newStatus } : user
+        )
+      );
+
       toast({
         title: 'Success',
         description: `User ${newStatus === 'active' ? 'unblocked' : 'blocked'} successfully`,
@@ -84,6 +92,7 @@ const UserManagement = () => {
       });
     }
   };
+
 
   const handleDeleteUser = async (userId: string) => {
     try {
@@ -133,7 +142,6 @@ const UserManagement = () => {
       </div>
     );
   }
-
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
@@ -168,7 +176,7 @@ const UserManagement = () => {
                     <CardTitle className="text-lg text-primary font-semibold">
                       {user.username}
                     </CardTitle>
-                    <CardDescription>{user.full_name}</CardDescription>
+                    <CardDescription>{user.email || 'No email'}</CardDescription>
                   </div>
                   <Badge
                     className="text-xs px-2 py-1"
@@ -200,7 +208,12 @@ const UserManagement = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStatusToggle(user.id, user.status)}
+                    onClick={() => {
+                      console.log('Clicked status button');
+                      console.log('User ID:', user.id);
+                      console.log('User Status:', user.status);
+                      handleStatusToggle(user.id, user.status);
+                    }}
                     title={user.status === 'active' ? 'Block User' : 'Unblock User'}
                   >
                     {user.status === 'active' ? (
@@ -209,7 +222,8 @@ const UserManagement = () => {
                       <Shield className="h-4 w-4" />
                     )}
                   </Button>
-                  <AlertDialog>
+
+                  {/*<AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" size="sm" title="Delete User">
                         <Trash2 className="h-4 w-4" />
@@ -230,7 +244,7 @@ const UserManagement = () => {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                  </AlertDialog>*/}
                 </div>
               </div>
             </CardHeader>

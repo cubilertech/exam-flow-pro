@@ -380,7 +380,7 @@ const CaseStudyExamDetail = () => {
           <Card className="w-full mb-6">
             <CardHeader>
               <CardTitle>Details</CardTitle>
-              <CardDescription className="max-h-32 overflow-y-auto">
+              <CardDescription className="max-h-32 overflow-y-auto custom-scrollbar">
                 {examInfo.description}
               </CardDescription>
             </CardHeader>
@@ -426,7 +426,7 @@ const CaseStudyExamDetail = () => {
                 <CardTitle className="text-lg">{subject.name}</CardTitle>
               </div>
               {subject.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5">
+                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5 custom -scrollbar">
                   {subject.description}
                 </CardDescription>
               )}
