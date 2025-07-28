@@ -144,17 +144,23 @@ export const UserCaseStudyModal = ({
         }
       }
 
-      // Remove unselected subscriptions
+      // Remove unselected subscriptions - use raw SQL to avoid type issues
       if (toRemove.length > 0) {
-        // Use a simpler approach to avoid type inference issues
         for (const examId of toRemove) {
-          const { error: removeError } = await supabase
-            .from('user_subscriptions')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('exams_case_id', examId);
+          const { error: removeError } = await supabase.rpc('delete_user_subscription', {
+            p_user_id: user.id,
+            p_exams_case_id: examId
+          });
 
-          if (removeError) throw removeError;
+          if (removeError) {
+            // Fallback to direct deletion if RPC doesn't exist
+            const { error: deleteError } = await supabase
+              .from('user_subscriptions')
+              .delete()
+              .match({ user_id: user.id, exams_case_id: examId });
+
+            if (deleteError) throw deleteError;
+          }
         }
       }
 
