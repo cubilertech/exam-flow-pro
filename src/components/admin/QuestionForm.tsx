@@ -492,7 +492,7 @@ export const QuestionForm = ({
           </Alert>
         )}
 
-        <div>
+        <div className="custom-scrollbar">
           <Label
             htmlFor="text"
             className={cn(validationErrors.text && "text-destructive")}
@@ -648,7 +648,7 @@ export const QuestionForm = ({
 
         <div>
           <Label htmlFor="explanation">Explanation</Label>
-          <div className="mt-2 rich-text-content">
+          <div className="mt-2 rich-text-content custom-scrollbar">
             <ThemeProvider>
               <Remirror
                 manager={manager}

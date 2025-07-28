@@ -415,6 +415,8 @@ export const CaseStudyCaseDetail = () => {
       setLoading(false);
     }
   };
+
+  console.log("caseInfo?.scenario", caseInfo?.scenario);
   if (loading) {
     return (
       <div className="container mx-auto py-6">
@@ -546,12 +548,14 @@ export const CaseStudyCaseDetail = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Scenario</CardTitle>
-            <CardDescription className="max-h-32 overflow-y-auto">
+            <CardDescription className="max-h-64 overflow-y-auto custom-scrollbar">
               <div
+                className="rich-text-content"
                 dangerouslySetInnerHTML={{
                   __html: normalizeHTML(caseInfo.scenario),
                 }}
               />
+
             </CardDescription>
           </CardHeader>
         </Card>

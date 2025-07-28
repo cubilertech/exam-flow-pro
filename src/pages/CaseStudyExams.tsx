@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { CreateCaseStudyExamModal } from "@/components/case-study/CreateCaseStudyExamModal";
 import { useToast } from "@/hooks/use-toast";
-import { useCaseStudySubscriptions } from "@/hooks/useCaseStudySubscriptions";
 
 interface CaseStudyExam {
   id: string;
@@ -32,11 +30,10 @@ const CaseStudyExams = () => {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
-  const { subscribedExamIds, loading: subscriptionsLoading } = useCaseStudySubscriptions();
 
   useEffect(() => {
     fetchExams();
-  }, [subscribedExamIds]);
+  }, []);
 
   const fetchExams = async () => {
     try {
@@ -56,11 +53,6 @@ const CaseStudyExams = () => {
 
       // Step 2: Loop through exams to calculate subjectCount
       for (const exam of examsData || []) {
-        // For students, only process exams they have access to
-        if (!isAdmin && !subscribedExamIds.includes(exam.id)) {
-          continue;
-        }
-
         const subjects = exam.subjects || [];
         let subjectCount = 0;
 
@@ -68,7 +60,9 @@ const CaseStudyExams = () => {
           const cases = subject.cases || [];
 
           if (isAdmin) {
-            subjectCount++; // count all subjects, even if they have 0 cases
+            if (isAdmin) {
+              subjectCount++; // count all subjects, even if they have 0 cases
+            }
           } else {
             // Only count subject if at least one case has questions
             let visibleCaseCount = 0;
@@ -98,7 +92,6 @@ const CaseStudyExams = () => {
           subjectCount,
         });
       }
-
       const filteredExams = isAdmin
         ? examsWithSubjectCount
         : examsWithSubjectCount.filter((exam) => exam.subjectCount > 0);
@@ -117,10 +110,11 @@ const CaseStudyExams = () => {
   };
 
   const handleExamClick = (exam: CaseStudyExam) => {
+    // if (isAdmin) {
     navigate(`/case-study-exams/${exam.id}`);
   };
 
-  if (loading || (!isAdmin && subscriptionsLoading)) {
+  if (loading) {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -141,6 +135,7 @@ const CaseStudyExams = () => {
             Case Study Exams
           </h1>
           <p className="text-muted-foreground">
+            {" "}
             {isAdmin
               ? "Manage case study exams and their content"
               : "Access your subscribed case study exams"}
@@ -149,9 +144,7 @@ const CaseStudyExams = () => {
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">
-          {isAdmin ? "All Exams" : "My Subscribed Exams"}
-        </h2>
+        <h2 className="text-xl font-semibold">Exams</h2>
         {isAdmin && (
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -160,21 +153,11 @@ const CaseStudyExams = () => {
         )}
       </div>
 
-      {!isAdmin && exams.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Case Study Exams Available</h3>
-          <p className="text-muted-foreground">
-            You don't have access to any case study exams yet. Contact your administrator to get access.
-          </p>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {exams.map((exam) => (
           <Card
             key={exam.id}
-            className="cursor-pointer transition-shadow hover:shadow-lg"
+            className={`cursor-pointer transition-shadow hover:shadow-lg`}
             onClick={() => handleExamClick(exam)}
           >
             <CardHeader>
@@ -185,7 +168,7 @@ const CaseStudyExams = () => {
                 </div>
               </div>
               {exam.description && (
-                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem] line-clamp-5">
+                <CardDescription className="text-ellipsis overflow-hidden h-[7rem] md:h-[7.5rem]  line-clamp-5 custom-scrollbar">
                   {exam.description}
                 </CardDescription>
               )}
