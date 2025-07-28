@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,6 +29,7 @@ import CaseStudyExamDetail from './pages/CaseStudyExamDetail';
 import { CaseStudySubjectDetail } from './pages/CaseStudySubjectDetail';
 import { CaseStudyCaseDetail } from './pages/CaseStudyCaseDetail';
 import { CaseStudyTakeExam } from './pages/CaseStudyTakeExam';
+import { CaseStudyResults } from './pages/CaseStudyResults';
 import { CaseSenerioShow } from './pages/CaseSenerioShow';
 import NotFound from './pages/NotFound';
 import Agreement from './pages/Agreement';
@@ -114,7 +114,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/exam/take" 
+                      path="/take-exam/:id" 
                       element={
                         <StudentRoute>
                           <MainLayout>
@@ -124,7 +124,7 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/exam-results/:resultId" 
+                      path="/exam-results/:id" 
                       element={
                         <StudentRoute>
                           <MainLayout>
@@ -181,6 +181,16 @@ function App() {
                         <StudentRoute>
                           <MainLayout>
                             <CaseStudyTakeExam />
+                          </MainLayout>
+                        </StudentRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/case-study-exams/:examId/subjects/:subjectId/results" 
+                      element={
+                        <StudentRoute>
+                          <MainLayout>
+                            <CaseStudyResults />
                           </MainLayout>
                         </StudentRoute>
                       } 

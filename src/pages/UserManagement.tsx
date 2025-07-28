@@ -1,14 +1,16 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, Trash2, Shield, ShieldOff, BookOpen } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Shield, ShieldOff, BookOpen, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAllUsers, updateUserStatus, deleteUser } from '@/services/authService';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { EditUserModal } from '@/components/admin/EditUserModal';
 import { UserQuestionBankModal } from '@/components/admin/UserQuestionBankModal';
+import { UserCaseStudyModal } from '@/components/admin/UserCaseStudyModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +26,6 @@ import {
 interface UserProfile {
   id: string;
   username: string;
-  email: string;
   full_name: string;
   country: string;
   gender: string;
@@ -41,6 +42,7 @@ const UserManagement = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [questionBankModalOpen, setQuestionBankModalOpen] = useState(false);
+  const [caseStudyModalOpen, setCaseStudyModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
 
@@ -72,14 +74,7 @@ const UserManagement = () => {
     try {
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       await updateUserStatus(userId, newStatus);
-
-      // 🔁 Update local state directly (faster than full refetch)
-      setUsers(prev =>
-        prev.map(user =>
-          user.id === userId ? { ...user, status: newStatus } : user
-        )
-      );
-
+      await fetchUsers();
       toast({
         title: 'Success',
         description: `User ${newStatus === 'active' ? 'unblocked' : 'blocked'} successfully`,
@@ -92,7 +87,6 @@ const UserManagement = () => {
       });
     }
   };
-
 
   const handleDeleteUser = async (userId: string) => {
     try {
@@ -114,6 +108,11 @@ const UserManagement = () => {
   const handleOpenQuestionBankModal = (user: UserProfile) => {
     setSelectedUser(user);
     setQuestionBankModalOpen(true);
+  };
+
+  const handleOpenCaseStudyModal = (user: UserProfile) => {
+    setSelectedUser(user);
+    setCaseStudyModalOpen(true);
   };
 
   const filteredUsers = users.filter((user) =>
@@ -142,12 +141,13 @@ const UserManagement = () => {
       </div>
     );
   }
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage users and their access to question banks</p>
+          <p className="text-muted-foreground">Manage users and their access to question banks and case studies</p>
         </div>
         <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add New User
@@ -176,7 +176,7 @@ const UserManagement = () => {
                     <CardTitle className="text-lg text-primary font-semibold">
                       {user.username}
                     </CardTitle>
-                    <CardDescription>{user.email || 'No email'}</CardDescription>
+                    <CardDescription>{user.full_name}</CardDescription>
                   </div>
                   <Badge
                     className="text-xs px-2 py-1"
@@ -197,6 +197,14 @@ const UserManagement = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => handleOpenCaseStudyModal(user)}
+                    title="Manage Case Study Access"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setSelectedUser(user);
                       setEditModalOpen(true);
@@ -208,12 +216,7 @@ const UserManagement = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      console.log('Clicked status button');
-                      console.log('User ID:', user.id);
-                      console.log('User Status:', user.status);
-                      handleStatusToggle(user.id, user.status);
-                    }}
+                    onClick={() => handleStatusToggle(user.id, user.status)}
                     title={user.status === 'active' ? 'Block User' : 'Unblock User'}
                   >
                     {user.status === 'active' ? (
@@ -222,8 +225,7 @@ const UserManagement = () => {
                       <Shield className="h-4 w-4" />
                     )}
                   </Button>
-
-                  {/*<AlertDialog>
+                  <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="outline" size="sm" title="Delete User">
                         <Trash2 className="h-4 w-4" />
@@ -234,7 +236,7 @@ const UserManagement = () => {
                         <AlertDialogTitle>Delete User</AlertDialogTitle>
                         <AlertDialogDescription>
                           Are you sure you want to delete {user.username}? This action cannot be
-                          undone and will remove all their question bank access.
+                          undone and will remove all their question bank and case study access.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -244,7 +246,7 @@ const UserManagement = () => {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>*/}
+                  </AlertDialog>
                 </div>
               </div>
             </CardHeader>
@@ -287,6 +289,15 @@ const UserManagement = () => {
         isOpen={questionBankModalOpen}
         onClose={() => {
           setQuestionBankModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onUpdated={fetchUsers}
+      />
+      <UserCaseStudyModal
+        isOpen={caseStudyModalOpen}
+        onClose={() => {
+          setCaseStudyModalOpen(false);
           setSelectedUser(null);
         }}
         user={selectedUser}

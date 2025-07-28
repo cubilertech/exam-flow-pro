@@ -1,12 +1,22 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Database } from "lucide-react";
 import ExamsTable from '@/components/exams/student/ExamsTable';
 import NewExamModal from '@/components/exams/student/NewExamModal';
+import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptions';
 
 const MyExams = () => {
   const [isNewExamModalOpen, setIsNewExamModalOpen] = useState(false);
+  const { subscriptions, setActiveQuestionBankById, activeQuestionBankId } = useQuestionBankSubscriptions();
+
+  const handleQuestionBankChange = (questionBankId: string) => {
+    setActiveQuestionBankById(questionBankId);
+  };
+
+  const activeQuestionBank = subscriptions.find(qb => qb.id === activeQuestionBankId);
 
   return (
     <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
@@ -20,6 +30,29 @@ const MyExams = () => {
           <Plus className="mr-2 h-4 w-4" />
           New Exam
         </Button>
+      </div>
+
+      {/* Question Bank Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Database className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">Question Bank:</span>
+        </div>
+        <Select
+          value={activeQuestionBankId || ''}
+          onValueChange={handleQuestionBankChange}
+        >
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue placeholder="Select a question bank" />
+          </SelectTrigger>
+          <SelectContent>
+            {subscriptions.map((questionBank) => (
+              <SelectItem key={questionBank.id} value={questionBank.id}>
+                {questionBank.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Tabs */}

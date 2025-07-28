@@ -40,20 +40,14 @@ export const SortableItem = ({
     transition,
   };
 
-  function normalizeHTML(input: string): string {
+  function normalizeHTML(input: string) {
     try {
       const maybeParsed = JSON.parse(input);
-      input = typeof maybeParsed === "string" ? maybeParsed : input;
+      return typeof maybeParsed === "string" ? maybeParsed : input;
     } catch {
-      // do nothing
+      return input;
     }
-
-    return input
-      .replace(/<\/?(div|p|br|h[1-6]|ul|li)[^>]*>/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
   }
-
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...customListeners}>
@@ -68,11 +62,22 @@ export const SortableItem = ({
           className="pb-3 p-4 bg-gray-100 flex-1 group rounded-r-lg"
           data-no-drag
         >
-          <div style={{ display: "flex" }}>
-            <div className="w-full bg-white rounded-xl shadow-md p-4 relative">
+          <div className="flex">
+            
+            <div className="flex flex-1 flex-col md:flex-row justify-between items-start gap-4">
+              
+                <div className="flex flex-row text-sm md:text-base pt-1 md:pt-0">
+                  <span className="font-bold mr-1">Q:{ selectedQuestion.order_index + 1}</span>
+                <h3
+                  className=""
+                  dangerouslySetInnerHTML={{
+                    __html: ` ${normalizeHTML(selectedQuestion.question_text)}`,
+                  }}
+                ></h3>
+                </div>
+             
 
-              {/* Edit/Delete Buttons - now top-right positioned */}
-              <div className="absolute top-2 right-2 flex gap-2 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
+              <div className="flex gap-2 flex-shrink-0 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto transition-all duration-200">
                 <Button
                   variant="outline"
                   size="sm"
@@ -90,48 +95,8 @@ export const SortableItem = ({
                   <Trash2 className="w-3 h-3" />
                 </Button>
               </div>
-
-              {/* Question Content */}
-              <div className="flex items-center gap-2 text-sm md:text-base w-full overflow-hidden">
-                <span className="font-bold shrink-0">
-                  Q: {selectedQuestion.order_index + 1}
-                </span>
-                {
-                  (() => {
-                    const html = normalizeHTML(selectedQuestion.question_text);
-                    const imgMatch = html.match(/^<img[^>]*src="([^"]+)"[^>]*>/i);
-                    const imgTag = imgMatch ? imgMatch[0] : '';
-                    const imgSrc = imgMatch ? imgMatch[1] : '';
-                    const textWithoutImg = html.replace(/^<img[^>]*>/i, '').replace(/<[^>]+>/g, '');
-                    const words = textWithoutImg.trim().split(/\s+/);
-                    const truncatedText = words.slice(0, 12).join(' ') + (words.length > 10 ? '...' : '');
-
-
-                    return (
-                      <div className="flex items-center gap-2 w-full overflow-hidden whitespace-nowrap text-ellipsis">
-                        {imgSrc && (
-                          <img
-                            src={imgSrc}
-                            alt=""
-                            className="w-[100%] h-6 object-fit shrink-0"
-
-                          />
-                        )}
-                        <span className="truncate">{truncatedText}</span>
-                      </div>
-                    );
-                  })()
-                }
-              </div>
-
-
-
-
-
-
             </div>
           </div>
-
         </CardHeader>
       </div>
       {/* </Card> */}

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -39,6 +38,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   removeAnswer,
   saveAnswer,
+  startSession,
+  endSession,
 } from "@/features/caseAnswers/caseAnswersSlice";
 
 import { Progress } from "@/components/ui/progress";
@@ -62,7 +63,7 @@ interface Question {
 }
 
 export const CaseStudyTakeExam = () => {
-  const { examId, subjectId, caseId, testId } = useParams<{ examId: string; subjectId: string; caseId: string; testId: string }>();
+  const { examId, subjectId, caseId , testId } = useParams<{examId: string; subjectId: string;caseId: string; testId : string}>();
   const { user } = useAppSelector((state) => state.auth);
   const [questions, setQuestions] = React.useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(1);
@@ -100,25 +101,37 @@ export const CaseStudyTakeExam = () => {
     }
   }, [caseId]);
 
+  // Start session when questions are loaded
+  useEffect(() => {
+    if (questions.length > 0 && examId && subjectId && caseId) {
+      dispatch(startSession({
+        totalQuestions: questions.length,
+        caseId,
+        subjectId,
+        examId,
+      }));
+    }
+  }, [questions, examId, subjectId, caseId, dispatch]);
+
   useEffect(() => {
     setShowAnswer(false);
   }, [currentQuestionIndex]);
 
   const fetchQuestions = async (caseId: string) => {
     try {
-
+      
       const { data, error } = await supabase
         .from("case_questions")
         .select("*")
         .eq("case_id", caseId)
         .order("order_index", { ascending: true });
-
+  
       if (data.length > 0) {
         setQuestions(data);
       }
       if (error) throw error;
     } catch (error) {
-      console.error("Error submitting answer:", error);
+      console.error("Error submitting answer:", error);  
     }
   };
 
@@ -182,19 +195,20 @@ export const CaseStudyTakeExam = () => {
 
         if (error) throw error;
         setResultData(data);
-
+        
         toast({
           title: "Success",
           description: "Answer submitted successfully",
         });
       }
       if (currentQuestionIndex < totalQuestions) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      }
-      if (currentQuestionIndex === totalQuestions) {
-        navigate(`/case-study-exams/${examId}/subjects/${subjectId}`);
-        // (/case-study-exams/:examId/subjects/:subjectId/cases/:caseId)
-      }
+         setCurrentQuestionIndex(currentQuestionIndex + 1);
+     }
+     if (currentQuestionIndex === totalQuestions) {
+        // End session and navigate to results
+        dispatch(endSession());
+        navigate(`/case-study-exams/${examId}/subjects/${subjectId}/results`);
+     }
     } catch (error) {
       console.error("Error submitting answer:", error);
       toast({
@@ -259,8 +273,6 @@ export const CaseStudyTakeExam = () => {
             <span className="text-xl sm:text-2xl font-bold">
               Question {currentQuestionIndex} of {totalQuestions}
             </span>
-
-
           </div>
           <div className="mb-4">
             <Progress
@@ -279,18 +291,17 @@ export const CaseStudyTakeExam = () => {
               </span>
             </div>
           </div>
-          <div className="bg-white shadow-md rounded-lg border border-gray-200 custom-scrollbar">
+          <div className="bg-white shadow-md rounded-lg border border-gray-200">
             <CardDescription className="p-4 rounded-md">
               <h3 className="font-semibold text-lg mb-2">
                 Question {currentQuestionIndex}{" "}
               </h3>
               <div
-                className="bg-gray-50 p-4 rounded-md mb-4"
+                className="bg-gray-50 p-4 rounded-md mb-4 h-36 overflow-y-auto"
                 dangerouslySetInnerHTML={{
                   __html: normalizeHTML(currentQuestion?.question_text),
                 }}
               />
-
 
               {/* Correct Answer */}
               <div>
@@ -332,36 +343,33 @@ export const CaseStudyTakeExam = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     {showAnswer ? "Processing " : "Proceed Answer"}
                   </Button>
-
                 </div>
               )}
 
               {/* Content */}
-
               {showAnswer && currentQuestion?.correct_answer && (
                 <div className="mt-0  p-4  rounded-md">
                   <h4 className=" font-medium text-sm mb-2">Correct Answer:</h4>
                   <div
-                    className="text-sm prose prose-sm max-w-none bg-secondary p-2 rounded-sm min-h-16 w-[600px]"
+                    className="text-sm prose prose-sm max-w-none bg-secondary p-2 rounded-sm min-h-16"
                     dangerouslySetInnerHTML={{
                       __html: normalizeHTML(currentQuestion.correct_answer),
                     }}
                   />
                   <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSubmitAnswer()}
-                      className="flex items-center mt-4"
-                    >
-                      {isSubmitted ? "Submitting" : "Submit Answer"}
-                    </Button>
-
+                 <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSubmitAnswer()}
+                    className="flex items-center mt-4"
+                  >
+                    {isSubmitted ? "Submitting" : "Submit Answer"}
+                  </Button>
                   </div>
                 </div>
               )}
             </CardDescription>
-          </div>
+          </div>         
         </div>
       )}
     </div>
