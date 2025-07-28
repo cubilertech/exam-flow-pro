@@ -1,14 +1,16 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, Trash2, Shield, ShieldOff, BookOpen } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Shield, ShieldOff, BookOpen, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAllUsers, updateUserStatus, deleteUser } from '@/services/authService';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { EditUserModal } from '@/components/admin/EditUserModal';
 import { UserQuestionBankModal } from '@/components/admin/UserQuestionBankModal';
+import { UserCaseStudyModal } from '@/components/admin/UserCaseStudyModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +42,7 @@ const UserManagement = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [questionBankModalOpen, setQuestionBankModalOpen] = useState(false);
+  const [caseStudyModalOpen, setCaseStudyModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const { toast } = useToast();
 
@@ -107,6 +110,11 @@ const UserManagement = () => {
     setQuestionBankModalOpen(true);
   };
 
+  const handleOpenCaseStudyModal = (user: UserProfile) => {
+    setSelectedUser(user);
+    setCaseStudyModalOpen(true);
+  };
+
   const filteredUsers = users.filter((user) =>
     user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,7 +147,7 @@ const UserManagement = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage users and their access to question banks</p>
+          <p className="text-muted-foreground">Manage users and their access to question banks and case studies</p>
         </div>
         <Button onClick={() => setCreateModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add New User
@@ -189,6 +197,14 @@ const UserManagement = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => handleOpenCaseStudyModal(user)}
+                    title="Manage Case Study Access"
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setSelectedUser(user);
                       setEditModalOpen(true);
@@ -220,7 +236,7 @@ const UserManagement = () => {
                         <AlertDialogTitle>Delete User</AlertDialogTitle>
                         <AlertDialogDescription>
                           Are you sure you want to delete {user.username}? This action cannot be
-                          undone and will remove all their question bank access.
+                          undone and will remove all their question bank and case study access.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -273,6 +289,15 @@ const UserManagement = () => {
         isOpen={questionBankModalOpen}
         onClose={() => {
           setQuestionBankModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onUpdated={fetchUsers}
+      />
+      <UserCaseStudyModal
+        isOpen={caseStudyModalOpen}
+        onClose={() => {
+          setCaseStudyModalOpen(false);
           setSelectedUser(null);
         }}
         user={selectedUser}

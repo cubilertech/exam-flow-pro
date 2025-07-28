@@ -11,7 +11,6 @@ import { Toaster as ToasterComponent } from './components/ui/toaster';
 import { ThemeProvider } from 'next-themes';
 import { SidebarProvider } from './components/ui/sidebar';
 import { MainLayout } from './layouts/MainLayout';
-import { CaseStudyResults } from './pages/CaseStudyResults';
 
 // Pages
 import Index from './pages/Index';
@@ -30,6 +29,7 @@ import CaseStudyExamDetail from './pages/CaseStudyExamDetail';
 import { CaseStudySubjectDetail } from './pages/CaseStudySubjectDetail';
 import { CaseStudyCaseDetail } from './pages/CaseStudyCaseDetail';
 import { CaseStudyTakeExam } from './pages/CaseStudyTakeExam';
+import { CaseStudyResults } from './pages/CaseStudyResults';
 import { CaseSenerioShow } from './pages/CaseSenerioShow';
 import NotFound from './pages/NotFound';
 import Agreement from './pages/Agreement';
