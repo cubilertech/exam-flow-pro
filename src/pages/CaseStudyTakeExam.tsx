@@ -285,7 +285,7 @@ export const CaseStudyTakeExam = () => {
                 Question {currentQuestionIndex}{" "}
               </h3>
               <div
-                className="rich-text-content"
+                className="bg-gray-50 p-4 rounded-md mb-4"
                 dangerouslySetInnerHTML={{
                   __html: normalizeHTML(currentQuestion?.question_text),
                 }}
