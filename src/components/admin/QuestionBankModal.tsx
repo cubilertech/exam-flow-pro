@@ -146,7 +146,7 @@ export function QuestionBankModal({ open, onOpenChange, onSuccess }: QuestionBan
               control={form.control}
               name="description"
               render={({ field }) => (
-                <FormItem className="custom-scrollbar">
+                <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea 

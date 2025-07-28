@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch } from '@/lib/hooks';
 import { loginSuccess, logout } from '@/features/auth/authSlice';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -39,10 +41,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               
               // Check if user is blocked or suspended
               const userStatus = (profile as any)?.status || 'active';
-              if (userStatus === 'blocked' || userStatus === 'suspended') {
-                console.log('User is blocked or suspended, signing out');
+              if (userStatus === 'blocked') {
+                console.log('User is blocked, signing out');
                 await supabase.auth.signOut();
                 dispatch(logout());
+                toast({
+                  title: "Account Blocked",
+                  description: "Your account has been blocked by the administrator. Please contact admin support for assistance.",
+                  variant: "destructive",
+                });
+                navigate('/login');
+                return;
+              }
+              
+              if (userStatus === 'suspended') {
+                console.log('User is suspended, signing out');
+                await supabase.auth.signOut();
+                dispatch(logout());
+                toast({
+                  title: "Account Suspended",
+                  description: "Your account has been suspended by the administrator. Please contact admin support for assistance.",
+                  variant: "destructive",
+                });
                 navigate('/login');
                 return;
               }
@@ -107,10 +127,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           // Check if user is blocked or suspended
           const userStatus = (profile as any)?.status || 'active';
-          if (userStatus === 'blocked' || userStatus === 'suspended') {
-            console.log('User is blocked or suspended, signing out');
+          if (userStatus === 'blocked') {
+            console.log('User is blocked during init, signing out');
             await supabase.auth.signOut();
             dispatch(logout());
+            toast({
+              title: "Account Blocked",
+              description: "Your account has been blocked by the administrator. Please contact admin support for assistance.",
+              variant: "destructive",
+            });
+            navigate('/login');
+            return;
+          }
+          
+          if (userStatus === 'suspended') {
+            console.log('User is suspended during init, signing out');
+            await supabase.auth.signOut();
+            dispatch(logout());
+            toast({
+              title: "Account Suspended",
+              description: "Your account has been suspended by the administrator. Please contact admin support for assistance.",
+              variant: "destructive",
+            });
             navigate('/login');
             return;
           }
@@ -149,7 +187,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         authListener.subscription.unsubscribe();
       }
     };
-  }, [dispatch, navigate, location]);
+  }, [dispatch, navigate, location, toast]);
 
   // Return a loading indicator if auth is not initialized yet
   if (!isInitialized) {
