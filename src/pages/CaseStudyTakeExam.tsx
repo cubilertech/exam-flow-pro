@@ -207,7 +207,7 @@ export const CaseStudyTakeExam = () => {
      if (currentQuestionIndex === totalQuestions) {
         // End session and navigate to results
         dispatch(endSession());
-        navigate(`/case-study-exams/${examId}/subjects/${subjectId}/results`);
+        navigate(`/case-study-exams`);
      }
     } catch (error) {
       console.error("Error submitting answer:", error);

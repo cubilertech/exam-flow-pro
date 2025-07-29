@@ -552,10 +552,11 @@ const TakeExam = () => {
         new Set(currentTestQuestions.map((q) => q.categoryId)),
       );
 
-      const { error: examUpdateError } = await supabase
+      const { data: examUpdateData, error: examUpdateError } = await supabase
         .from("user_exams")
         .update({ completed: true })
         .eq("id", currentExamId);
+
 
       if (examUpdateError) throw examUpdateError;
 

@@ -117,7 +117,7 @@ export const QuestionCard = ({
               question.difficulty.slice(1)}
           </Badge>
           <div className="text-sm text-muted-foreground">
-            Question #{question.serialNumber}
+            Question # {question.serialNumber}
           </div>
         </div>
       </CardHeader>

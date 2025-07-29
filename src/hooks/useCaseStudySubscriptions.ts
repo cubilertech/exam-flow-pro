@@ -23,7 +23,7 @@ export const useCaseStudySubscriptions = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('user_subscriptions')
-        .select('exams_case(*)')
+        .select('exams_case!exams_case_id(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .not('exams_case_id', 'is', null);
@@ -36,6 +36,7 @@ export const useCaseStudySubscriptions = () => {
         description: item.exams_case.description,
       })) || [];
 
+      // console.log('activeCaseStudyExams: ', activeCaseStudyExams);
       const examIds = activeCaseStudyExams.map(exam => exam.id);
       
       setSubscriptions(activeCaseStudyExams);

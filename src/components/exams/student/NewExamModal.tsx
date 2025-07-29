@@ -224,6 +224,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     try {
       setIsSaving(true);
 
+      console.log("Starting exam with values:", values);
       const questionBankId = selectedQuestionBank || subscriptions[0].id;
 
       const timeLimit = calculateTimeLimit(values);
@@ -314,6 +315,8 @@ const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
   };
 });
 
+console.log("Fetched questions:", questions);
+
       dispatch(startTest({
         questions,
         examId: examData.id,
@@ -332,7 +335,7 @@ const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
         examType: values.examType // Add the missing examType property
       }));
       onOpenChange(false);
-      navigate('/exam/take');
+      window.location.href = '/my-exams';
 
     } catch (error) {
       console.error("Error starting exam:", error);
