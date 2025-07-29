@@ -260,7 +260,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       const formattedQuestions = (questions as unknown as SupabaseQuestion[]).map((q) => ({
         id: q.id,
         text: q.text,
-        serialNumber: Number(q.serial_number),
+        serialNumber: q.serial_number,
         explanation: q.explanation,
         imageUrl: q.image_url,
         categoryId: q.category_id,

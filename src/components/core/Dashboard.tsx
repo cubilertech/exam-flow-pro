@@ -155,7 +155,7 @@ export const Dashboard = () => {
                           {question.text}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Question #{question.serialNumber}
+                          Question # {question.serialNumber}
                         </p>
                       </div>
                       <Button size="sm" variant="ghost" asChild>
