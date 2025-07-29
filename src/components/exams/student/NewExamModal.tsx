@@ -420,13 +420,13 @@ const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
                     <SelectTrigger>
                       <SelectValue placeholder="Select a question bank" />
                     </SelectTrigger>
-                    <SelectContent>
+                    {/* <SelectContent>
                       {subscriptions.map((bank) => (
                         <SelectItem key={bank.id} value={bank.id}>
                           {bank.name}
                         </SelectItem>
                       ))}
-                    </SelectContent>
+                    </SelectContent> */}
                   </Select>
                 </FormItem>
               )}
