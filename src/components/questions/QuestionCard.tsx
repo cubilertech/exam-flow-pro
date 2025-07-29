@@ -47,6 +47,7 @@ export const QuestionCard = ({
   const [showExplanation, setShowExplanation] = useState(false);
   const [answerChecked, setAnswerChecked] = useState(false);
 
+  // console.log('QuestionCard props:', question)
   const isMultipleChoice =
     question.options.filter((opt) => opt.isCorrect).length > 1;
   const shouldShowAnswers =
@@ -67,6 +68,7 @@ export const QuestionCard = ({
 
     onAnswerSelect?.(question.id, newSelectedOptions);
   };
+  // console.log('QuestionCard question:', question);
 
   useEffect(() => {
     if (question) {

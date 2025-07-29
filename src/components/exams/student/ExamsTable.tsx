@@ -280,8 +280,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       }));
 
       toast.dismiss();
-      
-      navigate('/exam/take');
+      navigate('/take-exam/' + exam.id);
     } catch (error) {
       const err = error as Error;
       console.error('Error continuing exam:', err);
@@ -363,7 +362,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       };
     }
   };
-
+console.log('ExamsTable exams:', exams);
   return (
     <Table>
       <TableCaption>A list of your exams</TableCaption>

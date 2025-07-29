@@ -11,7 +11,7 @@ import { useQuestionBankSubscriptions } from '@/hooks/useQuestionBankSubscriptio
 const MyExams = () => {
   const [isNewExamModalOpen, setIsNewExamModalOpen] = useState(false);
   const { subscriptions, setActiveQuestionBankById, activeQuestionBankId } = useQuestionBankSubscriptions();
-  console.log('subscriptions:', subscriptions);
+  // console.log('subscriptions:', subscriptions);
 
   const handleQuestionBankChange = (questionBankId: string) => {
     setActiveQuestionBankById(questionBankId);
@@ -50,7 +50,7 @@ const MyExams = () => {
             
 
               {subscriptions.map((questionBank) => (
-                <SelectItem key={questionBank.id} value={questionBank.name}>
+                <SelectItem key={questionBank.id} value={questionBank.id}>
                   {questionBank.name}
                 </SelectItem>
               ))}

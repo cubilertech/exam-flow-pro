@@ -292,6 +292,7 @@ const TakeExam = () => {
   }
 
   const currentQuestion = currentTestQuestions[currentQuestionIndex];
+  console.log("Current QuestionS:", currentTestQuestions);  
   const totalQuestions = currentTestQuestions.length;
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
   const isFirstQuestion = currentQuestionIndex === 0;
@@ -517,6 +518,8 @@ const TakeExam = () => {
       return;
     }
 
+    console.log("Confirm Finish is Click")
+    console.log("currentExamId", currentExamId)
     try {
       setIsSaving(true);
 
@@ -551,13 +554,15 @@ const TakeExam = () => {
       const categoryIds = Array.from(
         new Set(currentTestQuestions.map((q) => q.categoryId)),
       );
-
+      
       const { error: examUpdateError } = await supabase
         .from("user_exams")
-        .update({ completed: true })
+        .update({ time_limit: 12 })
         .eq("id", currentExamId);
 
       if (examUpdateError) throw examUpdateError;
+
+      console.log("Exam Update Error", examUpdateError)
 
       const { data: resultData, error: resultError } = await supabase
         .from("exam_results")

@@ -25,15 +25,15 @@ export const useQuestionBankSubscriptions = () => {
       if (error) throw error;
 
       const activeQuestionBanks = (data?.map(item => {
-  if (!item?.question_banks) return null;
+      if (!item?.question_banks) return null;
 
-  return {
-    id: item.question_banks.id,
-    name: item.question_banks.name,
-    description: item.question_banks.description,
-    question_bank_id: item.question_banks.id
-  };
-}) || []).filter(Boolean);
+      return {
+        id: item.question_banks.id,
+        name: item.question_banks.name,
+        description: item.question_banks.description,
+        question_bank_id: item.question_banks.id
+      };
+    }) || []).filter(Boolean);
       
       setSubscriptions(activeQuestionBanks);
 
