@@ -104,10 +104,21 @@ const CaseStudyExamDetail = () => {
   useEffect(() => {
     console.log("Fetching exam details for ID:", examId);
     if (examId) {
-      fetchSubjects();
-      fetchExam();
+      fetchExamAndSubjects();
     }
   }, [examId]);
+
+  const fetchExamAndSubjects = async () => {
+    try {
+      setLoading(true);
+      // Fetch both exam and subjects in parallel
+      await Promise.all([fetchExam(), fetchSubjects()]);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (examInfo) {
@@ -120,7 +131,6 @@ const CaseStudyExamDetail = () => {
 
   const fetchExam = async () => {
     try {
-      setLoading(true);
       const { data: examData, error } = await supabase
         .from("exams_case")
         .select("*")
@@ -138,14 +148,11 @@ const CaseStudyExamDetail = () => {
         variant: "destructive",
       });
       setExamInfo(null);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchSubjects = async () => {
     try {
-      setLoading(true);
       const processedSubjects: Subject[] = [];
 
       const { data: subjectsData, error } = await supabase
@@ -194,8 +201,6 @@ const CaseStudyExamDetail = () => {
         description: "Failed to load Subject data",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -215,7 +220,7 @@ const CaseStudyExamDetail = () => {
 
       if (error) throw error;
       toast({ title: "Updated", description: "Exam updated successfully" });
-      fetchExam();
+      fetchExam(); // Only need to refetch exam data for the edit
       setEditDialogOpen(false);
     } catch (error) {
       console.error("Error updating exam:", error);
@@ -399,7 +404,7 @@ const CaseStudyExamDetail = () => {
         )}
       </div>
 
-      {subjectCount === 0 && subjects && (
+      {!loading && subjectCount === 0 && subjects && (
         <div className="text-center py-12">
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-muted-foreground mb-2">

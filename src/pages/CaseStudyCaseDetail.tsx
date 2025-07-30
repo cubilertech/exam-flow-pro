@@ -132,8 +132,7 @@ export const CaseStudyCaseDetail = () => {
 
   useEffect(() => {
     if (caseId) {
-      fetchCaseInfo();
-      fetchQuestions(caseId);
+      fetchCasesAndQuestions(caseId);
     }
   }, [caseId]);
 
@@ -146,6 +145,18 @@ export const CaseStudyCaseDetail = () => {
     }
   }, [caseInfo, form]);
 
+  const fetchCasesAndQuestions = async (caseId: string) => {
+    try {
+      setLoading(true);
+      // Fetch both case and questions in parallel
+      await Promise.all([fetchCaseInfo(), fetchQuestions(caseId)]);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const ordered = questions
       .filter((q) =>
@@ -156,7 +167,7 @@ export const CaseStudyCaseDetail = () => {
   }, [questions, searchTerm]);
 
   const fetchCaseInfo = async () => {
-    setLoading(true);
+    
     if (!caseId) return;
     try {
       const { data, error } = await supabase
@@ -188,13 +199,11 @@ export const CaseStudyCaseDetail = () => {
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   const fetchQuestions = async (caseId: string) => {
-    setLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from("case_questions")
@@ -229,9 +238,7 @@ export const CaseStudyCaseDetail = () => {
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   const filteredQuestions = questionOrder
@@ -340,6 +347,7 @@ export const CaseStudyCaseDetail = () => {
     setCurrentQuestion(question);
     console.log("Editing", question);
   };
+
   const handleFormSubmitted = () => {
     setSheetOpen(false);
     setCurrentQuestion(null);
@@ -578,7 +586,7 @@ export const CaseStudyCaseDetail = () => {
             <Plus className="h-4 w-4 mr-2" /> Add Question
           </Button>
         </div>
-        {questionCount === 0 && availbleQuestions && (
+        {(questionCount === 0 && Array.isArray(availbleQuestions)) || (filteredQuestions.length === 0 && questionCount > 0) ? (
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-muted-foreground mb-2">
@@ -590,7 +598,7 @@ export const CaseStudyCaseDetail = () => {
                 : "Check back later for new subjects"}
             </p>
           </div>
-        )}
+        ) : null}
 
         <DndContext
           sensors={sensors}

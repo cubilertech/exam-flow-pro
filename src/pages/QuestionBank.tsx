@@ -198,7 +198,7 @@ const QuestionBank = () => {
                   : "No question banks found"}
               </p>
               <Button onClick={() => setBankModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Create Your First Question
+                <Plus className="h-4 w-4 mr-2" /> Create Your Question
                 Bank
               </Button>
             </div>

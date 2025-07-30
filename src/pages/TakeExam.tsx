@@ -167,6 +167,9 @@ const TakeExam = () => {
   }, [currentTestStartTime]);
 
   useEffect(() => {
+    // Don't navigate away if we're currently submitting the exam
+    if (isSaving) return;
+    
     if (
       !currentTestQuestions ||
       currentTestQuestions.length === 0 ||
@@ -174,7 +177,7 @@ const TakeExam = () => {
     ) {
       navigate("/my-exams");
     }
-  }, [currentTestQuestions, currentStudyMode, navigate]);
+  }, [currentTestQuestions, currentStudyMode, navigate, isSaving]);
 
   useEffect(() => {
     if (
@@ -286,7 +289,7 @@ const TakeExam = () => {
   if (!currentTestQuestions || currentTestQuestions.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
-        Loading...
+        take Loading...
       </div>
     );
   }

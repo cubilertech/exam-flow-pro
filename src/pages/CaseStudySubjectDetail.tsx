@@ -124,8 +124,7 @@ export const CaseStudySubjectDetail = () => {
 
   useEffect(() => {
     if (subjectId) {
-      fetchSubject();
-      fetchCases();
+      fetchSubjectAndCases();
     }
   }, [subjectId]);
 
@@ -138,9 +137,21 @@ export const CaseStudySubjectDetail = () => {
     }
   }, [subjectInfo, form]);
 
-  const fetchSubject = async () => {
+    const fetchSubjectAndCases = async () => {
     try {
       setLoading(true);
+      // Fetch both subject and case in parallel
+      await Promise.all([fetchSubject(), fetchCases()]);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSubject = async () => {
+    try {
+      
       const { data, error } = await supabase
         .from("subjects")
         .select("*")
@@ -158,14 +169,12 @@ export const CaseStudySubjectDetail = () => {
         variant: "destructive",
       });
       navigate(-1);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchCases = async () => {
     try {
-      setLoading(true);
+     
       let caseWithQuestions = [];
       const { data, error } = await supabase
         .from("cases")
@@ -190,8 +199,6 @@ export const CaseStudySubjectDetail = () => {
         description: "Failed to load cases",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -444,19 +451,19 @@ export const CaseStudySubjectDetail = () => {
           )}
         </div>
 
-        {caseCount === 0 && cases && (
-          <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              No Case available
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {isAdmin
-                ? "Add your first case to get started"
-                : "Check back later for new Cases"}
-            </p>
-          </div>
-        )}
+      {(caseCount === 0 && cases) || (filteredCases.length === 0 && cases) ? (
+        <div className="text-center py-12">
+          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+            No Case available
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isAdmin
+              ? "Add your first case to get started"
+              : "Check back later for new Cases"}
+          </p>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map((c) => (
             <Card
@@ -494,6 +501,7 @@ export const CaseStudySubjectDetail = () => {
             </Card>
           ))}
         </div>
+      )}
       </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

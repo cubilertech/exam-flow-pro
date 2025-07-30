@@ -81,7 +81,7 @@ interface QuestionOption {
 
 interface Question {
   id: string;
-  serialNumber: number;
+  serialNumber: string;
   text: string;
   options: QuestionOption[];
   explanation: string;
@@ -97,7 +97,7 @@ interface Question {
 const ExamResults = () => {
   const { resultId } = useParams<{ resultId: string }>();
   const navigate = useNavigate();
-  const { testResults } = useAppSelector((state) => state.study);
+  const { testResults } = useAppSelector((state) => state.study); 
   
   const [activeTab, setActiveTab] = useState<'summary' | 'questions'>('summary');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -240,7 +240,7 @@ const ExamResults = () => {
         
         return {
           id: q.id,
-          serialNumber: parseInt(q.serial_number.replace(/\D/g, '')),
+          serialNumber: String(q.serial_number.replace(/\D/g, '')),
           text: q.text,
           options: q.question_options.map((opt: { id: string; text: string; is_correct: boolean }) => ({
             id: opt.id,
@@ -264,7 +264,14 @@ const ExamResults = () => {
   };
   
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading results...</div>;
+    return ( <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading results...</p>
+          </div>
+        </div>
+      </div>)
   }
   
   if (!examResult) {

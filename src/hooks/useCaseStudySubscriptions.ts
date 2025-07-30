@@ -22,7 +22,7 @@ export const useCaseStudySubscriptions = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('user_subscriptions')
+       .from('user_subscriptions')
         .select('exams_case!exams_case_id(*)')
         .eq('user_id', user.id)
         .eq('is_active', true)
