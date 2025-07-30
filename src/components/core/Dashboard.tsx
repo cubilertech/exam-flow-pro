@@ -63,8 +63,8 @@ export const Dashboard = () => {
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-examInfo/10 flex items-center justify-center">
             <BarChart className="h-8 w-8 text-examInfo" />
           </div>
-          <CardHeader>
-            <CardTitle>Analytics</CardTitle>
+          <CardHeader >
+            <CardTitle className="pb-1">Analytics</CardTitle>
             <CardDescription>Track your performance</CardDescription>
           </CardHeader>
           <CardContent>
@@ -134,7 +134,7 @@ export const Dashboard = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Flagged Questions</CardTitle>
+              <CardTitle className="pb-1">Flagged Questions</CardTitle>
               <Flag className="h-5 w-5 text-amber-500" />
             </div>
           </CardHeader>

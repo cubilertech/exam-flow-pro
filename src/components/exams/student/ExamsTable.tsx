@@ -225,7 +225,6 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
         toast.error('No questions found for this exam');
         return;
       }
-
       interface SupabaseQuestionOption {
         id: string;
         text: string;
@@ -234,7 +233,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       interface SupabaseQuestion {
         id: string;
         text: string;
-        serial_number: number;
+        serial_number: string;
         explanation: string | null;
         image_url: string | null;
         category_id: string;
@@ -272,6 +271,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
           isCorrect: opt.is_correct // Ensure property name matches Option interface
         }))
       }));
+      
       dispatch(loadExamQuestions(formattedQuestions));
       
       dispatch(startExam({
@@ -306,6 +306,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     }
   };
 
+
+  console.log("activeQuestionBank:", activeQuestionBankId);
+
   if (!activeQuestionBankId) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -326,7 +329,9 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
     );
   }
 
-  if (exams.length === 0) {
+
+
+  if (!loading && exams.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10">
         <div className="text-center">
@@ -362,7 +367,7 @@ const ExamsTable = ({ filterStatus = 'all' }: ExamsTableProps) => {
       };
     }
   };
-console.log('ExamsTable exams:', exams);
+// console.log('ExamsTable exams:', exams);
   return (
     <Table>
       <TableCaption>A list of your exams</TableCaption>

@@ -191,6 +191,7 @@ const UserManagement = () => {
                     size="sm"
                     onClick={() => handleOpenQuestionBankModal(user)}
                     title="Manage Question Bank Access"
+                    
                   >
                     <BookOpen className="h-4 w-4" />
                   </Button>

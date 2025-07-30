@@ -8,7 +8,7 @@ export interface Option {
 
 export interface Question {
   id: string;
-  serialNumber: number;
+  serialNumber: string;
   text: string;
   options: Option[];
   explanation: string;

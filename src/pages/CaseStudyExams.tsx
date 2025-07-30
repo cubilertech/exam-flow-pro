@@ -120,7 +120,7 @@ const CaseStudyExams = () => {
     navigate(`/case-study-exams/${exam.id}`);
   };
 
-  if (loading || (!isAdmin && subscriptionsLoading)) {
+  if (loading) {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center min-h-[400px]">

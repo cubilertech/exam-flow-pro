@@ -297,7 +297,7 @@ const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
 
   return {
     id: q.id,
-    serialNumber: parseInt(q.serial_number.replace(/\D/g, '')) || 0,
+    serialNumber: (q.serial_number.replace(/\D/g, '') || 0).toString(),
     text: q.text,
     options: q.question_options.map((opt: SupabaseQuestionOption) => ({
       id: opt.id,
@@ -335,7 +335,7 @@ console.log("Fetched questions:", questions);
         examType: values.examType // Add the missing examType property
       }));
       onOpenChange(false);
-      window.location.href = '/my-exams';
+      navigate(`/take-exam/${examData.id}`);
 
     } catch (error) {
       console.error("Error starting exam:", error);
