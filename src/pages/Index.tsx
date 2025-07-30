@@ -6,7 +6,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -18,7 +18,7 @@ import {
   CheckCircle,
   Clock,
   Target,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import { useState, useLayoutEffect, useRef } from "react";
 import HeroSection from "@/components/heroSection/HeroSection";
@@ -27,6 +27,8 @@ import Footer from "@/components/footer/Footer";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import AnnouncementCard from "@/components/announcementCard/AnnouncementCard";
+import { StudentRoute } from "@/components/auth/StudentRoute";
+import { MainLayout } from "@/layouts/MainLayout";
 
 const Index = () => {
   const cardsRef = useRef<HTMLDivElement[]>([]);
@@ -40,8 +42,8 @@ const Index = () => {
       scrollTrigger: {
         trigger: cardsRef.current[0],
         start: "top bottom-=100",
-        toggleActions: "play none none reverse"
-      }
+        toggleActions: "play none none reverse",
+      },
     });
 
     cardsRef.current.slice(0, 4).forEach((card, index) => {
@@ -50,7 +52,7 @@ const Index = () => {
           card,
           { opacity: 0, y: 50 },
           { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
-          index * 0.2
+          index * 0.2,
         );
       }
     });
@@ -67,9 +69,9 @@ const Index = () => {
           scrollTrigger: {
             trigger: cardsRef.current[4],
             start: "top bottom-=100",
-            toggleActions: "play none none reverse"
-          }
-        }
+            toggleActions: "play none none reverse",
+          },
+        },
       );
     }
 
@@ -85,9 +87,9 @@ const Index = () => {
           scrollTrigger: {
             trigger: cardsRef.current[5],
             start: "top bottom-=100",
-            toggleActions: "play none none reverse"
-          }
-        }
+            toggleActions: "play none none reverse",
+          },
+        },
       );
     }
   }, []);
@@ -95,7 +97,11 @@ const Index = () => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   if (isAuthenticated) {
-    return <Dashboard />;
+    return (
+      <MainLayout>
+        <Dashboard />
+      </MainLayout>
+    );
   }
 
   return (
@@ -115,24 +121,23 @@ const Index = () => {
               {
                 icon: <Target className="h-6 w-6 text-primary" />,
                 title: "1,000+ Questions",
-                description: "At or above exam-level difficulty"
+                description: "At or above exam-level difficulty",
               },
               {
                 icon: <BookOpen className="h-6 w-6 text-examSecondary" />,
                 title: "Expert Explanations",
-                description: "In-depth, evidence-based answer explanations"
+                description: "In-depth, evidence-based answer explanations",
               },
               {
                 icon: <TestTube className="h-6 w-6 text-examInfo" />,
                 title: "Board-Simulated Interface",
-                description: "Displayed in exam-like environment"
+                description: "Displayed in exam-like environment",
               },
               {
                 icon: <Users className="h-6 w-6 text-examPrimary" />,
                 title: "Expert Prepared",
-                description:
-                  "By Preventive Medicine and Public Health Experts"
-              }
+                description: "By Preventive Medicine and Public Health Experts",
+              },
             ].map((feature, index) => (
               <Card
                 key={index}
@@ -204,14 +209,14 @@ const Index = () => {
                 icon: <BookOpen className="h-8 w-8 text-primary" />,
                 title: "Comprehensive Explanations",
                 description:
-                  "Visual, evidence-based rationales explain correct and incorrect answers, reinforcing key concepts like disease surveillance and health policy."
+                  "Visual, evidence-based rationales explain correct and incorrect answers, reinforcing key concepts like disease surveillance and health policy.",
               },
               {
                 icon: <TrendingUp className="h-8 w-8 text-examSecondary" />,
                 title: "Progress Tracking",
                 description:
-                  "Monitor performance with reports to identify and remediate weaknesses."
-              }
+                  "Monitor performance with reports to identify and remediate weaknesses.",
+              },
             ].map((tool, idx) => (
               <Card
                 key={idx}
@@ -257,18 +262,18 @@ const Index = () => {
               {
                 title: "Part 1 QBank",
                 description:
-                  "Covers epidemiology, biostatistics, and health systems with detailed explanations."
+                  "Covers epidemiology, biostatistics, and health systems with detailed explanations.",
               },
               {
                 title: "Promotion 1–3",
                 description:
-                  "Year-specific practice sets reflecting updated SBPM promotion exams."
+                  "Year-specific practice sets reflecting updated SBPM promotion exams.",
               },
               {
                 title: "Final Part 2",
                 description:
-                  "Advanced-level cases and board-style questions for senior residents."
-              }
+                  "Advanced-level cases and board-style questions for senior residents.",
+              },
             ].map((item, i) => (
               <Card key={i} className="p-6 bg-white">
                 <CardHeader>
@@ -294,7 +299,7 @@ const Index = () => {
               "High-yield questions",
               "Comprehensive explanations",
               "Reliable references",
-              "Progress tracking features"
+              "Progress tracking features",
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-4">
                 <CheckCircle className="h-6 w-6 text-green-500" />
