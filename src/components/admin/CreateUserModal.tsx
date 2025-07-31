@@ -167,6 +167,13 @@ export const CreateUserModal = ({
   }
 };
 
+  const handleClose = () => {
+    form.reset();
+    setSelectedCountry('');
+    setCities([]);
+    onClose();
+  };
+
 
   const handleCountryChange = (value: string) => {
     setSelectedCountry(value);
@@ -176,7 +183,7 @@ export const CreateUserModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader className="items-center text-center">
           <DialogTitle className="text-lg font-semibold">Create New User</DialogTitle>
@@ -307,7 +314,7 @@ export const CreateUserModal = ({
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>

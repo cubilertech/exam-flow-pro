@@ -67,7 +67,7 @@ export const LoginForm = () => {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle className="pb-1">Sign In</CardTitle>
         <CardDescription>
           Enter your credentials to access your account
         </CardDescription>
@@ -80,8 +80,8 @@ export const LoginForm = () => {
             </Alert>
           )}
           
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+          <div className="space-y-2 text-left">
+            <Label htmlFor="email" >Email</Label>
             <Input
               id="email"
               type="email"
@@ -92,7 +92,7 @@ export const LoginForm = () => {
             />
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2 text-left">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"

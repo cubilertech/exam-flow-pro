@@ -35,7 +35,7 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/questions">Browse Question Banks</Link>
+              <Link to="/my-exams">Browse Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -126,7 +126,7 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/questions">View All Question Banks</Link>
+              <Link to="/my-exams">View All Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
