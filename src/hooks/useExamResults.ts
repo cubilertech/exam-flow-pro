@@ -36,7 +36,7 @@ export const useExamResults = () => {
         `)
         .eq('user_id', user.id)
         .order('completed_at', { ascending: false });
-
+      
       if (error) throw error;
       
       const formattedResults = (data || []).map(result => ({
