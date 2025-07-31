@@ -3,10 +3,11 @@ import { useAppSelector } from "@/lib/hooks";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TestTube, BarChart, Flag, BookMarked, GraduationCap } from "lucide-react";
+import { BookOpen, TestTube, BarChart, Flag, BookMarked, GraduationCap, Clock, Target } from "lucide-react";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useQuestionBankSubscriptions } from "@/hooks/useQuestionBankSubscriptions";
 import { useCaseStudySubscriptions } from "@/hooks/useCaseStudySubscriptions";
+import { format } from "date-fns";
 
 export const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -107,39 +108,47 @@ export const Dashboard = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Question Banks</CardTitle>
-              <BookMarked className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Recent Exams</CardTitle>
+              <Clock className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            {questionBanks && questionBanks.length > 0 ? (
+            {stats.recentExamResults && stats.recentExamResults.length > 0 ? (
               <ul className="space-y-2">
-                {questionBanks.slice(0, 5).map((qb) => (
+                {stats.recentExamResults.slice(0, 5).map((result) => (
                   <li
-                    key={qb.id}
+                    key={result.id}
                     className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
                   >
                     <div>
-                      <p className="font-medium">{qb.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {qb.description || 'No description'}
-                      </p>
+                      <p className="font-medium">{result.exam_name || 'Unnamed Exam'}</p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{result.question_bank_name || 'Question Bank'}</span>
+                        <div className="flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          <span>{Math.round(result.score * 100)}%</span>
+                        </div>
+                        <span>{format(new Date(result.completed_at), 'MMM dd')}</span>
+                      </div>
                     </div>
                     <Button size="sm" variant="ghost" asChild>
-                      <Link to={`/questions/${qb.id}`}>View</Link>
+                      <Link to={`/exam-results/${result.id}`}>View</Link>
                     </Button>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="text-center p-6">
-                <p className="text-muted-foreground">No question banks available yet</p>
+                <p className="text-muted-foreground">No exams taken yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Start your first exam to see results here
+                </p>
               </div>
             )}
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/questions">View All Question Banks</Link>
+              <Link to="/my-exams">View All Exams</Link>
             </Button>
           </CardFooter>
         </Card>

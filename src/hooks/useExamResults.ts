@@ -11,6 +11,8 @@ interface ExamResult {
   time_taken: number;
   completed_at: string;
   user_exam_id: string;
+  exam_name?: string;
+  question_bank_name?: string;
 }
 
 export const useExamResults = () => {
@@ -25,12 +27,25 @@ export const useExamResults = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('exam_results')
-        .select('*')
+        .select(`
+          *,
+          user_exams!inner(
+            name,
+            question_banks!inner(name)
+          )
+        `)
         .eq('user_id', user.id)
         .order('completed_at', { ascending: false });
 
       if (error) throw error;
-      setExamResults(data || []);
+      
+      const formattedResults = (data || []).map(result => ({
+        ...result,
+        exam_name: result.user_exams?.name,
+        question_bank_name: result.user_exams?.question_banks?.name
+      }));
+      
+      setExamResults(formattedResults);
     } catch (error) {
       console.error('Error fetching exam results:', error);
       toast.error('Failed to fetch exam results');
