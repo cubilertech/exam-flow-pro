@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -55,13 +55,16 @@ const TakeExam = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string[]>
   >({});
+  const selectedAnswersRef = useRef<Record<string, string[]>>({});
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [noteIsSaving, setNoteIsSaving] = useState(false);
   const [examDuration, setExamDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [examDetails, setExamDetails] = useState<import("@/features/study/studySlice").ExamData | null>(null);
+  const [examDetails, setExamDetails] = useState<
+    import("@/features/study/studySlice").ExamData | null
+  >(null);
   const [isFlagging, setIsFlagging] = useState(false);
 
   useEffect(() => {
@@ -97,7 +100,7 @@ const TakeExam = () => {
             timeLimitType: data.time_limit_type,
             examType: data.exam_type as "study" | "test",
             name: data.name,
-            id: data.id
+            id: data.id,
           });
         } catch (error) {
           console.error("Error fetching exam details:", error);
@@ -169,7 +172,7 @@ const TakeExam = () => {
   useEffect(() => {
     // Don't navigate away if we're currently submitting the exam
     if (isSaving) return;
-    
+
     if (
       !currentTestQuestions ||
       currentTestQuestions.length === 0 ||
@@ -285,6 +288,10 @@ const TakeExam = () => {
       document.removeEventListener("contextmenu", handleContextMenu);
     };
   }, []);
+
+  useEffect(() => {
+    selectedAnswersRef.current = selectedAnswers;
+  }, [selectedAnswers]);
 
   if (!currentTestQuestions || currentTestQuestions.length === 0) {
     return (
@@ -522,28 +529,32 @@ const TakeExam = () => {
 
     try {
       setIsSaving(true);
+      const allAnswers = Object.keys(selectedAnswersRef.current).map(
+        (questionId) => {
+          const question = currentTestQuestions.find(
+            (q) => q.id === questionId,
+          );
+          const selectedOptionIds =
+            selectedAnswersRef.current[questionId] || [];
+          const correctOptionIds =
+            question?.options
+              .filter((option) => option.isCorrect)
+              .map((option) => option.id) || [];
 
-      const allAnswers = Object.keys(selectedAnswers).map((questionId) => {
-        const question = currentTestQuestions.find((q) => q.id === questionId);
-        const selectedOptionIds = selectedAnswers[questionId] || [];
-        const correctOptionIds =
-          question?.options
-            .filter((option) => option.isCorrect)
-            .map((option) => option.id) || [];
+          const isCorrect =
+            question?.options.filter((o) => o.isCorrect).length > 1
+              ? selectedOptionIds.length === correctOptionIds.length &&
+                selectedOptionIds.every((id) => correctOptionIds.includes(id))
+              : selectedOptionIds[0] === correctOptionIds[0];
 
-        const isCorrect =
-          question?.options.filter((o) => o.isCorrect).length > 1
-            ? selectedOptionIds.length === correctOptionIds.length &&
-              selectedOptionIds.every((id) => correctOptionIds.includes(id))
-            : selectedOptionIds[0] === correctOptionIds[0];
-
-        return {
-          questionId,
-          selectedOptions: selectedOptionIds,
-          isCorrect,
-          answeredAt: new Date().toISOString(),
-        };
-      });
+          return {
+            questionId,
+            selectedOptions: selectedOptionIds,
+            isCorrect,
+            answeredAt: new Date().toISOString(),
+          };
+        },
+      );
 
       const correctCount = allAnswers.filter(
         (answer) => answer.isCorrect,
@@ -559,7 +570,6 @@ const TakeExam = () => {
         .from("user_exams")
         .update({ completed: true })
         .eq("id", currentExamId);
-
 
       if (examUpdateError) throw examUpdateError;
 
@@ -625,7 +635,7 @@ const TakeExam = () => {
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
           <div className="flex space-x-1 sm:space-x-2">
-            <Badge 
+            <Badge
               variant={isCurrentQuestionFlagged ? "secondary" : "outline"}
               className="cursor-pointer hover:bg-secondary"
               onClick={() => handleFlagQuestion(currentQuestion.id)}
@@ -660,7 +670,11 @@ const TakeExam = () => {
               {getRemainingTime()}
             </Badge>
           )}
-          <Button onClick={handleFinishExam} variant="default" className="py-2 px-4 sm:py-3 sm:px-6">
+          <Button
+            onClick={handleFinishExam}
+            variant="default"
+            className="py-2 px-4 sm:py-3 sm:px-6"
+          >
             Finish Exam
           </Button>
         </div>
