@@ -1,8 +1,13 @@
+# SaudiKnowledgeSeeker - Medical Exam Preparation Platform
+# https://saudiknowledgeseeker.com
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -12,3 +17,21 @@ Allow: /
 
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Disallow admin and private areas
+Disallow: /admin
+Disallow: /api/
+Disallow: /private/
+Disallow: /*.json$
+
+# Allow important medical education content
+Allow: /categories
+Allow: /question-bank
+Allow: /case-study-exams
+
+# Sitemap location
+Sitemap: https://saudiknowledgeseeker.com/sitemap.xml
+
+# Host declaration
+Host: saudiknowledgeseeker.com

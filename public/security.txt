@@ -1,0 +1,12 @@
+Contact: security@saudiknowledgeseeker.com
+Encryption: https://saudiknowledgeseeker.com/pgp-key.txt
+Acknowledgments: https://saudiknowledgeseeker.com/security-acknowledgments
+Preferred-Languages: en, ar
+Canonical: https://saudiknowledgeseeker.com/.well-known/security.txt
+Policy: https://saudiknowledgeseeker.com/security-policy
+Hiring: https://saudiknowledgeseeker.com/careers
+
+# Medical Data Security Notice
+# This platform handles medical education data.
+# Please report any security vulnerabilities responsibly.
+# All medical information is handled according to healthcare data protection standards.
