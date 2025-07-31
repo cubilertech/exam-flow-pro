@@ -567,7 +567,12 @@ const TakeExam = () => {
       const categoryIds = Array.from(
         new Set(currentTestQuestions.map((q) => q.categoryId)),
       );
-
+      const examDuration =
+        currentTestStartTime &&
+        Math.floor(
+          (new Date().getTime() - new Date(currentTestStartTime).getTime()) /
+            1000,
+        );
       const { data: examUpdateData, error: examUpdateError } = await supabase
         .from("user_exams")
         .update({ completed: true })
