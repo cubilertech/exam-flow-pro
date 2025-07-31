@@ -21,7 +21,7 @@ export const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden transition-all duration-0">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-primary/10 flex items-center justify-center">
             <BookOpen className="h-8 w-8 text-primary" />
           </div>
@@ -35,12 +35,12 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/questions">Browse Question Banks</Link>
+              <Link to="/my-exams">Browse Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
         
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden transition-all duration-0">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-examSecondary/10 flex items-center justify-center">
             <TestTube className="h-8 w-8 text-examSecondary" />
           </div>
@@ -59,7 +59,7 @@ export const Dashboard = () => {
           </CardFooter>
         </Card>
         
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden ">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-examInfo/10 flex items-center justify-center">
             <BarChart className="h-8 w-8 text-examInfo" />
           </div>
@@ -91,7 +91,7 @@ export const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card>
+        <Card className="transition-all duration-0">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Question Banks</CardTitle>
@@ -126,12 +126,12 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/questions">View All Question Banks</Link>
+              <Link to="/my-exams">View All Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
         
-        <Card>
+        <Card className="transition-all duration-0">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="pb-1">Flagged Questions</CardTitle>

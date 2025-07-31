@@ -142,6 +142,8 @@ const UserManagement = () => {
     );
   }
 
+ 
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
@@ -166,9 +168,16 @@ const UserManagement = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       {(!loading && users.length === 0) || (filteredUsers.length === 0 && searchTerm) ? (
+      <div className="flex items-center justify-center h-64 w-full ">
+        <h3 className="text-lg font-medium text-muted-foreground mb-2">
+              No users found
+            </h3>
+        {/* <p className="text-muted-foreground">No users found</p> */}
+      </div>
+    ) : <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredUsers.map((user) => (
-          <Card key={user.id} className="shadow-sm border border-border rounded-2xl">
+          <Card key={user.id} className="shadow-sm border border-border rounded-2xl transition-all duration-0">
             <CardHeader className="pb-3">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
@@ -273,7 +282,9 @@ const UserManagement = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </div>}
+
+    
 
       {/* Modals */}
       <CreateUserModal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} onUserCreated={fetchUsers} />

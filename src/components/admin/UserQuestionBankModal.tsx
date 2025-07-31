@@ -176,7 +176,7 @@ export const UserQuestionBankModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Card>
+        <Card className='transition-all duration-0'>
           <CardHeader>
             <CardTitle className="text-lg">Available Question Banks</CardTitle>
             <CardDescription>
