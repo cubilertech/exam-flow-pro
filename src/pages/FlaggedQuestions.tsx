@@ -119,13 +119,13 @@ const FlaggedQuestions = () => {
           >
             List View
           </Button>
-          <Button
+          {/* <Button
             variant={viewMode === 'single' ? 'default' : 'outline'}
             onClick={() => setViewMode('single')}
             size="sm"
           >
             Study Mode
-          </Button>
+          </Button> */}
         </div>
       </div>
 

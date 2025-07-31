@@ -423,9 +423,10 @@ console.log("Fetched questions:", questions);
                     <SelectTrigger>
                       <SelectValue placeholder="Select a question bank" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="">
                       {subscriptions.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id}>
+                        // text-nowrap overflow-hidden
+                        <SelectItem key={bank.id} value={bank.id} className="w-[25rem] text-ellipsis ">
                           {bank.name}
                         </SelectItem>
                       ))}

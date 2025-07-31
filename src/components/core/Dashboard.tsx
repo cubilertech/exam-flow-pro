@@ -31,7 +31,7 @@ export const Dashboard = () => {
           </div>
           <CardHeader>
             <CardTitle>Question Banks</CardTitle>
-            <CardDescription>Browse and learn at your own pace</CardDescription>
+            <CardDescription className="pt-1">Browse and learn at your own pace</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{loading ? '...' : stats.totalQuestionBanks}</p>
@@ -39,12 +39,12 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button asChild>
-              <Link to="/my-exams">Browse Question Banks</Link>
+              <Link to="/profile">Browse Question Banks</Link>
             </Button>
           </CardFooter>
         </Card>
 
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden duration-0 transition-all">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-secondary/10 flex items-center justify-center">
             <GraduationCap className="h-8 w-8 text-secondary" />
           </div>
@@ -69,7 +69,7 @@ export const Dashboard = () => {
           </div>
           <CardHeader>
             <CardTitle>Test Mode</CardTitle>
-            <CardDescription>Challenge yourself with custom tests</CardDescription>
+            <CardDescription className="pt-1">Challenge yourself with custom tests</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{loading ? '...' : stats.testsCompleted}</p>
@@ -105,7 +105,7 @@ export const Dashboard = () => {
                         <span>{result.question_bank_name || 'Question Bank'}</span>
                         <div className="flex items-center gap-1">
                           <Target className="h-3 w-3" />
-                          <span>{Math.round(result.score * 100)}%</span>
+                          <span>{Math.round(result.score)}%</span>
                         </div>
                         <span>{format(new Date(result.completed_at), 'MMM dd')}</span>
                       </div>

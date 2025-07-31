@@ -9,7 +9,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useToast } from '@/hooks/use-toast';
 
 import { QuestionCard } from "@/components/questions/QuestionCard";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 const TakeExam = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+   const { toast } = useToast();
   const {
     currentTestQuestions,
     currentStudyMode,
@@ -199,7 +200,7 @@ const TakeExam = () => {
         }
 
         if (elapsedSeconds >= timeLimit) {
-          toast.error("Time's up! Submitting your exam.");
+          toast({ title: 'Error', description: "Time's up! Submitting your exam." });
           confirmFinishExam();
         }
       };
@@ -256,7 +257,7 @@ const TakeExam = () => {
         });
       } catch (error) {
         console.error("Error fetching user data:", error);
-        toast.error("Failed to load your notes and flags");
+        toast({ title: 'Error', description: "Failed to load your notes and flags" });
       }
     };
 
@@ -400,7 +401,7 @@ const TakeExam = () => {
 
   const handleSaveNote = async () => {
     if (!user?.id) {
-      toast.error("You must be logged in to save notes");
+      toast({ title: 'Error', description: "You must be logged in to save notes" });
       return;
     }
 
@@ -428,7 +429,7 @@ const TakeExam = () => {
 
         if (error) throw error;
 
-        toast.success("Note saved successfully");
+        toast({ title: 'Success', description: "Note saved successfully" });
         setShowNotesDialog(false);
       } else {
         const { error } = await supabase
@@ -439,12 +440,13 @@ const TakeExam = () => {
 
         if (error) throw error;
 
-        toast.success("Note cleared");
+        
+        toast({ title: 'Success', description: "Note cleared" });
         setShowNotesDialog(false);
       }
     } catch (error) {
       console.error("Error saving note:", error);
-      toast.error("Failed to save note");
+      toast({ title: 'Error', description: "Failed to save note" });
     } finally {
       setNoteIsSaving(false);
     }
@@ -452,7 +454,7 @@ const TakeExam = () => {
 
   const handleFlagQuestion = async (questionId: string) => {
     if (!user?.id) {
-      toast.error("You must be logged in to flag questions");
+      toast({ title: 'Error', variant: "destructive",description: "You must be logged in to flag questions" });
       return;
     }
 
@@ -477,7 +479,7 @@ const TakeExam = () => {
             flaggedAt: new Date().toISOString(),
           }),
         );
-        toast.success("Question flagged for review");
+        toast({ title: 'Success', description: "Question flagged for review" });
       } else {
         const { error } = await supabase
           .from("flagged_questions")
@@ -493,11 +495,11 @@ const TakeExam = () => {
             flaggedAt: new Date().toISOString(),
           }),
         );
-        toast.success("Question unflagged");
+        toast({ title: 'Success', description: "Question unflagged" });
       }
     } catch (error) {
       console.error("Error toggling flag:", error);
-      toast.error("Failed to update flag status");
+      toast({ title: 'Error', variant: "destructive",description: "Failed to update flag status" });
     } finally {
       setIsFlagging(false);
     }
@@ -516,7 +518,7 @@ const TakeExam = () => {
 
   const confirmFinishExam = async () => {
     if (!user?.id || !currentExamId) {
-      toast.error("You must be logged in to submit an exam");
+      toast({ title: 'Error', variant: "destructive",description: "You must be logged in to submit an exam" });
       return;
     }
 
@@ -611,7 +613,7 @@ const TakeExam = () => {
       navigate(`/exam-results/${result.id}`);
     } catch (error) {
       console.error("Error submitting exam:", error);
-      toast.error("Failed to submit exam. Please try again.");
+      toast({ title: 'Error', variant: "destructive", description: "Failed to submit exam. Please try again." });
     } finally {
       setIsSaving(false);
     }

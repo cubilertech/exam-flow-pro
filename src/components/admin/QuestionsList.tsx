@@ -189,14 +189,14 @@ export const QuestionsList = ({ questions, onEdit }: QuestionsListProps) => {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md">
-          <p className="mb-4 text-muted-foreground">No questions found</p>
-          <Button
+          <p className="mb-4 font-bold text-muted-foreground">No questions found</p>
+          {/* <Button
             variant="outline"
             onClick={() => setSearchTerm("")}
             className="mt-2"
           >
             Clear search 
-          </Button>
+          </Button> */}
         </div>
       )}
 

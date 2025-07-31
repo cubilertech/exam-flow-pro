@@ -171,7 +171,7 @@ const UserManagement = () => {
        {(!loading && users.length === 0) || (filteredUsers.length === 0 && searchTerm) ? (
       <div className="flex items-center justify-center h-64 w-full ">
         <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              No users found
+              No User Found
             </h3>
         {/* <p className="text-muted-foreground">No users found</p> */}
       </div>

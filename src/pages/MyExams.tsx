@@ -43,12 +43,10 @@ const MyExams = () => {
             value={activeQuestionBankId || ''}
             onValueChange={handleQuestionBankChange}
           >
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Select a question bank" />
+            <SelectTrigger className="w-full sm:w-[17rem]">
+              <SelectValue placeholder="Select a question bank" className='w-56 bg-slate-500 text-yellow-500'/>
             </SelectTrigger>
             <SelectContent>
-            
-
               {subscriptions.map((questionBank) => (
                 <SelectItem key={questionBank.id} value={questionBank.id}>
                   {questionBank.name}
