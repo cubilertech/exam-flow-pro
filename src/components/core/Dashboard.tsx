@@ -3,13 +3,16 @@ import { useAppSelector } from "@/lib/hooks";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TestTube, BarChart, Flag, BookMarked } from "lucide-react";
-import { mockQuestions } from "@/data/mockQuestions";
+import { BookOpen, TestTube, BarChart, Flag, BookMarked, GraduationCap } from "lucide-react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useQuestionBankSubscriptions } from "@/hooks/useQuestionBankSubscriptions";
+import { useCaseStudySubscriptions } from "@/hooks/useCaseStudySubscriptions";
 
 export const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { exams = [], questionBanks = [] } = useAppSelector((state) => state.questions);
-  const { flaggedQuestions = [], testResults = [] } = useAppSelector((state) => state.study);
+  const { stats, loading } = useDashboardStats();
+  const { subscriptions: questionBanks } = useQuestionBankSubscriptions();
+  const { subscriptions: caseStudyExams } = useCaseStudySubscriptions();
   
   return (
     <div className="container max-w-7xl mx-auto py-10 px-4 md:px-6">
@@ -20,7 +23,7 @@ export const Dashboard = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <Card className="relative overflow-hidden">
           <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-primary/10 flex items-center justify-center">
             <BookOpen className="h-8 w-8 text-primary" />
@@ -30,12 +33,31 @@ export const Dashboard = () => {
             <CardDescription>Browse and learn at your own pace</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{questionBanks.length}</p>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.totalQuestionBanks}</p>
             <p className="text-sm text-muted-foreground">Available question banks</p>
           </CardContent>
           <CardFooter>
             <Button asChild>
               <Link to="/questions">Browse Question Banks</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card className="relative overflow-hidden">
+          <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-secondary/10 flex items-center justify-center">
+            <GraduationCap className="h-8 w-8 text-secondary" />
+          </div>
+          <CardHeader>
+            <CardTitle>Case Studies</CardTitle>
+            <CardDescription>Advanced case-based learning</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.totalCaseStudyExams}</p>
+            <p className="text-sm text-muted-foreground">Available case studies</p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline">
+              <Link to="/case-study-exams">Browse Cases</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -49,7 +71,7 @@ export const Dashboard = () => {
             <CardDescription>Challenge yourself with custom tests</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{testResults.length}</p>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.testsCompleted}</p>
             <p className="text-sm text-muted-foreground">Tests completed</p>
           </CardContent>
           <CardFooter>
@@ -69,16 +91,7 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
-              {testResults.length > 0
-                ? `${Math.round(
-                    (testResults.reduce(
-                      (acc, result) => acc + result.score,
-                      0
-                    ) /
-                      testResults.length) *
-                      100
-                  )}%`
-                : "N/A"}
+              {loading ? '...' : (stats.averageScore > 0 ? `${stats.averageScore}%` : "N/A")}
             </p>
             <p className="text-sm text-muted-foreground">Average score</p>
           </CardContent>
@@ -109,7 +122,7 @@ export const Dashboard = () => {
                     <div>
                       <p className="font-medium">{qb.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {qb.categoryCount || 0} categories
+                        {qb.description || 'No description'}
                       </p>
                     </div>
                     <Button size="sm" variant="ghost" asChild>
@@ -139,36 +152,31 @@ export const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {flaggedQuestions && flaggedQuestions.length > 0 ? (
+            {stats.recentFlaggedQuestions && stats.recentFlaggedQuestions.length > 0 ? (
               <ul className="space-y-2">
-                {flaggedQuestions.slice(0, 5).map((flagged) => {
-                  const question = mockQuestions.find(
-                    (q) => q.id === flagged.questionId
-                  );
-                  return question ? (
-                    <li
-                      key={flagged.questionId}
-                      className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium truncate max-w-[250px]">
-                          {question.text}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Question # {question.serialNumber}
-                        </p>
-                      </div>
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link to={`/exam/take?question=${question.id}`}>Review</Link>
-                      </Button>
-                    </li>
-                  ) : null;
-                })}
+                {stats.recentFlaggedQuestions.map((flagged) => (
+                  <li
+                    key={flagged.id}
+                    className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium truncate max-w-[250px]">
+                        {flagged.questions.text}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {flagged.questions.serial_number} • {flagged.questions.difficulty}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost" asChild>
+                      <Link to={`/questions?highlight=${flagged.questions.id}`}>Review</Link>
+                    </Button>
+                  </li>
+                ))}
               </ul>
             ) : (
               <div className="text-center p-6">
                 <p className="text-muted-foreground">
-                  No flagged questions yet. Flag important questions during exams
+                  No flagged questions yet. Flag important questions during study
                   to review them later.
                 </p>
               </div>
