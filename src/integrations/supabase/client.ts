@@ -5,13 +5,14 @@ import type { Database } from './types';
 
 const SUPABASE_URL = "https://ugohngawkzymjvuwjqyp.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnb2huZ2F3a3p5bWp2dXdqcXlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3OTc4MjIsImV4cCI6MjA2MDM3MzgyMn0.jyue1Jl21KvYQj_fz1CzchZSJFO5yDvFya27kwGbk6E";
+const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnb2huZ2F3a3p5bWp2dXdqcXlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDc5NzgyMiwiZXhwIjoyMDYwMzczODIyfQ.ntBzmDkjBTXSfkbfNnIlJi5DcooY24lqaoaa0vgoEQg";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 // Initialize the Supabase client
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
+export const supabaseAdmin = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 // Initialize storage bucket for question images if it doesn't exist
 const createStorageBucket = async () => {
   try {
