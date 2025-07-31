@@ -10,6 +10,7 @@ import {
   Settings,
   User,
   Users,
+  Flag,
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/hooks";
@@ -76,6 +77,11 @@ export function AppSidebar() {
       title: "My Exams",
       url: "/my-exams",
       icon: BookOpen,
+    },
+    {
+      title: "Flagged Questions",
+      url: "/flagged-questions",
+      icon: Flag,
     },
     {
       title: "Case Study Exams",

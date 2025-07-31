@@ -3,13 +3,17 @@ import { useAppSelector } from "@/lib/hooks";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TestTube, BarChart, Flag, BookMarked } from "lucide-react";
-import { mockQuestions } from "@/data/mockQuestions";
+import { BookOpen, TestTube, BarChart, Flag, BookMarked, GraduationCap, Clock, Target } from "lucide-react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useQuestionBankSubscriptions } from "@/hooks/useQuestionBankSubscriptions";
+import { useCaseStudySubscriptions } from "@/hooks/useCaseStudySubscriptions";
+import { format } from "date-fns";
 
 export const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { exams = [], questionBanks = [] } = useAppSelector((state) => state.questions);
-  const { flaggedQuestions = [], testResults = [] } = useAppSelector((state) => state.study);
+  const { stats, loading } = useDashboardStats();
+  const { subscriptions: questionBanks } = useQuestionBankSubscriptions();
+  const { subscriptions: caseStudyExams } = useCaseStudySubscriptions();
   
   return (
     <div className="container max-w-7xl mx-auto py-10 px-4 md:px-6">
@@ -30,12 +34,31 @@ export const Dashboard = () => {
             <CardDescription>Browse and learn at your own pace</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{questionBanks.length}</p>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.totalQuestionBanks}</p>
             <p className="text-sm text-muted-foreground">Available question banks</p>
           </CardContent>
           <CardFooter>
             <Button asChild>
               <Link to="/my-exams">Browse Question Banks</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card className="relative overflow-hidden">
+          <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-secondary/10 flex items-center justify-center">
+            <GraduationCap className="h-8 w-8 text-secondary" />
+          </div>
+          <CardHeader>
+            <CardTitle>Case Studies</CardTitle>
+            <CardDescription>Advanced case-based learning</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.totalCaseStudyExams}</p>
+            <p className="text-sm text-muted-foreground">Available case studies</p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline">
+              <Link to="/case-study-exams">Browse Cases</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -49,42 +72,12 @@ export const Dashboard = () => {
             <CardDescription>Challenge yourself with custom tests</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{testResults.length}</p>
+            <p className="text-3xl font-bold">{loading ? '...' : stats.testsCompleted}</p>
             <p className="text-sm text-muted-foreground">Tests completed</p>
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline">
               <Link to="/my-exams">My Exams</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        <Card className="relative overflow-hidden ">
-          <div className="absolute right-0 top-0 h-16 w-16 rounded-bl-lg bg-examInfo/10 flex items-center justify-center">
-            <BarChart className="h-8 w-8 text-examInfo" />
-          </div>
-          <CardHeader >
-            <CardTitle className="pb-1">Analytics</CardTitle>
-            <CardDescription>Track your performance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {testResults.length > 0
-                ? `${Math.round(
-                    (testResults.reduce(
-                      (acc, result) => acc + result.score,
-                      0
-                    ) /
-                      testResults.length) *
-                      100
-                  )}%`
-                : "N/A"}
-            </p>
-            <p className="text-sm text-muted-foreground">Average score</p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline">
-              <Link to="/my-exams">View Analytics</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -94,39 +87,47 @@ export const Dashboard = () => {
         <Card className="transition-all duration-0">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Question Banks</CardTitle>
-              <BookMarked className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Recent Exams</CardTitle>
+              <Clock className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            {questionBanks && questionBanks.length > 0 ? (
+            {stats.recentExamResults && stats.recentExamResults.length > 0 ? (
               <ul className="space-y-2">
-                {questionBanks.slice(0, 5).map((qb) => (
+                {stats.recentExamResults.slice(0, 5).map((result) => (
                   <li
-                    key={qb.id}
+                    key={result.id}
                     className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
                   >
                     <div>
-                      <p className="font-medium">{qb.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {qb.categoryCount || 0} categories
-                      </p>
+                      <p className="font-medium">{result.exam_name || 'Unnamed Exam'}</p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>{result.question_bank_name || 'Question Bank'}</span>
+                        <div className="flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          <span>{Math.round(result.score * 100)}%</span>
+                        </div>
+                        <span>{format(new Date(result.completed_at), 'MMM dd')}</span>
+                      </div>
                     </div>
                     <Button size="sm" variant="ghost" asChild>
-                      <Link to={`/questions/${qb.id}`}>View</Link>
+                      <Link to={`/exam-results/${result.id}`}>View</Link>
                     </Button>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="text-center p-6">
-                <p className="text-muted-foreground">No question banks available yet</p>
+                <p className="text-muted-foreground">No exams taken yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Start your first exam to see results here
+                </p>
               </div>
             )}
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/my-exams">View All Question Banks</Link>
+              <Link to="/my-exams">View All Exams</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -139,36 +140,31 @@ export const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {flaggedQuestions && flaggedQuestions.length > 0 ? (
+            {stats.recentFlaggedQuestions && stats.recentFlaggedQuestions.length > 0 ? (
               <ul className="space-y-2">
-                {flaggedQuestions.slice(0, 5).map((flagged) => {
-                  const question = mockQuestions.find(
-                    (q) => q.id === flagged.questionId
-                  );
-                  return question ? (
-                    <li
-                      key={flagged.questionId}
-                      className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium truncate max-w-[250px]">
-                          {question.text}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Question # {question.serialNumber}
-                        </p>
-                      </div>
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link to={`/exam/take?question=${question.id}`}>Review</Link>
-                      </Button>
-                    </li>
-                  ) : null;
-                })}
+                {stats.recentFlaggedQuestions.map((flagged) => (
+                  <li
+                    key={flagged.id}
+                    className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium truncate max-w-[250px]">
+                        {flagged.questions.text}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {flagged.questions.serial_number} • {flagged.questions.difficulty}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost" asChild>
+                      <Link to={`/flagged-questions`}>Review</Link>
+                    </Button>
+                  </li>
+                ))}
               </ul>
             ) : (
               <div className="text-center p-6">
                 <p className="text-muted-foreground">
-                  No flagged questions yet. Flag important questions during exams
+                  No flagged questions yet. Flag important questions during study
                   to review them later.
                 </p>
               </div>
@@ -176,7 +172,9 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/my-exams">View My Exams</Link>
+              <Link to="/flagged-questions">
+                {stats.flaggedQuestionsCount > 5 ? 'View All Flagged Questions' : 'View Flagged Questions'}
+              </Link>
             </Button>
           </CardFooter>
         </Card>
