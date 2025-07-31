@@ -348,7 +348,7 @@ const ExamResults = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex flex-col items-center justify-center h-64">
+                <div className="flex flex-col items-center justify-center h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

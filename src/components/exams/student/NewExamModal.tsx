@@ -1,18 +1,13 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Info } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import * as z from 'zod';
+import { Info } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import * as z from "zod";
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +15,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -29,46 +24,38 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Question } from '@/features/questions/questionsSlice';
-import {
-  setCurrentExam,
-  startTest,
-} from '@/features/study/studySlice';
-import {
-  useQuestionBankSubscriptions,
-} from '@/hooks/useQuestionBankSubscriptions';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  useAppDispatch,
-  useAppSelector,
-} from '@/lib/hooks';
-import { zodResolver } from '@hookform/resolvers/zod';
+} from "@/components/ui/tooltip";
+import { Question } from "@/features/questions/questionsSlice";
+import { setCurrentExam, startTest } from "@/features/study/studySlice";
+import { useQuestionBankSubscriptions } from "@/hooks/useQuestionBankSubscriptions";
+import { supabase } from "@/integrations/supabase/client";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const formSchema = z.object({
   examType: z.enum(["test", "study"]),
   categories: z.array(z.string()).min(1, "Select at least one category"),
-  difficultyLevels: z.array(z.enum(["all", "easy", "medium", "hard"])).min(1, "Select at least one difficulty level"),
-  numberOfQuestions: z.number()
+  difficultyLevels: z
+    .array(z.enum(["all", "easy", "medium", "hard"]))
+    .min(1, "Select at least one difficulty level"),
+  numberOfQuestions: z
+    .number()
     .int()
     .min(1, "At least 1 question")
     .max(30, "Maximum 30 questions"),
@@ -102,12 +89,15 @@ interface CategoryCount {
 const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { subscriptions, activeQuestionBankId } = useQuestionBankSubscriptions();
+  const { subscriptions, activeQuestionBankId } =
+    useQuestionBankSubscriptions();
   const { user } = useAppSelector((state) => state.auth);
   const [categories, setCategories] = useState<CategoryCount[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedQuestionBank, setSelectedQuestionBank] = useState<string | null>(null);
+  const [selectedQuestionBank, setSelectedQuestionBank] = useState<
+    string | null
+  >(null);
 
   const form = useForm<NewExamFormValues>({
     resolver: zodResolver(formSchema),
@@ -132,61 +122,69 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
     if (subscriptions.length === 0) return null;
 
     return activeQuestionBankId
-      ? subscriptions.find(qb => qb.id === activeQuestionBankId)?.id || subscriptions[0].id
+      ? subscriptions.find((qb) => qb.id === activeQuestionBankId)?.id ||
+          subscriptions[0].id
       : subscriptions[0].id;
   }, [subscriptions, activeQuestionBankId]);
 
-    const fetchCategoriesByQuestionBank = useCallback(async (questionBankId: string) => {
-    try {
-      setLoading(true);
+  const fetchCategoriesByQuestionBank = useCallback(
+    async (questionBankId: string) => {
+      try {
+        setLoading(true);
 
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('question_bank_id', questionBankId);
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from("categories")
+          .select("*")
+          .eq("question_bank_id", questionBankId);
 
-      if (categoriesError) throw categoriesError;
+        if (categoriesError) throw categoriesError;
 
-      const categoriesWithCounts = await Promise.all(categoriesData.map(async (category) => {
-        // First, query for all questions for this category
-        const { data: questions, error: questionsError } = await supabase
-          .from('questions')
-          .select('id, difficulty')
-          .eq('category_id', category.id);
+        const categoriesWithCounts = await Promise.all(
+          categoriesData.map(async (category) => {
+            // First, query for all questions for this category
+            const { data: questions, error: questionsError } = await supabase
+              .from("questions")
+              .select("id, difficulty")
+              .eq("category_id", category.id);
 
-        if (questionsError) throw questionsError;
+            if (questionsError) throw questionsError;
 
-        // Count the occurrences of each difficulty level manually
-        const difficultyCount = {
-          easy: 0,
-          medium: 0,
-          hard: 0
-        };
+            // Count the occurrences of each difficulty level manually
+            const difficultyCount = {
+              easy: 0,
+              medium: 0,
+              hard: 0,
+            };
 
-        questions?.forEach((question) => {
-          if (question.difficulty in difficultyCount) {
-            difficultyCount[question.difficulty as keyof typeof difficultyCount]++;
-          }
-        });
+            questions?.forEach((question) => {
+              if (question.difficulty in difficultyCount) {
+                difficultyCount[
+                  question.difficulty as keyof typeof difficultyCount
+                ]++;
+              }
+            });
 
-        return {
-          id: category.id,
-          name: category.name,
-          questionBankId: category.question_bank_id,
-          questionCount: questions?.length || 0,
-          difficultyCount
-        };
-      }));
+            return {
+              id: category.id,
+              name: category.name,
+              questionBankId: category.question_bank_id,
+              questionCount: questions?.length || 0,
+              difficultyCount,
+            };
+          }),
+        );
 
-      setCategories(categoriesWithCounts);
-      form.setValue("categories", []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      toast.error('Failed to fetch categories');
-    } finally {
-      setLoading(false);
-    }
-  }, [form]);
+        setCategories(categoriesWithCounts);
+        form.setValue("categories", []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to fetch categories");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [form],
+  );
 
   useEffect(() => {
     if (open && initialSelectedBank) {
@@ -194,8 +192,6 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       fetchCategoriesByQuestionBank(initialSelectedBank);
     }
   }, [open, initialSelectedBank, fetchCategoriesByQuestionBank]);
-
- 
 
   const calculateTimeLimit = (values: NewExamFormValues) => {
     if (values.timedMode === "untimed") {
@@ -212,12 +208,12 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
 
   const handleStartExam = async (values: NewExamFormValues) => {
     if (!user?.id) {
-      toast.error('You must be logged in to create an exam');
+      toast.error("You must be logged in to create an exam");
       return;
     }
 
     if (subscriptions.length === 0) {
-      toast.error('You need to have at least one question bank subscription');
+      toast.error("You need to have at least one question bank subscription");
       return;
     }
 
@@ -230,19 +226,22 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       const timeLimit = calculateTimeLimit(values);
 
       const { data: examData, error: examError } = await supabase
-        .from('user_exams')
+        .from("user_exams")
         .insert({
           user_id: user.id,
           name: values.examName,
           exam_type: values.examType,
           question_bank_id: questionBankId,
           category_ids: values.categories,
-          difficulty_levels: values.difficultyLevels.filter(d => d !== "all") as string[],
+          difficulty_levels: values.difficultyLevels.filter(
+            (d) => d !== "all",
+          ) as string[],
           question_count: values.numberOfQuestions,
           is_timed: values.timedMode === "timed",
           time_limit: timeLimit,
-          time_limit_type: values.timedMode === "timed" ? values.timeLimitType : null,
-          completed: false
+          time_limit_type:
+            values.timedMode === "timed" ? values.timeLimitType : null,
+          completed: false,
         })
         .select()
         .single();
@@ -250,18 +249,21 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
       if (examError) throw examError;
 
       let query = supabase
-        .from('questions')
-        .select('*, question_options(*)')
-        .in('category_id', values.categories);
+        .from("questions")
+        .select("*, question_options(*)")
+        .in("category_id", values.categories);
 
       if (!values.difficultyLevels.includes("all")) {
-        const validDifficulties = values.difficultyLevels.filter(d => d !== "all") as ("easy" | "medium" | "hard")[];
+        const validDifficulties = values.difficultyLevels.filter(
+          (d) => d !== "all",
+        ) as ("easy" | "medium" | "hard")[];
         if (validDifficulties.length > 0) {
-          query = query.in('difficulty', validDifficulties);
+          query = query.in("difficulty", validDifficulties);
         }
       }
-
-      const { data: questionsData, error: questionsError } = await query.limit(values.numberOfQuestions);
+      const fetchCount = Math.max(values.numberOfQuestions * 2, 50);
+      const { data: questionsData, error: questionsError } =
+        await query.limit(fetchCount);
 
       if (questionsError) throw questionsError;
 
@@ -270,73 +272,83 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
         return;
       }
 
-interface SupabaseQuestionOption {
-  id: string;
-  text: string;
-  is_correct: boolean;
-}
+      interface SupabaseQuestionOption {
+        id: string;
+        text: string;
+        is_correct: boolean;
+      }
 
-interface SupabaseQuestion {
-  id: string;
-  serial_number: string;
-  text: string;
-  question_options: SupabaseQuestionOption[];
-  explanation: string | null;
-  image_url: string | null;
-  category_id: string;
-  difficulty: string;
-  answered_correctly_count: number | null;
-  answered_count: number | null;
-}
+      interface SupabaseQuestion {
+        id: string;
+        serial_number: string;
+        text: string;
+        question_options: SupabaseQuestionOption[];
+        explanation: string | null;
+        image_url: string | null;
+        category_id: string;
+        difficulty: string;
+        answered_correctly_count: number | null;
+        answered_count: number | null;
+      }
+      const shuffled = (questionsData || []).sort(() => Math.random() - 0.5);
+      const selectedQuestions = shuffled.slice(0, values.numberOfQuestions);
+      const questions: Question[] = selectedQuestions.map(
+        (q: SupabaseQuestion) => {
+          const difficulty: "easy" | "medium" | "hard" = [
+            "easy",
+            "medium",
+            "hard",
+          ].includes(q.difficulty)
+            ? (q.difficulty as "easy" | "medium" | "hard")
+            : "medium";
 
-const questions: Question[] = questionsData.map((q: SupabaseQuestion) => {
-  const difficulty: "easy" | "medium" | "hard" =
-    ["easy", "medium", "hard"].includes(q.difficulty)
-      ? q.difficulty as "easy" | "medium" | "hard"
-      : "medium";
+          return {
+            id: q.id,
+            serialNumber: (q.serial_number.replace(/\D/g, "") || 0).toString(),
+            text: q.text,
+            options: q.question_options.map((opt: SupabaseQuestionOption) => ({
+              id: opt.id,
+              text: opt.text,
+              isCorrect: opt.is_correct,
+            })),
+            explanation: q.explanation || "",
+            imageUrl: q.image_url || undefined,
+            categoryId: q.category_id || "",
+            tags: [],
+            difficulty,
+            correctAnswerRate:
+              q.answered_correctly_count && q.answered_count
+                ? (q.answered_correctly_count / q.answered_count) * 100
+                : undefined,
+          };
+        },
+      );
 
-  return {
-    id: q.id,
-    serialNumber: (q.serial_number.replace(/\D/g, '') || 0).toString(),
-    text: q.text,
-    options: q.question_options.map((opt: SupabaseQuestionOption) => ({
-      id: opt.id,
-      text: opt.text,
-      isCorrect: opt.is_correct
-    })),
-    explanation: q.explanation || "",
-    imageUrl: q.image_url || undefined,
-    categoryId: q.category_id || "",
-    tags: [],
-    difficulty,
-    correctAnswerRate: q.answered_correctly_count && q.answered_count
-      ? (q.answered_correctly_count / q.answered_count) * 100
-      : undefined
-  };
-});
+      console.log("Fetched questions:", questions);
 
-console.log("Fetched questions:", questions);
-
-      dispatch(startTest({
-        questions,
-        examId: examData.id,
-        examName: values.examName,
-      }));
-      const isTimed = values.timedMode === "untimed" ? false : true
-      dispatch(setCurrentExam({
-        id: examData.id,
-        name: values.examName,
-        categoryIds: values.categories,
-        difficultyLevels: values.difficultyLevels,
-        questionCount: values.numberOfQuestions,
-        isTimed: isTimed,
-        timeLimit: values.timeLimit,
-        timeLimitType: values.timeLimitType,
-        examType: values.examType // Add the missing examType property
-      }));
+      dispatch(
+        startTest({
+          questions,
+          examId: examData.id,
+          examName: values.examName,
+        }),
+      );
+      const isTimed = values.timedMode === "untimed" ? false : true;
+      dispatch(
+        setCurrentExam({
+          id: examData.id,
+          name: values.examName,
+          categoryIds: values.categories,
+          difficultyLevels: values.difficultyLevels,
+          questionCount: values.numberOfQuestions,
+          isTimed: isTimed,
+          timeLimit: values.timeLimit,
+          timeLimitType: values.timeLimitType,
+          examType: values.examType, // Add the missing examType property
+        }),
+      );
       onOpenChange(false);
       navigate(`/take-exam/${examData.id}`);
-
     } catch (error) {
       console.error("Error starting exam:", error);
       toast.error("Failed to start the exam. Please try again.");
@@ -345,29 +357,34 @@ console.log("Fetched questions:", questions);
     }
   };
   // Calculate Total Questions
-  const selectedCategories = form.watch('categories') || [];
+  const selectedCategories = form.watch("categories") || [];
   const totalQuestions = categories
-    .filter(cat => selectedCategories.includes(cat.id))
-    .reduce((total, cat) => total + cat.questionCount, 0)
+    .filter((cat) => selectedCategories.includes(cat.id))
+    .reduce((total, cat) => total + cat.questionCount, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[501px] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className='font-extrabold '>Create a New Exam</DialogTitle>
+          <DialogTitle className="font-extrabold ">
+            Create a New Exam
+          </DialogTitle>
           <DialogDescription>
             Customize your exam settings below.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 px-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleStartExam)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(handleStartExam)}
+              className="space-y-6"
+            >
               <FormField
                 control={form.control}
                 name="examType"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className='font-extrabold'>Exam Type</FormLabel>
+                    <FormLabel className="font-extrabold">Exam Type</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -386,17 +403,30 @@ console.log("Fetched questions:", questions);
                           <FormControl>
                             <RadioGroupItem value="study" id="study" />
                           </FormControl>
-                          <FormLabel htmlFor="study" className="font-normal flex items-center">
+                          <FormLabel
+                            htmlFor="study"
+                            className="font-normal flex items-center"
+                          >
                             Study
-                            <TooltipProvider >
+                            <TooltipProvider>
                               <Tooltip delayDuration={0}>
                                 <TooltipTrigger asChild>
-                                  <button type="button" className="focus:outline-none">
+                                  <button
+                                    type="button"
+                                    className="focus:outline-none"
+                                  >
                                     <Info className="h-4 w-4 ml-2 text-muted-foreground" />
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="right" align="center" className="max-w-[200px]">
-                                  <p>Final response to a question used to determine score</p>
+                                <TooltipContent
+                                  side="right"
+                                  align="center"
+                                  className="max-w-[200px]"
+                                >
+                                  <p>
+                                    Final response to a question used to
+                                    determine score
+                                  </p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -411,7 +441,9 @@ console.log("Fetched questions:", questions);
 
               {subscriptions.length > 0 && (
                 <FormItem>
-                  <FormLabel className='font-extrabold'>Question Bank</FormLabel>
+                  <FormLabel className="font-extrabold">
+                    Question Bank
+                  </FormLabel>
 
                   <Select
                     value={selectedQuestionBank || undefined}
@@ -423,9 +455,10 @@ console.log("Fetched questions:", questions);
                     <SelectTrigger>
                       <SelectValue placeholder="Select a question bank" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="">
                       {subscriptions.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id}>
+                        // text-nowrap overflow-hidden
+                        <SelectItem key={bank.id} value={bank.id} className="w-[25rem] text-ellipsis ">
                           {bank.name}
                         </SelectItem>
                       ))}
@@ -448,7 +481,9 @@ console.log("Fetched questions:", questions);
                       </FormDescription>
                     </div>
                     {loading ? (
-                      <div className="p-4 text-center">Loading categories...</div>
+                      <div className="p-4 text-center">
+                        Loading categories...
+                      </div>
                     ) : categories.length === 0 ? (
                       <div className="p-4 text-center text-muted-foreground">
                         No categories available for the selected question bank.
@@ -468,15 +503,21 @@ console.log("Fetched questions:", questions);
                                 >
                                   <FormControl>
                                     <Checkbox
-                                      checked={field.value?.includes(category.id)}
+                                      checked={field.value?.includes(
+                                        category.id,
+                                      )}
                                       onCheckedChange={(checked) => {
                                         return checked
-                                          ? field.onChange([...field.value, category.id])
+                                          ? field.onChange([
+                                              ...field.value,
+                                              category.id,
+                                            ])
                                           : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== category.id
-                                            )
-                                          );
+                                              field.value?.filter(
+                                                (value) =>
+                                                  value !== category.id,
+                                              ),
+                                            );
                                       }}
                                     />
                                   </FormControl>
@@ -499,12 +540,14 @@ console.log("Fetched questions:", questions);
                 control={form.control}
                 name="difficultyLevels"
                 render={() => {
-                  const selectedCategories = form.watch('categories') || []; // Track selected categories
+                  const selectedCategories = form.watch("categories") || []; // Track selected categories
 
                   return (
                     <FormItem>
                       <div className="mb-4">
-                        <FormLabel className="text-base font-extrabold">Difficulty Level</FormLabel>
+                        <FormLabel className="text-base font-extrabold">
+                          Difficulty Level
+                        </FormLabel>
                         <FormDescription>
                           Select the difficulty levels to include in your exam.
                         </FormDescription>
@@ -517,19 +560,31 @@ console.log("Fetched questions:", questions);
                           { id: "hard", label: "Hard" },
                         ].map((item) => {
                           // Calculate questionCount based on SELECTED categories only
-                          const questionCount = item.id === "all"
-                            ? categories
-                              .filter(cat => selectedCategories.includes(cat.id))
-                              .reduce((total, cat) => total + cat.questionCount, 0)
-                            : categories
-                              .filter(cat => selectedCategories.includes(cat.id))
-                              .reduce(
-                                (total, cat) =>
-                                  total + (cat.difficultyCount[item.id as keyof typeof cat.difficultyCount] || 0),
-                                0
-                              );
+                          const questionCount =
+                            item.id === "all"
+                              ? categories
+                                  .filter((cat) =>
+                                    selectedCategories.includes(cat.id),
+                                  )
+                                  .reduce(
+                                    (total, cat) => total + cat.questionCount,
+                                    0,
+                                  )
+                              : categories
+                                  .filter((cat) =>
+                                    selectedCategories.includes(cat.id),
+                                  )
+                                  .reduce(
+                                    (total, cat) =>
+                                      total +
+                                      (cat.difficultyCount[
+                                        item.id as keyof typeof cat.difficultyCount
+                                      ] || 0),
+                                    0,
+                                  );
 
-                          const isDisabled = item.id !== "all" && questionCount === 0;
+                          const isDisabled =
+                            item.id !== "all" && questionCount === 0;
 
                           return (
                             <FormField
@@ -544,24 +599,39 @@ console.log("Fetched questions:", questions);
                                   >
                                     <FormControl>
                                       <Checkbox
-                                        checked={field.value?.includes(item.id as NewExamFormValues['difficultyLevels'][number])}
+                                        checked={field.value?.includes(
+                                          item.id as NewExamFormValues["difficultyLevels"][number],
+                                        )}
                                         onCheckedChange={(checked) => {
                                           if (item.id === "all" && checked) {
                                             return field.onChange(["all"]);
                                           } else if (checked && !isDisabled) {
-                                            const newValue = field.value.filter(v => v !== "all");
-                                            return field.onChange([...newValue, item.id as NewExamFormValues['difficultyLevels'][number]]);
+                                            const newValue = field.value.filter(
+                                              (v) => v !== "all",
+                                            );
+                                            return field.onChange([
+                                              ...newValue,
+                                              item.id as NewExamFormValues["difficultyLevels"][number],
+                                            ]);
                                           } else {
                                             return field.onChange(
-                                              field.value?.filter((value) => value !== item.id)
+                                              field.value?.filter(
+                                                (value) => value !== item.id,
+                                              ),
                                             );
                                           }
                                         }}
                                         disabled={isDisabled}
-                                        className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
+                                        className={
+                                          isDisabled
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }
                                       />
                                     </FormControl>
-                                    <FormLabel className={`font-normal ${isDisabled ? "opacity-50" : ""}`}>
+                                    <FormLabel
+                                      className={`font-normal ${isDisabled ? "opacity-50" : ""}`}
+                                    >
                                       {item.label} ({questionCount})
                                     </FormLabel>
                                   </FormItem>
@@ -582,7 +652,9 @@ console.log("Fetched questions:", questions);
                 name="numberOfQuestions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='font-extrabold'>Number of Questions (max {totalQuestions})</FormLabel>
+                    <FormLabel className="font-extrabold">
+                      Number of Questions (max {totalQuestions})
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -643,7 +715,7 @@ console.log("Fetched questions:", questions);
                     name="timeLimitType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel >Time Limit Type</FormLabel>
+                        <FormLabel>Time Limit Type</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -655,8 +727,12 @@ console.log("Fetched questions:", questions);
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="seconds_per_question">Seconds per question</SelectItem>
-                            <SelectItem value="total_time">Total time</SelectItem>
+                            <SelectItem value="seconds_per_question">
+                              Seconds per question
+                            </SelectItem>
+                            <SelectItem value="total_time">
+                              Total time
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -677,7 +753,9 @@ console.log("Fetched questions:", questions);
                               {...field}
                               min={5}
                               placeholder="60"
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) =>
+                                field.onChange(parseInt(e.target.value))
+                              }
                             />
                           </FormControl>
                           <FormDescription>
@@ -704,7 +782,9 @@ console.log("Fetched questions:", questions);
                                 min={0}
                                 max={180}
                                 placeholder="0"
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -724,7 +804,9 @@ console.log("Fetched questions:", questions);
                                 min={0}
                                 max={59}
                                 placeholder="0"
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
                               />
                             </FormControl>
                             <FormMessage />
@@ -741,9 +823,12 @@ console.log("Fetched questions:", questions);
                 name="examName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className='font-extrabold'>Exam Name</FormLabel>
+                    <FormLabel className="font-extrabold">Exam Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter a name for your exam" {...field} />
+                      <Input
+                        placeholder="Enter a name for your exam"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -751,13 +836,19 @@ console.log("Fetched questions:", questions);
               />
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   type="submit"
-                  disabled={form.getValues().categories.length === 0 || isSaving}
-                  className='mb-2 sm:mb-0'
+                  disabled={
+                    form.getValues().categories.length === 0 || isSaving
+                  }
+                  className="mb-2 sm:mb-0"
                 >
                   {isSaving ? "Creating..." : "Start Exam"}
                 </Button>

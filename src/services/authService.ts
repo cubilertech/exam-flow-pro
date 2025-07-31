@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 
 export const signUp = async (userData: {
   email: string;
@@ -206,15 +206,14 @@ export const createUserByAdmin = async (
 ) => {
   try {
     // 1. Create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          username: userData.username,
-          full_name: userData.username,
-        },
-      },
+      email_confirm: true,
+      user_metadata: {
+        username: userData.username,
+        full_name: userData.username,
+      }
     });
     
     if (authError) {

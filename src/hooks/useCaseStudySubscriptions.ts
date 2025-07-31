@@ -21,23 +21,36 @@ export const useCaseStudySubscriptions = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-       .from('user_subscriptions')
-        .select('exams_case!exams_case_id(*)')
+      // First get subscription IDs for case studies
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .select('exams_case_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .not('exams_case_id', 'is', null);
 
-      if (error) throw error;
+      if (subscriptionError) throw subscriptionError;
 
-      const activeCaseStudyExams = data?.map(item => ({
-        id: item.exams_case.id,
-        title: item.exams_case.title,
-        description: item.exams_case.description,
-      })) || [];
+      const examIds = subscriptionData?.map((sub: any) => sub.exams_case_id).filter(Boolean) || [];
+
+      if (examIds.length === 0) {
+        setSubscriptions([]);
+        setSubscribedExamIds([]);
+        return;
+      }
+
+      // Then get the actual exam details
+      const { data: examData, error: examError } = await supabase
+        .from('exams_case')
+        .select('id, title, description')
+        .in('id', examIds)
+        .eq('is_deleted_exam', false);
+
+      if (examError) throw examError;
+
+      const activeCaseStudyExams = examData || [];
 
       // console.log('activeCaseStudyExams: ', activeCaseStudyExams);
-      const examIds = activeCaseStudyExams.map(exam => exam.id);
       
       setSubscriptions(activeCaseStudyExams);
       setSubscribedExamIds(examIds);

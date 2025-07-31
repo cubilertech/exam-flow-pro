@@ -137,8 +137,8 @@ const Profile = () => {
           {!isAdmin && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Book className="h-5 w-5 mr-2" />
+                <CardTitle className="flex items-center pb-1">
+                  {/* <Book className="h-5 w-5 mr-2" /> */}
                   My Question Banks
                 </CardTitle>
                 <CardDescription>
@@ -162,8 +162,8 @@ const Profile = () => {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Description</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
+                        {/* <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead> */}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -175,7 +175,7 @@ const Profile = () => {
                           <TableCell>
                             {bank.description || "No description available"}
                           </TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             {bank.id === activeQuestionBankId ? (
                               <Badge className="flex items-center bg-green-500 text-white">
                                 <CheckCircle className="h-3 w-3 mr-1" />{" "}
@@ -184,8 +184,8 @@ const Profile = () => {
                             ) : (
                               <Badge variant="outline">Available</Badge>
                             )}
-                          </TableCell>
-                          <TableCell className="text-right">
+                          </TableCell> */}
+                          {/* <TableCell className="text-right">
                             {bank.id !== activeQuestionBankId && (
                               <Button
                                 variant="outline"
@@ -197,7 +197,7 @@ const Profile = () => {
                                 Set Active
                               </Button>
                             )}
-                          </TableCell>
+                          </TableCell> */}
                         </TableRow>
                       ))}
                     </TableBody>
