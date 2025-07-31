@@ -23,7 +23,7 @@ import QuestionBankDetail from './pages/QuestionBankDetail';
 import MyExams from './pages/MyExams';
 import TakeExam from './pages/TakeExam';
 import ExamResults from './pages/ExamResults';
-import { FlaggedQuestions } from './pages/FlaggedQuestions';
+import FlaggedQuestions from './pages/FlaggedQuestions';
 import Profile from './pages/Profile';
 import UserManagement from './pages/UserManagement';
 import CaseStudyExams from './pages/CaseStudyExams';

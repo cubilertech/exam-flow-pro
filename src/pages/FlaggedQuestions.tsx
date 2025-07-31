@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Flag, Search, Filter, ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export const FlaggedQuestions = () => {
+const FlaggedQuestions = () => {
   const {
     flaggedQuestions,
     allFlaggedQuestions,
@@ -268,3 +268,5 @@ export const FlaggedQuestions = () => {
     </div>
   );
 };
+
+export default FlaggedQuestions;
