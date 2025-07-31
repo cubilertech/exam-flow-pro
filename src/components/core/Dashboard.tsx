@@ -177,7 +177,7 @@ export const Dashboard = () => {
                       </p>
                     </div>
                     <Button size="sm" variant="ghost" asChild>
-                      <Link to={`/questions?highlight=${flagged.questions.id}`}>Review</Link>
+                      <Link to={`/flagged-questions`}>Review</Link>
                     </Button>
                   </li>
                 ))}
@@ -193,7 +193,9 @@ export const Dashboard = () => {
           </CardContent>
           <CardFooter>
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/my-exams">View My Exams</Link>
+              <Link to="/flagged-questions">
+                {stats.flaggedQuestionsCount > 5 ? 'View All Flagged Questions' : 'View Flagged Questions'}
+              </Link>
             </Button>
           </CardFooter>
         </Card>
