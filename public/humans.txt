@@ -1,0 +1,22 @@
+# SaudiKnowledgeSeeker - Medical Exam Preparation Platform
+# https://saudiknowledgeseeker.com
+
+/* TEAM */
+Name: SaudiKnowledgeSeeker Development Team
+Role: Medical Education Technology
+Location: Saudi Arabia
+
+/* THANKS */
+Medical Education Community
+Saudi Board of Preventive Medicine
+Healthcare Professionals
+
+/* SITE */
+Last update: 2024/01/31
+Language: English / العربية
+Doctype: HTML5
+IDE: Modern Web Technologies
+Standards: W3C, WCAG 2.1 AA
+Components: React, TypeScript, Tailwind CSS
+Backend: Supabase
+Hosting: Vercel
