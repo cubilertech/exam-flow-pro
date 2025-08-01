@@ -43,17 +43,17 @@ export function AppSidebar() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   const adminItems = [
-    {
-      title: "Dashboard",
-      url: "/",
-      icon: LayoutDashboard,
-    },
+    // {
+    //   title: "Dashboard",
+    //   url: "/",
+    //   icon: LayoutDashboard,
+    // },
     {
       title: "Question Banks",
       url: "/questions",
       icon: Database,
     },
-    
+
     {
       title: "User Management",
       url: "/users",
@@ -64,11 +64,10 @@ export function AppSidebar() {
       url: "/case-study-exams",
       icon: BookOpen,
     },
-    
   ];
 
   const studentItems = [
-     {
+    {
       title: "Dashboard",
       url: "/",
       icon: LayoutDashboard,
@@ -105,20 +104,19 @@ export function AppSidebar() {
               <AccordionTrigger>
                 {user?.isAdmin ? "Admin" : "Student"} Dashboard
               </AccordionTrigger>
-              
-                <nav className="grid gap-1">
-                  {(user?.isAdmin ? adminItems : studentItems).map((item) => (
-                    <NavLink
-                      key={item.title}
-                      to={item.url}
-                      className="flex items-center space-x-2 rounded-md p-2 text-sm font-medium hover:underline"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  ))}
-                </nav>
-              
+
+              <nav className="grid gap-1">
+                {(user?.isAdmin ? adminItems : studentItems).map((item) => (
+                  <NavLink
+                    key={item.title}
+                    to={item.url}
+                    className="flex items-center space-x-2 rounded-md p-2 text-sm font-medium hover:underline"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </NavLink>
+                ))}
+              </nav>
             </AccordionItem>
           </Accordion>
         </div>
