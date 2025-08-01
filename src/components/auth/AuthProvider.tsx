@@ -100,12 +100,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 location.pathname === "/register" ||
                 location.pathname === "/"
               ) {
-                // if (adminData) {
-                //   navigate("/questions");
-                // } else {
-                //   navigate("/");
-                // }
-                navigate("/");
+                if (adminData) {
+                  navigate("/questions");
+                } else {
+                  navigate("/");
+                }
               }
             } catch (error) {
               console.error("Error processing auth state change:", error);

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -9,18 +9,18 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface CaseStudyExam {
   id: string;
@@ -66,33 +66,32 @@ export const UserCaseStudyModal = ({
 
       // Fetch all case study exams
       const { data: examData, error: examError } = await supabase
-        .from('exams_case')
-        .select('id, title, description')
-        .eq('is_deleted_exam', false)
-        .order('title');
+        .from("exams_case")
+        .select("id, title, description")
+        .eq("is_deleted_exam", false)
+        .order("title");
 
       if (examError) throw examError;
 
       // Fetch user's current case study subscriptions
       const { data: subData, error: subError } = await supabase
-        .from('user_subscriptions')
-        .select('exams_case_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .not('exams_case_id', 'is', null);
+        .from("user_subscriptions")
+        .select("exams_case_id, exams_case!user_subscriptions_case_id_fkey(id)")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
 
       if (subError) throw subError;
 
       setCaseStudyExams(examData || []);
       setUserSubscriptions(
-        subData?.map((sub: any) => sub.exams_case_id).filter(Boolean) || []
+        subData?.map((sub: any) => sub.exams_case_id).filter(Boolean) || [],
       );
     } catch (error: any) {
-      console.error('Error fetching data:', error.message || error);
+      console.error("Error fetching data:", error.message || error);
       toast({
-        title: 'Error',
-        description: 'Failed to load case study exams',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load case study exams",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -101,7 +100,7 @@ export const UserCaseStudyModal = ({
 
   const handleSubscriptionChange = (examId: string, checked: boolean) => {
     setUserSubscriptions((prev) =>
-      checked ? [...prev, examId] : prev.filter((id) => id !== examId)
+      checked ? [...prev, examId] : prev.filter((id) => id !== examId),
     );
   };
 
@@ -113,18 +112,22 @@ export const UserCaseStudyModal = ({
 
       // Get current case study subscriptions
       const { data: currentSubs, error: fetchError } = await supabase
-        .from('user_subscriptions')
-        .select('exams_case_id')
-        .eq('user_id', user.id)
-        .not('exams_case_id', 'is', null);
+        .from("user_subscriptions")
+        .select("exams_case_id")
+        .eq("user_id", user.id)
+        .not("exams_case_id", "is", null);
 
       if (fetchError) throw fetchError;
 
-      const currentSubIds = 
+      const currentSubIds =
         currentSubs?.map((sub: any) => sub.exams_case_id).filter(Boolean) || [];
 
-      const toAdd = userSubscriptions.filter((id) => !currentSubIds.includes(id));
-      const toRemove = currentSubIds.filter((id) => !userSubscriptions.includes(id));
+      const toAdd = userSubscriptions.filter(
+        (id) => !currentSubIds.includes(id),
+      );
+      const toRemove = currentSubIds.filter(
+        (id) => !userSubscriptions.includes(id),
+      );
 
       // Add new subscriptions
       if (toAdd.length > 0) {
@@ -136,7 +139,7 @@ export const UserCaseStudyModal = ({
 
         for (const subscription of subscriptionsToInsert) {
           const { error: insertError } = await supabase
-            .from('user_subscriptions')
+            .from("user_subscriptions")
             .insert(subscription);
 
           if (insertError) throw insertError;
@@ -147,7 +150,7 @@ export const UserCaseStudyModal = ({
       if (toRemove.length > 0) {
         for (const examId of toRemove) {
           const { error: deleteError } = await supabase
-            .from('user_subscriptions')
+            .from("user_subscriptions")
             .delete()
             .match({ user_id: user.id, exams_case_id: examId });
 
@@ -156,18 +159,18 @@ export const UserCaseStudyModal = ({
       }
 
       toast({
-        title: 'Success',
-        description: 'Case study access updated successfully',
+        title: "Success",
+        description: "Case study access updated successfully",
       });
 
       onUpdated();
       onClose();
     } catch (error: any) {
-      console.error('Error updating subscriptions:', error.message || error);
+      console.error("Error updating subscriptions:", error.message || error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update case study access',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to update case study access",
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
@@ -182,13 +185,16 @@ export const UserCaseStudyModal = ({
         <DialogHeader>
           <DialogTitle>Manage Case Study Access</DialogTitle>
           <DialogDescription>
-            Assign or revoke case study exam access for <strong>{user.username}</strong>.
+            Assign or revoke case study exam access for{" "}
+            <strong>{user.username}</strong>.
           </DialogDescription>
         </DialogHeader>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Available Case Study Exams</CardTitle>
+            <CardTitle className="text-lg">
+              Available Case Study Exams
+            </CardTitle>
             <CardDescription>
               Select which case study exams this user should have access to.
             </CardDescription>
@@ -214,11 +220,16 @@ export const UserCaseStudyModal = ({
                         }
                       />
                       <div className="flex-1 min-w-0">
-                        <Label htmlFor={exam.id} className="text-sm font-medium cursor-pointer">
+                        <Label
+                          htmlFor={exam.id}
+                          className="text-sm font-medium cursor-pointer"
+                        >
                           {exam.title}
                         </Label>
                         {exam.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{exam.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {exam.description}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -246,7 +257,7 @@ export const UserCaseStudyModal = ({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving || loading}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
