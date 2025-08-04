@@ -61,7 +61,7 @@ export const useQuestionBankSubscriptions = () => {
 
   useEffect(() => {
     fetchSubscribedQuestionBanks();
-  }, [user]);
+  }, []);
 
   return { 
     subscriptions, 

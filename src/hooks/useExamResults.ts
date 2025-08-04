@@ -56,7 +56,7 @@ export const useExamResults = () => {
 
   useEffect(() => {
     fetchExamResults();
-  }, [user]);
+  }, []);
 
   return { examResults, loading, refetch: fetchExamResults };
 };

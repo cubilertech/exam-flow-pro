@@ -68,7 +68,7 @@ export const useCaseStudySubscriptions = () => {
 
   useEffect(() => {
     fetchSubscribedCaseStudyExams();
-  }, [user]);
+  }, []);
 
   return { 
     subscriptions, 
