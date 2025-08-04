@@ -97,7 +97,7 @@ export const useFlaggedQuestions = () => {
 
   useEffect(() => {
     fetchFlaggedQuestions();
-  }, [user]);
+  }, []);
 
   return { 
     flaggedQuestions: filteredQuestions, 

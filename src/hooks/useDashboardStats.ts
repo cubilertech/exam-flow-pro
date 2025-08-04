@@ -11,15 +11,15 @@ export const useDashboardStats = () => {
   const { subscriptions: caseStudyExams } = useCaseStudySubscriptions();
 
   const stats = useMemo(() => {
-    const averageScore = examResults.length > 0 
-      ? examResults.reduce((acc, result) => acc + result.score, 0) / examResults.length
-      : 0;
+    // const averageScore = examResults.length > 0 
+    //   ? examResults.reduce((acc, result) => acc + result.score, 0) / examResults.length
+    //   : 0;
 
     return {
       totalQuestionBanks: questionBanks.length,
       totalCaseStudyExams: caseStudyExams.length,
       testsCompleted: examResults.length,
-      averageScore: Math.round(averageScore * 100),
+      // averageScore: Math.round(averageScore * 100),
       flaggedQuestionsCount: flaggedQuestions.length,
       recentExamResults: examResults.slice(0, 5),
       recentFlaggedQuestions: flaggedQuestions.slice(0, 5)

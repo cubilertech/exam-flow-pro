@@ -115,15 +115,17 @@ export const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="transition-all duration-0">
+        <Card className="transition-all duration-0 relative ">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Recent Exams</CardTitle>
               <Clock className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent >
             {stats.recentExamResults && stats.recentExamResults.length > 0 ? (
+              <div className="pb-14">
+
               <ul className="space-y-2">
                 {stats.recentExamResults.slice(0, 5).map((result) => (
                   <li
@@ -153,23 +155,24 @@ export const Dashboard = () => {
                   </li>
                 ))}
               </ul>
+              </div>
             ) : (
-              <div className="text-center p-6">
+              <div className="text-center p-6 pb-20">
                 <p className="text-muted-foreground">No exams taken yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Start your first exam to see results here
                 </p>
               </div>
             )}
-          </CardContent>
-          <CardFooter>
+          </CardContent >
+          <CardFooter className="absolute bottom-0 left-0 right-0">
             <Button variant="outline" className="w-full" asChild>
               <Link to="/my-exams">View All Exams</Link>
             </Button>
           </CardFooter>
         </Card>
 
-        <Card className="transition-all duration-0">
+        <Card className="transition-all duration-0 relative">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="pb-1">Flagged Questions</CardTitle>
@@ -177,8 +180,11 @@ export const Dashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
+           
             {stats.recentFlaggedQuestions &&
             stats.recentFlaggedQuestions.length > 0 ? (
+             <div className="pb-14">
+              
               <ul className="space-y-2">
                 {stats.recentFlaggedQuestions.map((flagged) => (
                   <li
@@ -197,11 +203,13 @@ export const Dashboard = () => {
                     <Button size="sm" variant="ghost" asChild>
                       <Link to={`/flagged-questions`}>Review</Link>
                     </Button>
-                  </li>
+                  </li>        
                 ))}
               </ul>
+            </div>
+              
             ) : (
-              <div className="text-center p-6">
+              <div className="text-center p-6 pb-20">
                 <p className="text-muted-foreground">
                   No flagged questions yet. Flag important questions during
                   study to review them later.
@@ -209,7 +217,7 @@ export const Dashboard = () => {
               </div>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="absolute bottom-0 left-0 right-0">
             <Button variant="outline" className="w-full" asChild>
               <Link to="/flagged-questions">
                 {stats.flaggedQuestionsCount > 5
