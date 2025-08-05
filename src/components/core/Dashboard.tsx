@@ -130,7 +130,7 @@ export const Dashboard = () => {
                 {stats.recentExamResults.slice(0, 5).map((result) => (
                   <li
                     key={result.id}
-                    className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
+                    className="flex flex-col md:flex-row justify-between items-end p-3 hover:bg-muted rounded-md transition-colors"
                   >
                     <div>
                       <p className="font-medium">
@@ -179,17 +179,17 @@ export const Dashboard = () => {
               <Flag className="h-5 w-5 text-amber-500" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent >
            
             {stats.recentFlaggedQuestions &&
             stats.recentFlaggedQuestions.length > 0 ? (
              <div className="pb-14">
               
-              <ul className="space-y-2">
+              <ul className="space-y-2  ">
                 {stats.recentFlaggedQuestions.map((flagged) => (
                   <li
                     key={flagged.id}
-                    className="flex justify-between items-center p-3 hover:bg-muted rounded-md transition-colors"
+                    className="flex flex-col md:flex-row justify-between items-end p-3 hover:bg-muted rounded-md transition-colors"
                   >
                     <div>
                       <p className="font-medium truncate max-w-[250px]">
