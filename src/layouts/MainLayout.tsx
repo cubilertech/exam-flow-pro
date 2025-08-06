@@ -1,7 +1,7 @@
 import React, { ReactNode, useState } from "react";
 import { Navbar } from "@/components/core/Navbar";
 import { useAppSelector } from "@/lib/hooks";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/core/AppSidebar";
 import { matchPath, useLocation } from "react-router-dom";
 import Footer from "@/components/footer/Footer";
@@ -13,7 +13,7 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  // const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const isCaseStudyPage = location.pathname === "/case-study-exams";
@@ -39,14 +39,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           {(isAuthenticated && !isHomePage) ||
           (isAuthenticated && isHomePage) ? (
           <>
-
-          <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="md:hidden p-3 sticky mt-2 left-4 z-40 bg-secondary rounded-full shadow"
-          >
-            <Menu className="w-6 h-6"/>
-          </button>
-          <AppSidebar mobileSidebarOpen={mobileSidebarOpen} setMobileSidebarOpen={setMobileSidebarOpen} />
+          <AppSidebar  />
           </>
           ) : null}
           <SidebarInset className="flex-1">

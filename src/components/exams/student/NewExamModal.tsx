@@ -458,7 +458,7 @@ const NewExamModal: React.FC<NewExamModalProps> = ({ open, onOpenChange }) => {
                     <SelectContent className="">
                       {subscriptions.map((bank) => (
                         // text-nowrap overflow-hidden
-                        <SelectItem key={bank.id} value={bank.id} className="w-[25rem] text-ellipsis ">
+                        <SelectItem key={bank.id} value={bank.id} className="w-64 md:w-[25rem]  text-ellipsis ">
                           {bank.name}
                         </SelectItem>
                       ))}

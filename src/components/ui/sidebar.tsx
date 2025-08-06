@@ -32,6 +32,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  mobileSidebarOpen: boolean
+  toggleMobileSidebarOpen: (open: boolean) => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -46,8 +48,7 @@ function useSidebar() {
 }
 
 const SidebarProvider = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
+  HTMLDivElement,  React.ComponentProps<"div"> & {
     defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
@@ -66,6 +67,7 @@ const SidebarProvider = React.forwardRef<
     ref
   ) => {
     const isMobile = useIsMobile()
+    const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // This is the internal state of the sidebar.
@@ -86,6 +88,10 @@ const SidebarProvider = React.forwardRef<
       },
       [setOpenProp, open]
     )
+
+    const toggleMobileSidebarOpen = React.useCallback((open: boolean) => {
+      setMobileSidebarOpen(open)
+    }, [])
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
@@ -123,8 +129,10 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        toggleMobileSidebarOpen,
+        mobileSidebarOpen,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, toggleMobileSidebarOpen, mobileSidebarOpen]
     )
 
     return (

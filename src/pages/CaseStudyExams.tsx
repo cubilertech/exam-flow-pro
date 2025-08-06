@@ -33,10 +33,15 @@ const CaseStudyExams = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { toast } = useToast();
   const { subscribedExamIds, loading: subscriptionsLoading } = useCaseStudySubscriptions();
+  // console.log("subscribedExamIds:", subscribedExamIds);
+  // console.log("Loading case", !loading , "isAdmin:", !isAdmin ,"exams", exams.length === 0 )
 
-  useEffect(() => {
+ useEffect(() => {
+  // console.log("Effect triggered. subscriptionsLoading:", subscriptionsLoading, "subscribedExamIds:", subscribedExamIds);
+  if (!subscriptionsLoading) {
     fetchExams();
-  }, [subscribedExamIds]);
+  }
+}, [subscribedExamIds, subscriptionsLoading]);
 
   const fetchExams = async () => {
     try {
@@ -104,6 +109,7 @@ const CaseStudyExams = () => {
         : examsWithSubjectCount.filter((exam) => exam.subjectCount > 0);
 
       setExams(filteredExams);
+      // console.log("Fetched exams:", filteredExams);
     } catch (error) {
       console.error("Error fetching case study exams:", error);
       toast({
@@ -160,7 +166,8 @@ const CaseStudyExams = () => {
         )}
       </div>
 
-      {!isAdmin && exams.length === 0 && !loading && (
+      { !loading && !isAdmin && exams.length === 0  && (
+        
         <div className="text-center py-12">
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Case Study Exams Available</h3>

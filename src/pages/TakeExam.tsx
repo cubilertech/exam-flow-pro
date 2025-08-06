@@ -203,7 +203,7 @@ const TakeExam = () => {
         }
 
         if (elapsedSeconds >= timeLimit) {
-          toast({ title: 'Error', description: "Time's up! Submitting your exam." });
+          toast({ title: 'Successful', description: "Time's up! Your exam has been submitted." });
           confirmFinishExam();
         }
       };
@@ -636,8 +636,8 @@ const TakeExam = () => {
 
   return (
     <div className="container px-3 sm:px-8 mx-auto py-6 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-3">
+      <div className="flex justify-between md:items-center items-start mb-6">
+        <div className="flex flex-col md:flex-row gap-y-2 items-center justify-between w-full md:w-[22rem] space-x-3">
           <h1 className="text-xl sm:text-2xl font-bold">
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </h1>
@@ -669,7 +669,7 @@ const TakeExam = () => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col-reverse md:flex-row gap-y-2 items-end justify-end  space-x-2 w-full md:w-52  md:mt-0">
           {examDetails?.isTimed && (
             <Badge variant="outline" className="px-2 py-1">
               <Timer className="h-4 w-4 mr-1.5" />
@@ -791,8 +791,8 @@ const TakeExam = () => {
             </div>
           </div>
 
-          <DialogFooter className="flex space-x-2 sm:space-x-0">
-            <Button
+          <DialogFooter className="flex  sm:space-x-0">
+            <Button className="mt-3 md:mt-0"
               variant="outline"
               onClick={() => setShowSummaryDialog(false)}
             >
@@ -824,7 +824,7 @@ const TakeExam = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNotesDialog(false)}>
+            <Button className="mt-1 md:mt-0" variant="outline" onClick={() => setShowNotesDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleSaveNote} disabled={noteIsSaving}>

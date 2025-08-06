@@ -104,14 +104,14 @@ const FlaggedQuestions = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
         <div className="flex items-center gap-2">
           <Flag className="h-6 w-6 text-primary" />
-          <h1 className="text-3xl font-bold">Flagged Questions</h1>
-          <Badge variant="secondary">{allFlaggedQuestions.length} total</Badge>
+          <h1 className="text-2xl md:text-3xl font-bold">Flagged Questions</h1>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex md:justify-end gap-2 w-full md:w-64 mt-4 md:mt-0">
+          <Badge variant="secondary">{allFlaggedQuestions.length} total</Badge>
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             onClick={() => setViewMode('list')}
@@ -133,7 +133,7 @@ const FlaggedQuestions = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Search className="h-5 w-5" />
+            {/* <Search className="h-5 w-5" /> */}
             Search & Filter
           </CardTitle>
         </CardHeader>
