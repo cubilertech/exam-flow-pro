@@ -46,12 +46,12 @@ const Profile = () => {
 
   return (
     <>
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-2 md:px-6">
         <div className="flex flex-col space-y-8">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="flex flex-col md:flex-row  items-start  md:items-center justify-between">
+                <div className="flex items-center  space-x-4">
                   <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10">
                     <User className="h-8 w-8 text-primary" />
                   </div>
@@ -63,6 +63,7 @@ const Profile = () => {
                   </div>
                 </div>
                 <Button
+                className='mt-4 md:mt-0'
                   onClick={() => setEditModalOpen(true)}
                   variant="outline"
                   size="sm"
@@ -120,7 +121,7 @@ const Profile = () => {
                         {isAdmin ? "Admin" : "Student"}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4  md:gap-2">
                       <span className="w-24 text-muted-foreground">
                         Subscriptions:
                       </span>
@@ -157,7 +158,7 @@ const Profile = () => {
                     </p>
                   </div>
                 ) : (
-                  <Table>
+                  <Table className='w-[30rem] md:w-full'>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
@@ -172,7 +173,7 @@ const Profile = () => {
                           <TableCell className="font-medium">
                             {bank.name}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className='line-clamp-2'>
                             {bank.description || "No description available"}
                           </TableCell>
                           {/* <TableCell>

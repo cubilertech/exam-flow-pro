@@ -139,19 +139,25 @@ export const Dashboard = () => {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>
                           {result.question_bank_name || "Question Bank"}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          <span>{Math.round(result.score)}%</span>
+                        </span>    
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between md:justify-end  w-full md:w-72 mt-2 md:mt-0">
+                      <div className="flex items-center gap-2 ">
+
+                      <div className="flex items-center gap-1">
+                      <Target className="h-3 w-3" />
+                      <span>{Math.round(result.score)}%</span>
                         </div>
                         <span>
                           {format(new Date(result.completed_at), "MMM dd")}
                         </span>
                       </div>
-                    </div>
+
                     <Button size="sm" variant="ghost" asChild>
                       <Link to={`/exam-results/${result.id}`}>View</Link>
                     </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

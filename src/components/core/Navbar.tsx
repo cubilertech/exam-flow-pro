@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   Book,
   LogOut,
+  Menu,
   User,
 } from 'lucide-react';
 import {
@@ -37,9 +38,12 @@ import {
   useAppDispatch,
   useAppSelector,
 } from '@/lib/hooks';
+import { useSidebar } from '../ui/sidebar';
 
 export const Navbar = () => {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  // const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
+  const { toggleMobileSidebarOpen } = useSidebar();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { subscriptions, activeQuestionBankId, setActiveQuestionBankById } = useQuestionBankSubscriptions();
@@ -72,6 +76,9 @@ export const Navbar = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between sm:px-8  px-4">
         <div className="flex items-center gap-2">
+          <button onClick={() => toggleMobileSidebarOpen(true)} className="md:hidden px-2 sticky  left-4 z-40 ">
+              <Menu className="w-6 h-6"/>
+            </button>
           <Link to="/" className="font-bold  text-primary text-lg sm:text-2xl">
             ExamFlowPro
           </Link>

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/accordion";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
+import { useSidebar } from "../ui/sidebar";
 
 interface MainNavItem {
   title: string;
@@ -41,12 +42,13 @@ interface DashboardConfig {
   mainNav: MainNavItem[];
   sidebarNav: SidebarNavItem[];
 }
-interface AppSidebarProps {
-  mobileSidebarOpen: boolean;
-  setMobileSidebarOpen: (value: boolean) => void;
-}
+// interface AppSidebarProps {
+//   mobileSidebarOpen: boolean;
+//   setMobileSidebarOpen: (value: boolean) => void;
+// }
 
-export function AppSidebar({ mobileSidebarOpen, setMobileSidebarOpen }: AppSidebarProps) {
+export function AppSidebar() {
+  const { mobileSidebarOpen, toggleMobileSidebarOpen } = useSidebar();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const adminItems = [
     { title: "Question Banks", url: "/questions", icon: Database },
@@ -73,13 +75,13 @@ export function AppSidebar({ mobileSidebarOpen, setMobileSidebarOpen }: AppSideb
 
       {/* Mobile Sidebar Drawer */}
       <div
-        className={`fixed top-0 left-0 z-50 h-full w-96 bg-secondary border-r transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-full bg-secondary border-r transform transition-transform duration-300 ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:hidden`}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="text-lg font-bold">{user?.isAdmin ? "Admin" : "Student"} Dashboard</h2>
-          <button className="pr-3" onClick={() => setMobileSidebarOpen(false)}>
+          <button className="pr-3" onClick={() => toggleMobileSidebarOpen(false)}>
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -89,8 +91,8 @@ export function AppSidebar({ mobileSidebarOpen, setMobileSidebarOpen }: AppSideb
             <NavLink
               key={item.title}
               to={item.url}
-              onClick={() => setMobileSidebarOpen(false)}
-              className="flex items-center space-x-2 rounded-md p-2 text-sm font-medium hover:underline"
+              onClick={() => toggleMobileSidebarOpen(false)}
+              className="flex items-center space-x-2 rounded-md p-2 text-sm font-medium hover:underline "
             >
               <item.icon className="h-4 w-4" />
               <span>{item.title}</span>
