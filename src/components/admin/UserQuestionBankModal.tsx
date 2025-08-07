@@ -190,7 +190,7 @@ export const UserQuestionBankModal = ({
         </DialogHeader>
 
         <Card className="transition-all duration-0">
-          <CardHeader>
+          <CardHeader className="py-5 md:py-6">
             <CardTitle className="text-lg">Available Question Banks</CardTitle>
             <CardDescription>
               Select which question banks this user should have access to.
@@ -250,7 +250,7 @@ export const UserQuestionBankModal = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button className="mt-2 md:mt-0" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving || loading}>

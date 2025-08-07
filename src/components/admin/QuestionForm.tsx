@@ -652,7 +652,6 @@ export const QuestionForm = ({
             <ThemeProvider>
               <Remirror
                 manager={manager}
-                autoFocus
                 onChange={({ state, helpers }) => {
                   const html = helpers.getHTML();
                   handleExplanationChange(html);

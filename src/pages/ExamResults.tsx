@@ -320,7 +320,7 @@ const ExamResults = () => {
   };
 
   return (
-    <div className="container mx-auto  max-w-5xl">
+    <div className="container mx-auto  max-w-5xl px-4 md:px-6">
       <div className="mb-8">
         <Button variant="ghost" onClick={() => navigate('/my-exams')} className="mb-3 bg-secondary px-4 py-2 sm:px-6 sm:py-3">
           <ChevronLeft className="h-4 w-4 mr-2" />
@@ -348,7 +348,7 @@ const ExamResults = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex flex-col items-center justify-center h-80">
+                <div className="flex flex-col items-center justify-center h-80 ">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie

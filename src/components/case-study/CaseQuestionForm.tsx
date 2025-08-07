@@ -215,6 +215,7 @@ export const CaseQuestionForm = ({
         <h3 className="font-semibold text-lg mb-2">Question *</h3>
         <ThemeProvider>
           <Remirror
+            autoFocus
             manager={questionEditor.manager}
             initialContent={questionEditor.state}
             onChange={({ helpers }) =>
