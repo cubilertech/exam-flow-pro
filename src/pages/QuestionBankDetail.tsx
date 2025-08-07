@@ -399,7 +399,7 @@ const QuestionBankDetail = () => {
     <div className="container py-8">
       <div className="mb-6">
         {/* First row: Back button on left, Edit button on right */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate("/questions")}
@@ -411,6 +411,7 @@ const QuestionBankDetail = () => {
 
           <Button
             variant="outline"
+            className="mt-2 md:mt-0"
             onClick={() => setEditDialogOpen(true)}
           >
             <PenSquare className="mr-2 h-4 w-4" />
@@ -419,7 +420,7 @@ const QuestionBankDetail = () => {
         </div>
 
         <div className="mt-4 text-center">
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {questionBank?.name}
           </h1>
         </div>
@@ -600,6 +601,7 @@ const QuestionBankDetail = () => {
 
               <DialogFooter className="pt-4">
                 <Button
+                className="mt-2 md:mt-0"
                   variant="outline"
                   type="button"
                   onClick={() => {

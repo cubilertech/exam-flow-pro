@@ -210,6 +210,7 @@ export function QuestionBankModal({ open, onOpenChange, onSuccess }: QuestionBan
 
             <DialogFooter className="pt-4">
               <Button 
+              className="mt-2 md:mt-0"
                 variant="outline" 
                 type="button" 
                 onClick={() => onOpenChange(false)}

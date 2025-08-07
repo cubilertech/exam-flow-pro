@@ -314,7 +314,7 @@ export const CreateUserModal = ({
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose}>
+              <Button className='mt-2 md:mt-0' type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>

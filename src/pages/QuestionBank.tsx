@@ -115,9 +115,9 @@ const QuestionBank = () => {
 
   return (
     <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Question Banks</h1>
-        <Button onClick={() => setBankModalOpen(true)}>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 md:mb-0">Question Banks</h1>
+        <Button  onClick={() => setBankModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> New Question Bank
         </Button>
       </div>
